@@ -1,0 +1,29 @@
+policies:
+  authorised_testing_required:
+    enabled: true
+    decision: block
+    description: Testing must be explicitly authorised before scanning non-demo targets.
+
+  no_secret_disclosure:
+    enabled: true
+    decision: fail_on_high
+    patterns:
+      - api_key
+      - secret
+      - password
+      - private_key
+
+  tool_execution_requires_allowlist:
+    enabled: true
+    decision: fail_on_medium
+    description: Agent tools should require explicit allowlists and scoped permissions.
+
+  rag_corpus_integrity_required:
+    enabled: true
+    decision: warn
+    description: RAG corpora should have source tracking, hashes, and approval state.
+
+  critical_ai_action_requires_human_approval:
+    enabled: true
+    decision: fail_on_high
+    description: High-impact actions should require human approval gates.
