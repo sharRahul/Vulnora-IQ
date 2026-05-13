@@ -1,0 +1,31 @@
+owasp_llm_2025:
+  LLM01:
+    name: Prompt Injection
+    module: owasp_llm01_prompt_injection
+  LLM02:
+    name: Sensitive Information Disclosure
+    module: owasp_llm02_sensitive_information_disclosure
+  LLM03:
+    name: Supply Chain
+    module: owasp_llm03_supply_chain
+  LLM04:
+    name: Data and Model Poisoning
+    module: owasp_llm04_data_and_model_poisoning
+  LLM05:
+    name: Improper Output Handling
+    module: owasp_llm05_improper_output_handling
+  LLM06:
+    name: Excessive Agency
+    module: owasp_llm06_excessive_agency
+  LLM07:
+    name: System Prompt Leakage
+    module: owasp_llm07_system_prompt_leakage
+  LLM08:
+    name: Vector and Embedding Weaknesses
+    module: owasp_llm08_vector_embedding_weaknesses
+  LLM09:
+    name: Misinformation
+    module: owasp_llm09_misinformation
+  LLM10:
+    name: Unbounded Consumption
+    module: owasp_llm10_unbounded_consumption
