@@ -1,0 +1,13 @@
+targets:
+  demo:
+    type: echo
+    description: Safe in-memory demonstration target.
+    endpoint: null
+    auth: none
+
+  custom_http_agent:
+    type: custom_agent
+    description: Placeholder for an authorised HTTP-based AI application target.
+    endpoint: https://example.invalid/agent
+    auth: bearer_env
+    token_env_var: LLM_VAPT_TARGET_TOKEN
