@@ -1,9 +1,13 @@
 source:
-  default_url: https://raw.githubusercontent.com/Straitcode/mitre-atlas-data/main/dist/ATLAS.yaml
+  default_url: https://raw.githubusercontent.com/mitre-atlas/atlas-data/main/dist/v6/ATLAS-2026.05.yaml
+  upstream_site: https://atlas.mitre.org
+  upstream_repository: https://github.com/mitre-atlas/atlas-data
   local_fallback: config/mitre_atlas_mapping.yaml
 output:
   mapping_path: config/mitre_atlas_mapping.yaml
+  matrix_doc_path: docs/MITRE_ATLAS_AI_MATRIX.md
 rules:
   - Refresh tooling must validate generated mappings before writing over the working catalog.
+  - Matrix documentation should be regenerated from the same official source before new payload work is marked complete.
   - CI should use local fixture mode unless network refresh is explicitly requested.
   - Generated mappings should preserve local module_mappings and update only known technique metadata.
