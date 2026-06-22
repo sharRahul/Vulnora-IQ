@@ -1,6 +1,6 @@
-# Vulnora-IQ
+# VulnoraIQ
 
-**Vulnora-IQ** is an early-stage AI security assessment and VAPT platform for **LLM applications, RAG pipelines, AI agents, and orchestration layers**.
+**VulnoraIQ** is an early-stage AI security assessment and VAPT platform for **LLM applications, RAG pipelines, AI agents, and orchestration layers**.
 
 > **Current maturity:** version `0.0.1.2` is an early development build. It is useful for local demos, UI workflow validation, report-pipeline development, and safe framework testing. It is **not ready for real-world VAPT testing or production assessment use** yet.
 
@@ -10,7 +10,7 @@
 
 ## Why this exists
 
-AI application security needs more than prompt-level checks. Vulnora-IQ provides a practical structure for assessing model endpoints, retrieval layers, tools, memory, orchestration, governance controls, and reporting.
+AI application security needs more than prompt-level checks. VulnoraIQ provides a practical structure for assessing model endpoints, retrieval layers, tools, memory, orchestration, governance controls, and reporting.
 
 The current implementation provides:
 
@@ -81,7 +81,7 @@ Outputs: Web dashboard | Markdown | JSON | SARIF-style | dashboards | report dif
 ## Repository structure
 
 ```text
-Vulnora-IQ/
+vulnoraiq/
 ├── .github/workflows/       # Python CI
 ├── benchmarks/              # Regression benchmark suite and runner
 ├── config/                  # Targets, profiles, policies, manifests, mappings, scenarios
