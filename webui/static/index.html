@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLM VAPT Console</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="hero panel">
+      <div>
+        <p class="eyebrow">LLM VAPT Framework</p>
+        <h1>Modern AI Security Assessment Console</h1>
+        <p class="subtitle">Launch authorised scans, watch progress in real time, and present findings through an executive dashboard.</p>
+      </div>
+      <div class="hero-card">
+        <span class="status-dot"></span>
+        <div>
+          <strong>Local/demo-safe by default</strong>
+          <p>Configured targets require explicit authorisation before execution.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid two">
+      <form id="scan-form" class="panel form-panel">
+        <div class="section-title">
+          <span>01</span>
+          <h2>Run scan</h2>
+        </div>
+        <label>
+          Target
+          <select id="target-select" name="target"></select>
+        </label>
+        <label>
+          Profile
+          <select id="profile-select" name="profile"></select>
+        </label>
+        <label class="checkbox-row">
+          <input id="authorised" type="checkbox" name="authorised">
+          <span>I confirm this configured target is owned by me or explicitly authorised for assessment.</span>
+        </label>
+        <button type="submit" class="primary">Start assessment</button>
+        <p id="form-message" class="form-message"></p>
+      </form>
+
+      <section class="panel progress-panel">
+        <div class="section-title">
+          <span>02</span>
+          <h2>Realtime progress</h2>
+        </div>
+        <div class="progress-ring">
+          <svg viewBox="0 0 120 120" aria-label="Scan progress">
+            <circle class="track" cx="60" cy="60" r="52"></circle>
+            <circle id="progress-circle" class="meter" cx="60" cy="60" r="52"></circle>
+          </svg>
+          <div><strong id="progress-value">0%</strong><span id="scan-status">Idle</span></div>
+        </div>
+        <ol id="event-list" class="timeline"></ol>
+      </section>
+    </section>
+
+    <section class="panel dashboard-panel">
+      <div class="section-title">
+        <span>03</span>
+        <h2>Completed assessment dashboard</h2>
+      </div>
+      <div id="empty-state" class="empty-state">Run a scan to populate the dashboard.</div>
+      <div id="dashboard" class="dashboard hidden">
+        <div class="cards">
+          <article><span>Target</span><strong id="summary-target">-</strong></article>
+          <article><span>Profile</span><strong id="summary-profile">-</strong></article>
+          <article><span>Findings</span><strong id="summary-findings">0</strong></article>
+          <article><span>Highest severity</span><strong id="summary-severity">info</strong></article>
+          <article><span>Policy status</span><strong id="summary-policy">pass</strong></article>
+        </div>
+
+        <div class="grid two dashboard-grid">
+          <section>
+            <h3>Severity distribution</h3>
+            <div id="severity-bars" class="bars"></div>
+          </section>
+          <section>
+            <h3>Policy evaluation</h3>
+            <div id="policy-list" class="policy-list"></div>
+          </section>
+        </div>
+
+        <section>
+          <h3>Findings</h3>
+          <div id="findings-list" class="findings-list"></div>
+        </section>
+
+        <section>
+          <h3>Outputs for presentation</h3>
+          <div id="artifact-links" class="artifact-links"></div>
+        </section>
+      </div>
+    </section>
+
+    <section class="panel history-panel">
+      <div class="section-title">
+        <span>04</span>
+        <h2>Recent scans</h2>
+      </div>
+      <div id="job-history" class="job-history"></div>
+    </section>
+  </main>
+  <script src="/static/app.js" defer></script>
+</body>
+</html>
