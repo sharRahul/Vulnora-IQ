@@ -26,7 +26,17 @@ jobs:
           python -m pip install -e .[dev]
 
       - name: Run tests
-        run: pytest
+        run: |
+          mkdir -p reports/output/ci-logs
+          pytest 2>&1 | tee reports/output/ci-logs/python-ci-pytest-${{ matrix.python-version }}.log
+          test ${PIPESTATUS[0]} -eq 0
+
+      - name: Upload pytest log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vulnoraiq-python-ci-pytest-log-${{ matrix.python-version }}
+          path: reports/output/ci-logs/python-ci-pytest-${{ matrix.python-version }}.log
 
       - name: Validate Web UI package wiring
         run: |
