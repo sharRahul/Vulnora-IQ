@@ -13,6 +13,7 @@ payload_libraries:
   - rag_readiness
   - agent_readiness
   - owasp_document_examples
+  - owasp_genai_data_privacy
 
 risk_model:
   thresholds:
