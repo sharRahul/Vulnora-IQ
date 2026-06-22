@@ -1,6 +1,6 @@
 framework:
   name: llm-vapt-framework
-  version: 0.7.0
+  version: 0.8.0
   safe_mode: true
 
 execution:
@@ -25,6 +25,8 @@ reporting:
   sarif_output: reports/output/scan-report.sarif
   dashboard_output: reports/output/dashboard.md
   html_dashboard_output: reports/output/dashboard.html
+  diff_json_output: reports/output/report-diff.json
+  diff_markdown_output: reports/output/report-diff.md
   include_evidence: true
 
 approval_gates:
