@@ -19,7 +19,8 @@ This document separates current working capability from roadmap items so users c
 | HTTP JSON target adapter | Starter | A minimal HTTP JSON adapter exists for explicitly authorised local or owned targets. |
 | OWASP LLM 2025 mapping | Partial | Checks are mapped to OWASP LLM 2025 IDs in config and module metadata. |
 | MITRE ATLAS mapping | Pending | A validated ATLAS mapping table still needs to be added. Existing output marks this as pending rather than complete. |
-| RAG testing | Starter | RAG-related profile entries, payload libraries, and policy metadata exist, but retrieval harnesses are not complete. |
+| RAG corpus manifest validation | Working starter | `config/rag_corpus_manifest.yaml` and `rag_testing/corpus_manifest.py` validate source metadata, approvals, hashes, and access groups. |
+| RAG retrieval testing | Starter | RAG-related profile entries, payload libraries, and manifest policy checks exist, but retrieval harnesses are not complete. |
 | Agent testing | Starter | Agent-related profile entries, payload libraries, and allowlist policy checks exist, but full tool, memory, and multi-agent harnesses are not complete. |
 | CI | Working starter | GitHub Actions installs the package, runs tests across supported Python versions, and runs a demo smoke assessment producing Markdown, JSON, SARIF, and dashboard artifacts. |
 
@@ -50,7 +51,7 @@ For any configured target outside demo mode:
 ## Gap backlog
 
 1. Add validated MITRE ATLAS mapping data.
-2. Add deeper RAG retrieval harnesses and corpus integrity checks.
+2. Add deeper RAG retrieval harnesses and source-trust scoring.
 3. Add agent tool-permission, memory-integrity, and orchestration harnesses.
 4. Expand policy-as-code to support severity thresholds, exception files, and signed approvals.
 5. Add release versioning and packaged example outputs.
