@@ -1,6 +1,6 @@
 framework:
   name: llm-vapt-framework
-  version: 1.0.0
+  version: 1.1.0
   safe_mode: true
 
 execution:
@@ -32,6 +32,11 @@ reporting:
   diff_trend_markdown_output: reports/output/diff-trend-dashboard.md
   diff_trend_html_output: reports/output/diff-trend-dashboard.html
   include_evidence: true
+
+web_ui:
+  host: 127.0.0.1
+  port: 8787
+  output_root: reports/output/webui
 
 approval_gates:
   high_impact_actions_require_approval: true
