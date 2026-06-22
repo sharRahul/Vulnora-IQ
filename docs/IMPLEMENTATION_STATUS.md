@@ -2,9 +2,9 @@
 
 This document separates current working capability from roadmap items so users can understand what is ready today.
 
-> **Current maturity:** VulnoraIQ version `0.0.1.4` is an early development build. It is suitable for local demos, framework development, UI workflow validation, and report-pipeline testing. It is **not ready for real-world VAPT testing or production security assessment use**.
+> **Current maturity:** VulnoraIQ version `0.0.1.5` is an early development build. It is suitable for local demos, framework development, UI workflow validation, and report-pipeline testing. It is **not ready for real-world VAPT testing or production security assessment use**.
 
-> **Important limitation:** OWASP LLM 2025 coverage now has implementation specs, safe starter oracle coverage, deterministic local evaluator primitives, and local good/bad fixtures for all 10 categories. MITRE ATLAS AI technique coverage now has a planning matrix, but the matrix is not the same as active production-validated detection coverage. Treat output as development evidence, not validated security assurance.
+> **Important limitation:** OWASP LLM 2025 coverage now has implementation specs, safe starter oracle coverage, deterministic local evaluator primitives, and local good/bad fixtures for all 10 categories. MITRE ATLAS AI technique coverage now has a source-driven planning matrix and unmapped backlog preservation, but the matrix is not the same as active production-validated detection coverage. Treat output as development evidence, not validated security assurance.
 
 ## Seven-phase implementation status
 
@@ -22,7 +22,7 @@ This document separates current working capability from roadmap items so users c
 
 | Area | Status | Notes |
 | --- | --- | --- |
-| Python package scaffold | Working starter | VulnoraIQ version `0.0.1.4` installs as a Python package with CLI entry points for assessment, Web UI, dashboard generation, report diffing, benchmark runs, trend outputs, ATLAS refresh, HTML export, package metadata validation, and release package building. |
+| Python package scaffold | Working starter | VulnoraIQ version `0.0.1.5` installs as a Python package with CLI entry points for assessment, Web UI, dashboard generation, report diffing, benchmark runs, trend outputs, ATLAS refresh, ATLAS matrix generation, HTML export, package metadata validation, and release package building. |
 | Modern Web UI | Working starter | `webui/hosted_server.py`, `webui/auth.py`, `webui/persistent_jobs.py`, and `webui/static/` provide a browser console for launching demo scans, realtime progress via Server-Sent Events, completed dashboard views, scan history, role-aware auth hooks, persistent JSON job storage, and artifact downloads. |
 | Demo target | Working | The default `demo` target uses an in-memory echo client and requires no external API keys. |
 | Local demo targets | Working-alpha starter | `examples/local_demo_targets/` contains safe HTTP JSON, control-gap, and OWASP good/bad fixture targets for local demonstration and tests. |
@@ -38,7 +38,7 @@ This document separates current working capability from roadmap items so users c
 | Approval evidence validation | Working starter | `config/approval_evidence.yaml` and `core/approval_evidence.py` validate approval references and local SHA-256 integrity signatures before exceptions suppress policy outcomes. |
 | OWASP LLM 2025 implementation specs | Working-alpha starter | `docs/owasp/` defines scope, safe strategy, expected good/bad behaviour, evidence, evaluators, severity rationale, and working criteria for all 10 categories. |
 | OWASP LLM 2025 oracle coverage | Working starter | `config/owasp_oracles.yaml` and `core/evidence_model.py` provide safe starter oracle coverage for all 10 OWASP LLM 2025 categories. |
-| MITRE ATLAS AI matrix | Working starter | `docs/MITRE_ATLAS_AI_MATRIX.md` records the current AI technique matrix, module mappings, implementation status, and next implementation work for adding techniques later. |
+| MITRE ATLAS AI matrix | Working starter | `docs/MITRE_ATLAS_AI_MATRIX.md` records the official-source planning path. `scripts/generate_mitre_atlas_matrix.py` generates tactic and technique rows with OWASP mapping, VulnoraIQ coverage area, implementation status, and `Unmapped / map later` backlog preservation. |
 | Evidence model and test oracles | Working starter | `core/evidence_model.py` creates structured `InteractionEvidence` and `OracleResult` records for module output and report evidence. |
 | Report generation | Working starter | Markdown, JSON, and SARIF-style reports include findings, structured evidence, oracle results, and policy evaluation, but conclusions are only as mature as the starter checks. |
 | Report diffing | Working starter | `reports/report_diff.py` compares two structured JSON reports, emits JSON/Markdown diffs, and can fail on regression. |
