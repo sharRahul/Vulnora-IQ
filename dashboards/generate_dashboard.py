@@ -14,7 +14,9 @@ class DashboardGenerator:
         output.parent.mkdir(parents=True, exist_ok=True)
 
         lines = [
-            f"# VulnoraIQ Assessment Dashboard - {report.get('target', 'unknown')}",
+            f"# LLM Assessment Dashboard - {report.get('target', 'unknown')}",
+            "",
+            f"_VulnoraIQ Assessment Dashboard for `{report.get('target', 'unknown')}`._",
             "",
             "## Summary",
             "",
@@ -52,7 +54,7 @@ class DashboardGenerator:
             "| --- | --- | --- | --- |",
         ])
         for policy in report.get("policy_results", []):
-            message = str(policy.get("message", "")).replace("|", "\|")
+            message = str(policy.get("message", "")).replace("|", "\\|")
             lines.append(
                 f"| {policy.get('policy_id', '')} | {policy.get('status', '')} | {policy.get('decision', '')} | {message} |"
             )
@@ -66,8 +68,8 @@ class DashboardGenerator:
         ])
         findings = sorted(report.get("findings", []), key=lambda item: item.get("score") or 0, reverse=True)
         for finding in findings[:10]:
-            title = str(finding.get("title", "")).replace("|", "\|")
-            component = str(finding.get("affected_component", "")).replace("|", "\|")
+            title = str(finding.get("title", "")).replace("|", "\\|")
+            component = str(finding.get("affected_component", "")).replace("|", "\\|")
             lines.append(
                 f"| {finding.get('severity', '')} | {finding.get('score', '')} | {title} | {finding.get('owasp_id', '')} | {component} |"
             )
