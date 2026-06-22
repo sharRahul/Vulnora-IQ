@@ -1,6 +1,6 @@
 framework:
   name: llm-vapt-framework
-  version: 0.1.0
+  version: 0.2.0
   safe_mode: true
 
 execution:
@@ -16,4 +16,15 @@ risk_model:
 
 reporting:
   default_output: reports/output/scan-report.md
+  json_output: reports/output/scan-report.json
+  dashboard_output: reports/output/dashboard.md
   include_evidence: true
+
+approval_gates:
+  high_impact_actions_require_approval: true
+  approval_record_required: true
+
+rag_corpus:
+  manifest_path: config/rag_corpus_manifest.yaml
+  hash_algorithm: sha256
+  approval_required: true
