@@ -1,6 +1,6 @@
 # VulnoraIQ Documentation
 
-This folder contains the operational, security, production-readiness, assurance, OWASP, and MITRE ATLAS documentation for VulnoraIQ.
+This folder contains the operational, security, production-readiness, assurance, OWASP, GenAI, Agentic, and MITRE ATLAS documentation for VulnoraIQ.
 
 > **Current version:** `0.2.0`  
 > **Current posture:** controlled internal enterprise production-readiness gate passed.  
@@ -49,19 +49,37 @@ It must **not** be described as:
 | Container | Non-root Dockerfile, `/data` volume, healthcheck, Docker Compose example |
 | CI gates | Ruff, mypy, pytest, pip check, pip-audit, metadata validation, readiness validation, functional acceptance |
 
-## OWASP and MITRE documentation
+## OWASP, GenAI, Agentic, and MITRE documentation
 
 | Area | Document |
 | --- | --- |
 | OWASP LLM 2025 category specs | [`owasp/`](owasp/) |
+| OWASP LLM production-readiness plan | [`owasp/PRODUCTION_READINESS_PLAN.md`](owasp/PRODUCTION_READINESS_PLAN.md) |
+| OWASP to MITRE ATLAS crosswalk | [`owasp/OWASP_TO_MITRE_ATLAS_CROSSWALK.md`](owasp/OWASP_TO_MITRE_ATLAS_CROSSWALK.md) |
+| GenAI security implementation plan | [`genai/`](genai/) |
+| GenAI production-readiness plan | [`genai/PRODUCTION_READINESS_PLAN.md`](genai/PRODUCTION_READINESS_PLAN.md) |
+| Agentic Applications implementation plan | [`agentic/`](agentic/) |
+| Agentic Applications production-readiness plan | [`agentic/PRODUCTION_READINESS_PLAN.md`](agentic/PRODUCTION_READINESS_PLAN.md) |
 | MITRE ATLAS AI planning matrix | [`MITRE_ATLAS_AI_MATRIX.md`](MITRE_ATLAS_AI_MATRIX.md) |
 | MITRE ATLAS mapping notes | [`mitre-atlas-mapping.md`](mitre-atlas-mapping.md) |
 
-The OWASP and MITRE documents are planning and implementation references. They should not be interpreted as proof that every mapped technique has production-validated active detection coverage.
+The OWASP, GenAI, Agentic, and MITRE documents are planning and implementation references. They should not be interpreted as proof that every mapped technique has production-validated active detection coverage.
+
+## Source document review queue
+
+The following PDFs are stored locally for source review and category confirmation:
+
+- `owasp-documents/OWASP-GenAI-COMPASS-RunBook-1.0.pdf`
+- `owasp-documents/OWASP-GenAI-Data-Security-Risks-and-Mitigations-2026-v1.0.pdf`
+- `owasp-documents/OWASP-Top-10-for-Agentic-Applications-2026-12.6.pdf`
+- `owasp-documents/OWASP-Top10-for-Agentic-Applications_AIUC-1-Crosswalk-May26.pdf`
+- `owasp-documents/State-of-Agentic-AI-Security-and-Governance-v2.01.pdf`
+
+Until the PDF text is extracted and reviewed, GenAI and Agentic category IDs/names in the new planning docs must remain `Planning` or `candidate` mappings.
 
 ## Documentation maintenance rule
 
-When production posture changes, update these together:
+When production posture or assessment coverage changes, update these together:
 
 1. `README.md`
 2. `SECURITY.md`
@@ -71,6 +89,9 @@ When production posture changes, update these together:
 6. `docs/PRODUCTION_READINESS_SCORECARD.md`
 7. `docs/PRODUCTION_HARDENING_BACKLOG.md`
 8. `docs/ASSESSMENT_ASSURANCE.md`
-9. `CHANGELOG.md`
+9. `docs/owasp/OWASP_TO_MITRE_ATLAS_CROSSWALK.md`
+10. `docs/genai/`
+11. `docs/agentic/`
+12. `CHANGELOG.md`
 
-If a capability is starter-level, partial, experimental, accepted risk, or roadmap-only, mark it clearly in every document that mentions it.
+If a capability is starter-level, partial, experimental, accepted risk, source-review pending, or roadmap-only, mark it clearly in every document that mentions it.
