@@ -1,7 +1,7 @@
 framework:
   name: vulnoraiq
   display_name: VulnoraIQ
-  version: 0.0.1.4
+  version: 0.0.1.5
   safe_mode: true
 
 execution:
@@ -60,6 +60,7 @@ agent_runtime:
 mitre_atlas:
   mapping_path: config/mitre_atlas_mapping.yaml
   refresh_config_path: config/atlas_refresh.yaml
+  source_url: https://raw.githubusercontent.com/mitre-atlas/atlas-data/main/dist/v6/ATLAS-2026.05.yaml
   source_fixture_path: config/mitre_atlas_source_fixture.yaml
   matrix_doc_path: docs/MITRE_ATLAS_AI_MATRIX.md
 
