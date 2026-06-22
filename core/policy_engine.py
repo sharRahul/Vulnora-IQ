@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Any
 
@@ -52,27 +51,27 @@ class PolicyEngine:
         matches: list[dict[str, str]] = []
 
         for finding in findings:
-            text = json.dumps(finding.evidence, default=str).lower()
-            text += " " + finding.description.lower()
-            for marker in markers:
-                if marker and marker in text:
-                    matches.append({"finding": finding.title, "marker": marker})
+            for interaction in finding.evidence.get("interaction_evidence", []):
+                text = str(interaction.get("response_preview", "")).lower()
+                for marker in markers:
+                    if marker and marker in text:
+                        matches.append({"finding": finding.title, "payload_id": str(interaction.get("payload_id", "")), "marker": marker})
 
         if matches:
             return PolicyResult(
                 policy_id="no_secret_disclosure",
                 status="fail",
                 decision=policy.get("decision", "fail_on_high"),
-                message="Sensitive data markers were found in assessment evidence or descriptions.",
-                evidence={"matches": matches},
+                message="Sensitive data markers were found in observed target responses.",
+                evidence={"matches": matches, "scope": "observed_response_preview_only"},
             )
 
         return PolicyResult(
             policy_id="no_secret_disclosure",
             status="pass",
             decision=policy.get("decision", "fail_on_high"),
-            message="No configured sensitive data markers were found in the report evidence.",
-            evidence={"markers_checked": markers},
+            message="No configured sensitive data markers were found in observed target responses.",
+            evidence={"markers_checked": markers, "scope": "observed_response_preview_only"},
         )
 
     def _evaluate_severity_threshold(self, result: ScanResult, policy: dict[str, Any]) -> PolicyResult:
