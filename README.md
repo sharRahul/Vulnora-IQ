@@ -1,14 +1,14 @@
-# LLM VAPT Framework
+# VulnoraIQ
 
-An AI security assessment framework for **LLM applications, RAG pipelines, AI agents, and orchestration layers**.
+**VulnoraIQ** is an AI security assessment and VAPT platform for **LLM applications, RAG pipelines, AI agents, and orchestration layers**.
 
-> **Current maturity:** version `1.1.0` provides a working local/demo-safe enterprise starter platform with a modern Web UI. Start with [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md) to see what is implemented, partial, or planned.
+> **Current maturity:** version `1.2.0` provides a working local/demo-safe enterprise starter platform with a modern Web UI. Start with [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md) to see what is implemented, partial, or planned.
 
-> **Responsible use only:** run this framework only against systems you own or are explicitly authorised to assess. The default demo target is safe and local. Configured non-demo targets require an explicit authorisation flag.
+> **Responsible use only:** run this platform only against systems you own or are explicitly authorised to assess. The default demo target is safe and local. Configured non-demo targets require an explicit authorisation flag.
 
 ## Why this exists
 
-AI application security needs more than prompt-level checks. This repository provides a practical structure for assessing model endpoints, retrieval layers, tools, memory, orchestration, governance controls, and reporting.
+AI application security needs more than prompt-level checks. VulnoraIQ provides a practical structure for assessing model endpoints, retrieval layers, tools, memory, orchestration, governance controls, and reporting.
 
 The current implementation provides:
 
@@ -79,7 +79,7 @@ Outputs: Web dashboard | Markdown | JSON | SARIF-style | dashboards | report dif
 ## Repository structure
 
 ```text
-llm-vapt-framework/
+vulnoraiq/
 ├── .github/workflows/       # Python CI
 ├── benchmarks/              # Regression benchmark suite and runner
 ├── config/                  # Targets, profiles, policies, manifests, mappings, scenarios
@@ -104,10 +104,10 @@ llm-vapt-framework/
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -e .[dev]
-python scripts/run_scan.py --target demo --profile baseline
+vulnoraiq --target demo --profile baseline
 ```
 
-The demo target uses an in-memory echo client, so the framework can be explored without external API keys.
+The demo target uses an in-memory echo client, so the platform can be explored without external API keys.
 
 The default command writes:
 
@@ -122,7 +122,7 @@ The default command writes:
 Run the modern Web UI:
 
 ```bash
-llm-vapt-web --host 127.0.0.1 --port 8787
+vulnoraiq-web --host 127.0.0.1 --port 8787
 ```
 
 Open:
@@ -142,7 +142,7 @@ pytest -q
 ## Example demo command
 
 ```bash
-python scripts/run_scan.py \
+vulnoraiq \
   --target demo \
   --profile baseline \
   --output reports/output/demo-report.md \
@@ -157,7 +157,7 @@ python scripts/run_scan.py \
 Only use this for systems you own or are explicitly authorised to assess:
 
 ```bash
-python scripts/run_scan.py \
+vulnoraiq \
   --target custom_http_agent \
   --profile baseline \
   --authorised \
@@ -175,7 +175,7 @@ Before running against a configured target, replace the placeholder endpoint in 
 Compare two structured JSON reports:
 
 ```bash
-python -m reports.report_diff \
+vulnoraiq-diff \
   --baseline reports/output/baseline.json \
   --current reports/output/current.json \
   --json-output reports/output/report-diff.json \
@@ -187,14 +187,14 @@ Use `--fail-on-regression` in CI when added or changed findings or policy status
 ## Trend commands
 
 ```bash
-python -m reports.policy_trends --input-dir reports/output
-python -m dashboards.diff_trend_dashboard --input-dir reports/output
+vulnoraiq-policy-trend --input-dir reports/output
+vulnoraiq-diff-trend --input-dir reports/output
 ```
 
 ## Benchmark command
 
 ```bash
-python -m benchmarks.run_benchmarks --manifest benchmarks/benchmark_suite.yaml --fail-on-regression
+vulnoraiq-benchmark --manifest benchmarks/benchmark_suite.yaml --fail-on-regression
 ```
 
 ## ATLAS refresh command
@@ -202,7 +202,7 @@ python -m benchmarks.run_benchmarks --manifest benchmarks/benchmark_suite.yaml -
 Use local fixture mode in CI and review generated mappings before committing refreshed data:
 
 ```bash
-python scripts/refresh_mitre_atlas.py --source path/to/ATLAS.yaml --output config/mitre_atlas_mapping.yaml
+vulnoraiq-refresh-atlas --source path/to/ATLAS.yaml --output config/mitre_atlas_mapping.yaml
 ```
 
 ## Release package command
@@ -210,17 +210,17 @@ python scripts/refresh_mitre_atlas.py --source path/to/ATLAS.yaml --output confi
 Build a ZIP package with safe demo outputs and non-sensitive examples after generating demo reports:
 
 ```bash
-python scripts/build_release_package.py --manifest config/release_package.yaml
+vulnoraiq-package --manifest config/release_package.yaml
 ```
 
-The package path defaults to `dist/llm-vapt-example-package.zip`.
+The package path defaults to `dist/vulnoraiq-example-package.zip`.
 
 ## Dashboard command
 
 Generate a Markdown dashboard from an existing JSON report:
 
 ```bash
-python dashboards/generate_dashboard.py \
+vulnoraiq-dashboard \
   --report reports/output/scan-report.json \
   --output reports/output/dashboard.md
 ```
