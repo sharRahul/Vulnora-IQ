@@ -5,6 +5,7 @@ include_paths:
   - README.md
   - docs/IMPLEMENTATION_STATUS.md
   - docs/module-authoring.md
+  - docs/web-ui.md
   - config/default.yaml
   - config/targets.yaml
   - config/attack_profiles.yaml
