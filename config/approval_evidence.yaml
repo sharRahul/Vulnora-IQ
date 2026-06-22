@@ -7,7 +7,7 @@ approvals:
     expires_on: 2999-01-01
     canonical_statement: "DEMO-APPROVAL-001|security-team|demo-fixture|2999-01-01"
     signature_algorithm: sha256
-    signature: d1f7c6f4f88e3bcf7a4b2f8f73d51f6162f88e98b945e35f940afaf87e12593f
+    signature: 79ac17ffd0dafca7d2f764e6af2f9189ba56d9c2db57143f53a7fd87b36333dd
 
 rules:
   - Approval references used by exceptions should exist in this register.
