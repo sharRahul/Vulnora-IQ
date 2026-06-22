@@ -9,7 +9,7 @@ documents:
     owner: security-team
     classification: internal
     approval_status: approved
-    content_hash: 0000000000000000000000000000000000000000000000000000000000000000
+    content_hash: "0000000000000000000000000000000000000000000000000000000000000000"
     last_reviewed: 2026-06-22
     allowed_groups:
       - demo-users
@@ -19,7 +19,7 @@ documents:
     owner: operations-team
     classification: internal
     approval_status: approved
-    content_hash: 1111111111111111111111111111111111111111111111111111111111111111
+    content_hash: "1111111111111111111111111111111111111111111111111111111111111111"
     last_reviewed: 2026-06-22
     allowed_groups:
       - demo-users
