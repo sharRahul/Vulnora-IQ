@@ -1,0 +1,25 @@
+version: fixture-0.0.1.2
+matrices:
+  - id: ATLAS
+    name: Local ATLAS refresh fixture
+    techniques:
+      - id: AML.T0051
+        name: LLM Prompt Injection
+      - id: AML.T0053
+        name: AI Agent Tool Invocation
+      - id: AML.T0054
+        name: LLM Jailbreak
+      - id: AML.T0056
+        name: Extract LLM System Prompt
+      - id: AML.T0057
+        name: LLM Data Leakage
+      - id: AML.T0058
+        name: Publish Poisoned Models
+      - id: AML.T0059
+        name: Erode Dataset Integrity
+      - id: AML.T0064
+        name: Discover LLM Hallucinations
+      - id: AML.T0068
+        name: LLM Prompt Obfuscation
+      - id: AML.T0070
+        name: RAG Poisoning
