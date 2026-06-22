@@ -1,11 +1,16 @@
 framework:
   name: llm-vapt-framework
-  version: 0.2.0
+  version: 0.3.0
   safe_mode: true
 
 execution:
   max_payloads_per_module: 5
   request_timeout_seconds: 30
+
+payload_libraries:
+  - safe_baseline
+  - rag_readiness
+  - agent_readiness
 
 risk_model:
   thresholds:
