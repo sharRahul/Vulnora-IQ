@@ -13,7 +13,7 @@ This document separates current working capability from roadmap items so users c
 | Module plugin interface | Working starter | `modules/base.py`, `modules/starter.py`, and `modules/registry.py` provide a formal module protocol, starter module implementation, and registry lookup. |
 | Payload libraries | Working starter | `core/payload_loader.py` loads safe YAML payload libraries from `payloads/` and maps them to module names. |
 | Non-demo authorisation gate | Working | Configured targets outside demo mode require the explicit CLI authorisation flag. |
-| Policy-as-code | Working starter | Policy YAML is evaluated by `core/policy_engine.py` for sensitive marker checks, agent tool allowlists, RAG corpus integrity metadata, and approval gates. |
+| Policy-as-code | Working starter | Policy YAML is evaluated by `core/policy_engine.py` for sensitive marker checks, agent runtime governance, RAG corpus integrity metadata, and approval gates. |
 | Report generation | Working | Markdown, JSON, and SARIF-style reports include findings, evidence, and policy evaluation. |
 | Dashboard generation | Working | Markdown and HTML dashboards are generated from the structured JSON report. |
 | HTTP JSON target adapter | Starter | A minimal HTTP JSON adapter exists for explicitly authorised local or owned targets. |
@@ -21,7 +21,8 @@ This document separates current working capability from roadmap items so users c
 | MITRE ATLAS mapping | Pending | A validated ATLAS mapping table still needs to be added. Existing output marks this as pending rather than complete. |
 | RAG corpus manifest validation | Working starter | `config/rag_corpus_manifest.yaml` and `rag_testing/corpus_manifest.py` validate source metadata, approvals, hashes, and access groups. |
 | RAG retrieval testing | Starter | RAG-related profile entries, payload libraries, and manifest policy checks exist, but retrieval harnesses are not complete. |
-| Agent testing | Starter | Agent-related profile entries, payload libraries, and allowlist policy checks exist, but full tool, memory, and multi-agent harnesses are not complete. |
+| Agent runtime governance | Working starter | `config/agent_runtime.yaml` and `agent_testing/runtime_manifest.py` validate tool allowlists, high-impact approvals, memory integrity settings, and orchestration plan requirements. |
+| Agent testing | Starter | Agent-related profile entries, payload libraries, and runtime policy checks exist, but simulated execution and multi-agent harnesses are not complete. |
 | CI | Working starter | GitHub Actions installs the package, runs tests across supported Python versions, and runs a demo smoke assessment producing Markdown, JSON, SARIF, and dashboard artifacts. |
 
 ## Current safe usage
@@ -52,7 +53,7 @@ For any configured target outside demo mode:
 
 1. Add validated MITRE ATLAS mapping data.
 2. Add deeper RAG retrieval harnesses and source-trust scoring.
-3. Add agent tool-permission, memory-integrity, and orchestration harnesses.
+3. Add simulated agent execution, memory-integrity, and orchestration harnesses.
 4. Expand policy-as-code to support severity thresholds, exception files, and signed approvals.
 5. Add release versioning and packaged example outputs.
 6. Add richer target adapters for common enterprise patterns.
