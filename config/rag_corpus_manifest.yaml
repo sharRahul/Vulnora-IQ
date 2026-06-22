@@ -1,0 +1,25 @@
+name: demo_rag_corpus
+version: 1
+hash_algorithm: sha256
+approval_required: true
+documents:
+  - id: kb-policy-001
+    title: Example policy overview
+    source_uri: local://examples/policy-overview.md
+    owner: security-team
+    classification: internal
+    approval_status: approved
+    content_hash: 0000000000000000000000000000000000000000000000000000000000000000
+    last_reviewed: 2026-06-22
+    allowed_groups:
+      - demo-users
+  - id: kb-runbook-001
+    title: Example support runbook
+    source_uri: local://examples/support-runbook.md
+    owner: operations-team
+    classification: internal
+    approval_status: approved
+    content_hash: 1111111111111111111111111111111111111111111111111111111111111111
+    last_reviewed: 2026-06-22
+    allowed_groups:
+      - demo-users
