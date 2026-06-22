@@ -1,0 +1,25 @@
+name: llm-vapt-framework-example-package
+version: 1
+output_path: dist/llm-vapt-example-package.zip
+include_paths:
+  - README.md
+  - docs/IMPLEMENTATION_STATUS.md
+  - docs/module-authoring.md
+  - config/default.yaml
+  - config/attack_profiles.yaml
+  - config/policies.yaml
+  - config/policy_exceptions.yaml
+  - config/mitre_atlas_mapping.yaml
+  - config/rag_corpus_manifest.yaml
+  - config/rag_retrieval_scenarios.yaml
+  - config/agent_runtime.yaml
+  - config/agent_execution_scenarios.yaml
+  - payloads/schema.yaml
+  - payloads/safe_baseline.yaml
+  - payloads/rag_readiness.yaml
+  - payloads/agent_readiness.yaml
+  - reports/output/
+rules:
+  - Include only local demo outputs and non-sensitive configuration files.
+  - Do not include credentials, tokens, tenant identifiers, or real client evidence.
+  - Review generated reports before publishing a release package.
