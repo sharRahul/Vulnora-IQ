@@ -28,6 +28,19 @@ jobs:
       - name: Run tests
         run: pytest
 
+      - name: Validate Web UI package wiring
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from webui.server import STATIC_DIR, load_config
+          assert (STATIC_DIR / 'index.html').exists()
+          assert (STATIC_DIR / 'styles.css').exists()
+          assert (STATIC_DIR / 'app.js').exists()
+          config = load_config()
+          assert 'demo' in config['targets']
+          assert 'baseline' in config['profiles']
+          PY
+
       - name: Run baseline assessment smoke test
         run: |
           python scripts/run_scan.py --target demo --profile baseline \
