@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "llm-vapt-framework"
-version = "0.11.0"
+version = "1.0.0"
 description = "AI-native VAPT framework for LLM applications, RAG systems, agents, and orchestration layers."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -24,10 +24,14 @@ llm-vapt = "scripts.run_scan:main"
 llm-vapt-dashboard = "dashboards.generate_dashboard:main"
 llm-vapt-diff = "reports.report_diff:main"
 llm-vapt-package = "scripts.build_release_package:main"
+llm-vapt-benchmark = "benchmarks.run_benchmarks:main"
+llm-vapt-policy-trend = "reports.policy_trends:main"
+llm-vapt-diff-trend = "dashboards.diff_trend_dashboard:main"
+llm-vapt-refresh-atlas = "scripts.refresh_mitre_atlas:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["core*", "integrations*", "modules*", "rag_testing*", "agent_testing*", "reports*", "dashboards*", "scripts*"]
+include = ["core*", "integrations*", "modules*", "rag_testing*", "agent_testing*", "reports*", "dashboards*", "scripts*", "benchmarks*", "examples*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
