@@ -13,6 +13,12 @@ policies:
       - password
       - private_key
 
+  severity_threshold:
+    enabled: true
+    decision: fail_on_critical
+    maximum_allowed_severity: high
+    description: Assessment results should not exceed the maximum approved severity without review.
+
   tool_execution_requires_allowlist:
     enabled: true
     decision: fail_on_medium
