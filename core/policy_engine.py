@@ -8,6 +8,7 @@ from agent_testing.runtime_manifest import AgentRuntimeValidator
 from core.exception_registry import PolicyExceptionRegistry
 from core.types import Finding, PolicyResult, ScanResult
 from rag_testing.corpus_manifest import CorpusManifestValidator
+from rag_testing.retrieval_harness import LocalRetrievalHarness
 
 
 SEVERITY_ORDER = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
@@ -138,17 +139,38 @@ class PolicyEngine:
                 evidence={"configured": corpus},
             )
 
-        validation = CorpusManifestValidator().validate(Path(manifest_path))
+        corpus_validation = CorpusManifestValidator().validate(Path(manifest_path))
+        retrieval = LocalRetrievalHarness(
+            corpus_manifest_path=manifest_path,
+            scenario_path=corpus.get("retrieval_scenarios_path", "config/rag_retrieval_scenarios.yaml"),
+        ).run()
+        status = "fail" if "fail" in {corpus_validation.status, retrieval.status} else "warn" if "warn" in {corpus_validation.status, retrieval.status} else "pass"
         return PolicyResult(
             policy_id="rag_corpus_integrity_required",
-            status=validation.status,
+            status=status,
             decision=policy.get("decision", "warn"),
-            message=f"RAG corpus manifest validation completed with status: {validation.status}.",
+            message=f"RAG corpus and retrieval validation completed with status: {status}.",
             evidence={
-                "manifest_path": validation.manifest_path,
-                "document_count": validation.document_count,
-                "errors": validation.errors,
-                "warnings": validation.warnings,
+                "manifest_path": corpus_validation.manifest_path,
+                "document_count": corpus_validation.document_count,
+                "corpus_errors": corpus_validation.errors,
+                "corpus_warnings": corpus_validation.warnings,
+                "retrieval_status": retrieval.status,
+                "retrieval_scenario_count": retrieval.scenario_count,
+                "retrieval_passed_count": retrieval.passed_count,
+                "retrieval_failed_count": retrieval.failed_count,
+                "minimum_source_trust_score": retrieval.minimum_source_trust_score,
+                "retrieval_results": [
+                    {
+                        "scenario_id": item.scenario_id,
+                        "status": item.status,
+                        "retrieved_documents": item.retrieved_documents,
+                        "source_trust_score": item.source_trust_score,
+                        "errors": item.errors,
+                        "warnings": item.warnings,
+                    }
+                    for item in retrieval.results
+                ],
             },
         )
 
