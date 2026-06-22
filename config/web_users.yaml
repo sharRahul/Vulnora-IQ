@@ -6,22 +6,18 @@
 #   VULNORAIQ_ANALYST_TOKEN=<analyst-token>
 #   VULNORAIQ_VIEWER_TOKEN=<viewer-token>
 #
-# The file-based user list below is used only when no token env vars are set.
-# The hashes below are for demo/development only -- replace in production.
+# When env token vars are set, file-based users are ignored.
+# This file is used only as a fallback when no token env vars are present.
+#
+# IMPORTANT: The token hashes in this file are example-only values.
+# Replace them with real SHA-256 hashes for any non-development deployment.
+# See config/web_users.example.yaml for a template.
 
 auth:
   enabled: true
   default_role: viewer
   header_name: X-VulnoraIQ-Token
-users:
-  - username: admin
-    role: admin
-    token_hash: 8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
-    status: active
-  - username: analyst
-    role: analyst
-    token_hash: f44e64e75f3948e9f73f8dfa94721c4ce8cbb4f265c4790c702b2d41cfbf2753
-    status: active
+users: []
 roles:
   viewer:
     permissions:

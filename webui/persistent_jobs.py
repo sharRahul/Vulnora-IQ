@@ -123,16 +123,22 @@ class PersistentJobStore:
 class SqliteJobStore:
     """SQLite-backed scan job store for production use."""
 
+    SCHEMA_VERSION = 1
+
     def __init__(self, path: str | Path = "reports/output/webui/jobs.db") -> None:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(str(self.path), check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
+        self._conn.executescript("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;")
         self._lock = RLock()
         self._init_schema()
 
     def _init_schema(self) -> None:
         self._conn.executescript("""
+            CREATE TABLE IF NOT EXISTS _schema_version (
+                version INTEGER PRIMARY KEY
+            );
             CREATE TABLE IF NOT EXISTS jobs (
                 id TEXT PRIMARY KEY,
                 target TEXT NOT NULL,
@@ -161,6 +167,14 @@ class SqliteJobStore:
             CREATE INDEX IF NOT EXISTS idx_jobs_created_at ON jobs(created_at);
         """)
         self._conn.commit()
+        self._ensure_schema_version()
+
+    def _ensure_schema_version(self) -> None:
+        row = self._conn.execute("SELECT MAX(version) FROM _schema_version").fetchone()
+        current_version = row[0] if row and row[0] else 0
+        if current_version < self.SCHEMA_VERSION:
+            self._conn.execute("INSERT OR REPLACE INTO _schema_version (version) VALUES (?)", (self.SCHEMA_VERSION,))
+            self._conn.commit()
 
     def create(self, target: str, profile: str, authorised: bool, created_by: str = "anonymous") -> PersistedScanJob:
         job = PersistedScanJob(uuid.uuid4().hex[:12], target, profile, authorised, created_by=created_by)

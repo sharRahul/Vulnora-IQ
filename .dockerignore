@@ -12,3 +12,13 @@ dist
 *.egg-info
 .env
 .env.*
+config/web_users.local.yaml
+config/local*.yaml
+tests/
+docs/
+.gitignore
+Dockerfile
+docker-compose*.yml
+*.md
+THIRD_PARTY_NOTICES.md
+LICENSE

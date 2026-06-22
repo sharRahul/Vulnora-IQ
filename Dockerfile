@@ -3,9 +3,17 @@ FROM python:3.12-slim AS runtime
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     VULNORAIQ_HOST=0.0.0.0 \
-    VULNORAIQ_PORT=8787
+    VULNORAIQ_PORT=8787 \
+    VULNORAIQ_JOB_STORE_BACKEND=sqlite \
+    VULNORAIQ_JOB_STORE_PATH=/data/jobs.db \
+    VULNORAIQ_WEB_OUTPUT_ROOT=/data/reports \
+    VULNORAIQ_AUTH_ENABLED=true \
+    VULNORAIQ_ENV=production
 
 WORKDIR /app
+
+RUN addgroup --system --gid 1001 vulnoraiq && \
+    adduser --system --uid 1001 --gid 1001 --no-create-home vulnoraiq
 
 COPY pyproject.toml README.md ./
 COPY agent_testing ./agent_testing
@@ -22,7 +30,14 @@ COPY reports ./reports
 COPY scripts ./scripts
 COPY webui ./webui
 
-RUN pip install --no-cache-dir -e .
+RUN pip install --no-cache-dir -e . --no-cache-dir && \
+    rm -rf /root/.cache/pip
+
+RUN mkdir -p /data && chown -R vulnoraiq:vulnoraiq /data /app
+
+USER vulnoraiq
+
+VOLUME ["/data"]
 
 EXPOSE 8787
 

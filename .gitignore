@@ -15,3 +15,5 @@ reports/output/*.json
 *.pem
 *.db
 config/local*.yaml
+config/web_users.local.yaml
+config/*_secret*.yaml

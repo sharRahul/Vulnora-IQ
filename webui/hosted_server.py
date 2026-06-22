@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import json
 import logging
 import mimetypes
@@ -29,6 +30,7 @@ from webui.auth import AuthPrincipal, WebAuthManager
 from webui.persistent_jobs import JobStore, PersistedScanJob, create_job_store
 
 LOGGER = logging.getLogger("vulnoraiq.webui")
+AUDIT_LOG = logging.getLogger("vulnoraiq.audit")
 STATIC_DIR = Path(__file__).parent / "static"
 CONFIG_ROOT = Path(os.getenv("VULNORAIQ_CONFIG_DIR", "config"))
 OUTPUT_ROOT = Path(os.getenv("VULNORAIQ_WEB_OUTPUT_ROOT", "reports/output/webui"))
@@ -38,20 +40,61 @@ JOB_STORE: JobStore = create_job_store()
 STARTED_AT = datetime.now(timezone.utc)
 
 # Security limits
-MAX_REQUEST_BODY = int(os.getenv("VULNORAIQ_MAX_REQUEST_BODY", str(10 * 1024 * 1024)))  # 10 MB default
-RATE_LIMIT_WINDOW = int(os.getenv("VULNORAIQ_RATE_LIMIT_WINDOW", "60"))  # seconds
-RATE_LIMIT_MAX = int(os.getenv("VULNORAIQ_RATE_LIMIT_MAX", "60"))  # requests per window
+MAX_REQUEST_BODY = int(os.getenv("VULNORAIQ_MAX_REQUEST_BODY", str(10 * 1024 * 1024)))
+RATE_LIMIT_WINDOW = int(os.getenv("VULNORAIQ_RATE_LIMIT_WINDOW", "60"))
+RATE_LIMIT_MAX = int(os.getenv("VULNORAIQ_RATE_LIMIT_MAX", "60"))
+
+# Proxy trust settings
+TRUST_PROXY_HEADERS = os.getenv("VULNORAIQ_TRUST_PROXY_HEADERS", "false").strip().lower() in ("1", "true", "yes")
+_TRUSTED_PROXY_CIDRS_ENV = os.getenv("VULNORAIQ_TRUSTED_PROXY_CIDRS", "")
+TRUSTED_PROXY_NETS: list[ipaddress.IPv4Network | ipaddress.IPv6Network] = []
+if TRUST_PROXY_HEADERS and _TRUSTED_PROXY_CIDRS_ENV:
+    for cidr in _TRUSTED_PROXY_CIDRS_ENV.split(","):
+        cidr = cidr.strip()
+        if cidr:
+            TRUSTED_PROXY_NETS.append(ipaddress.ip_network(cidr, strict=False))
 
 # Rate limiter state
 _rate_limit_store: dict[str, list[float]] = {}
 _rate_limit_lock = threading.Lock()
 
-# CSRF token store: ip -> token
-_csrf_tokens: dict[str, str] = {}
+# CSRF token store
+_csrf_tokens: dict[str, dict[str, Any]] = {}  # session_key -> {"token": str, "expires": float}
 _csrf_token_lock = threading.Lock()
+CSRF_TOKEN_TTL = int(os.getenv("VULNORAIQ_CSRF_TOKEN_TTL", "300"))  # 5 minutes
 
-# Audit log
-AUDIT_LOG = logging.getLogger("vulnoraiq.audit")
+
+def _resolve_client_ip(handler: BaseHTTPRequestHandler) -> str:
+    """Resolve client IP, respecting proxy trust settings."""
+    direct_ip = handler.client_address[0]
+    if not TRUST_PROXY_HEADERS:
+        return direct_ip
+    # Only trust proxy headers when request comes from a trusted proxy
+    try:
+        addr = ipaddress.ip_address(direct_ip)
+    except ValueError:
+        return direct_ip
+    is_trusted = any(addr in net for net in TRUSTED_PROXY_NETS)
+    if not is_trusted:
+        return direct_ip
+    forwarded = handler.headers.get("X-Forwarded-For", "").strip()
+    if forwarded:
+        # Use the leftmost address (original client)
+        client = forwarded.split(",")[0].strip()
+        try:
+            ipaddress.ip_address(client)
+            return client
+        except ValueError:
+            pass
+    return direct_ip
+
+
+def _audit(event: str, principal: AuthPrincipal, client_ip: str = "", detail: str = "") -> None:
+    AUDIT_LOG.info(
+        "event=%s user=%s role=%s authenticated=%s ip=%s detail=%s",
+        event, principal.username, principal.role,
+        str(principal.authenticated).lower(), client_ip, detail,
+    )
 
 
 def _rate_limit(client_ip: str) -> bool:
@@ -78,29 +121,44 @@ def _clean_rate_limit_store() -> None:
             del _rate_limit_store[ip]
 
 
-def _csrf_token_for(client_ip: str) -> str:
+def _csrf_session_key(principal: AuthPrincipal, client_ip: str) -> str:
+    """Bind CSRF token to authenticated principal or client IP."""
+    if principal.authenticated:
+        return f"user:{principal.username}"
+    return f"ip:{client_ip}"
+
+
+def _csrf_token_for(session_key: str) -> str:
+    now = time.monotonic()
     with _csrf_token_lock:
-        token = _csrf_tokens.get(client_ip)
-        if not token:
-            token = secrets.token_urlsafe(32)
-            _csrf_tokens[client_ip] = token
+        entry = _csrf_tokens.get(session_key)
+        if entry and entry["expires"] > now:
+            return entry["token"]
+        token = secrets.token_urlsafe(32)
+        _csrf_tokens[session_key] = {"token": token, "expires": now + CSRF_TOKEN_TTL}
         return token
 
 
-def _validate_csrf(client_ip: str, provided_token: str | None) -> bool:
+def _validate_csrf(session_key: str, provided_token: str | None) -> bool:
     if not provided_token:
         return False
+    now = time.monotonic()
     with _csrf_token_lock:
-        expected = _csrf_tokens.get(client_ip)
-        if not expected:
+        entry = _csrf_tokens.get(session_key)
+        if not entry:
             return False
-        return secrets.compare_digest(expected, provided_token)
+        if entry["expires"] <= now:
+            _csrf_tokens.pop(session_key, None)
+            return False
+        return secrets.compare_digest(entry["token"], provided_token)
 
 
-def _audit(event: str, principal: AuthPrincipal, detail: str = "") -> None:
-    AUDIT_LOG.info("event=%s user=%s role=%s authenticated=%s ip=%s detail=%s",
-                   event, principal.username, principal.role, principal.authenticated,
-                   "%s", detail)
+def _clean_csrf_store() -> None:
+    now = time.monotonic()
+    with _csrf_token_lock:
+        expired = [k for k, v in _csrf_tokens.items() if v["expires"] <= now]
+        for k in expired:
+            del _csrf_tokens[k]
 
 
 def load_config() -> dict[str, Any]:
@@ -183,9 +241,9 @@ def run_scan_job(job_id: str) -> None:
 
         mutate(complete)
         LOGGER.info("scan_job_completed job_id=%s target=%s profile=%s", job.id, job.target, job.profile)
-    except Exception as exc:  # pragma: no cover
+    except Exception:  # pragma: no cover
         LOGGER.exception("scan_job_failed job_id=%s", job_id)
-        err_msg = str(exc)
+        err_msg = "internal scan error"
 
         def fail(item: PersistedScanJob) -> None:
             item.status = "failed"
@@ -197,13 +255,29 @@ def run_scan_job(job_id: str) -> None:
 
 
 class HostedWebUiHandler(BaseHTTPRequestHandler):
-    server_version = "VulnoraIQWebUI/0.0.1.4"
+    server_version = "VulnoraIQWebUI/0.0.1.5"
 
-    def _security_headers(self) -> None:
+    def _client_ip(self) -> str:
+        return _resolve_client_ip(self)
+
+    def _session_key(self, principal: AuthPrincipal) -> str:
+        client_ip = self._client_ip()
+        return _csrf_session_key(principal, client_ip)
+
+    def _security_headers(self, suppress_hsts: bool = False) -> None:
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("X-XSS-Protection", "0")
-        self.send_header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+        # Only emit HSTS when we can be confident we're behind TLS
+        if not suppress_hsts:
+            forwarded_proto = self.headers.get("X-Forwarded-Proto", "").strip().lower()
+            if TRUST_PROXY_HEADERS and forwarded_proto == "https":
+                self.send_header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+            elif not TRUST_PROXY_HEADERS and self._client_ip() == "127.0.0.1":
+                # Localhost development - skip HSTS
+                pass
+            else:
+                self.send_header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
         self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
         self.send_header(
             "Content-Security-Policy",
@@ -212,17 +286,21 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
         )
         self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
 
-    def _check_rate_limit(self, principal: AuthPrincipal) -> bool:
-        client_ip = self.client_address[0]
+    def _check_rate_limit(self, principal: AuthPrincipal, client_ip: str) -> bool:
         if not _rate_limit(client_ip):
             LOGGER.warning("rate_limit_exceeded ip=%s user=%s", client_ip, principal.username)
+            _audit("rate_limit_exceeded", principal, client_ip)
             self._send_json({"error": "rate limit exceeded"}, status=HTTPStatus.TOO_MANY_REQUESTS)
             return False
         return True
 
+    def _send_error_response(self, status: HTTPStatus, message: str) -> None:
+        self._send_json({"error": message}, status=status)
+
     def do_GET(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
         path = parsed.path
+        client_ip = self._client_ip()
 
         if path == "/healthz":
             self._send_json({"status": "ok", "service": "vulnoraiq-web", "started_at": STARTED_AT.isoformat()})
@@ -241,16 +319,18 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
             )
             return
 
-        principal = self._principal()
+        principal = self._principal(client_ip)
         if not principal:
-            self._send_json({"error": "authentication required"}, status=HTTPStatus.UNAUTHORIZED)
+            _audit("auth_failure", AUTH_MANAGER.anonymous(), client_ip, "no token provided")
+            self._send_error_response(HTTPStatus.UNAUTHORIZED, "authentication required")
             return
 
-        if not self._check_rate_limit(principal):
+        if not self._check_rate_limit(principal, client_ip):
             return
 
         if path == "/api/csrf-token":
-            token = _csrf_token_for(self.client_address[0])
+            session_key = self._session_key(principal)
+            token = _csrf_token_for(session_key)
             self._send_json({"csrf_token": token})
             return
         if path == "/":
@@ -264,42 +344,47 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
             return
         if path == "/api/scans":
             if not AUTH_MANAGER.can(principal, "view_scans"):
+                _audit("authz_failure", principal, client_ip, "view_scans")
                 self._forbidden()
                 return
             self._send_json({"jobs": [job.to_dict(include_events=False) for job in JOB_STORE.list()]})
             return
         if path.startswith("/api/scans/"):
-            self._handle_scan_get(path, principal)
+            self._handle_scan_get(path, principal, client_ip)
             return
         self.send_error(HTTPStatus.NOT_FOUND, "Not found")
 
     def do_POST(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
         path = parsed.path
+        client_ip = self._client_ip()
 
-        principal = self._principal()
+        principal = self._principal(client_ip)
         if not principal:
-            self._send_json({"error": "authentication required"}, status=HTTPStatus.UNAUTHORIZED)
+            _audit("auth_failure", AUTH_MANAGER.anonymous(), client_ip, "no token provided")
+            self._send_error_response(HTTPStatus.UNAUTHORIZED, "authentication required")
             return
 
-        if not self._check_rate_limit(principal):
+        if not self._check_rate_limit(principal, client_ip):
             return
 
         if path == "/api/scans":
-            # CSRF check for state-changing requests
+            session_key = self._session_key(principal)
             csrf_token = self.headers.get("X-CSRF-Token")
-            if not _validate_csrf(self.client_address[0], csrf_token):
-                self._send_json({"error": "invalid or missing CSRF token"}, status=HTTPStatus.FORBIDDEN)
+            if not _validate_csrf(session_key, csrf_token):
+                _audit("csrf_failure", principal, client_ip, "invalid or missing CSRF token")
+                self._send_error_response(HTTPStatus.FORBIDDEN, "invalid or missing CSRF token")
                 return
             try:
                 payload = self._read_json()
                 target, profile, authorised = validate_scan_request(payload)
                 required_permission = "start_demo_scan" if target == "demo" else "start_configured_scan"
                 if not AUTH_MANAGER.can(principal, required_permission):
+                    _audit("authz_failure", principal, client_ip, f"missing {required_permission}")
                     self._forbidden()
                     return
                 job = JOB_STORE.create(target, profile, authorised, created_by=principal.username)
-                _audit("scan_created", principal, f"target={target} profile={profile} job_id={job.id}")
+                _audit("scan_created", principal, client_ip, f"target={target} profile={profile} job_id={job.id}")
                 LOGGER.info("scan_job_accepted job_id=%s target=%s profile=%s user=%s",
                             job.id, target, profile, principal.username)
                 threading.Thread(target=run_scan_job, args=(job.id,), daemon=True).start()
@@ -310,7 +395,7 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
 
         self.send_error(HTTPStatus.NOT_FOUND, "Not found")
 
-    def _handle_scan_get(self, path: str, principal: AuthPrincipal) -> None:
+    def _handle_scan_get(self, path: str, principal: AuthPrincipal, client_ip: str) -> None:
         parts = [unquote(item) for item in path.split("/") if item]
         if len(parts) < 3:
             self.send_error(HTTPStatus.NOT_FOUND, "Scan not found")
@@ -322,6 +407,7 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
             return
         if len(parts) == 3:
             if not AUTH_MANAGER.can(principal, "view_scans"):
+                _audit("authz_failure", principal, client_ip, "view_scans")
                 self._forbidden()
                 return
             self._send_json(job.to_dict())
@@ -329,23 +415,25 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
         action = parts[3]
         if action == "events":
             if not AUTH_MANAGER.can(principal, "view_scans"):
+                _audit("authz_failure", principal, client_ip, "view_scans")
                 self._forbidden()
                 return
             self._send_events(job_id)
             return
         if action == "artifact" and len(parts) == 5:
             if not AUTH_MANAGER.can(principal, "download_artifacts"):
+                _audit("authz_failure", principal, client_ip, "download_artifacts")
                 self._forbidden()
                 return
-            self._send_artifact(job, parts[4])
+            self._send_artifact(job, parts[4], client_ip)
             return
         self.send_error(HTTPStatus.NOT_FOUND, "Scan resource not found")
 
-    def _principal(self) -> AuthPrincipal | None:
+    def _principal(self, client_ip: str) -> AuthPrincipal | None:
         token = self.headers.get(AUTH_MANAGER.header_name())
         return AUTH_MANAGER.authenticate_token(token)
 
-    def _send_artifact(self, job: PersistedScanJob, artifact_name: str) -> None:
+    def _send_artifact(self, job: PersistedScanJob, artifact_name: str, client_ip: str) -> None:
         path = job.outputs.get(artifact_name)
         if not path:
             self.send_error(HTTPStatus.NOT_FOUND, "Artifact not found")
@@ -355,6 +443,8 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.NOT_FOUND, "Artifact file not found")
             return
         data = file_path.read_bytes()
+        _audit("artifact_download", self._principal(client_ip) or AUTH_MANAGER.anonymous(),
+               client_ip, f"artifact={artifact_name} job={job.id}")
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", mimetypes.guess_type(file_path.name)[0] or "application/octet-stream")
         self.send_header("Content-Disposition", f'attachment; filename="{file_path.name}"')
@@ -404,12 +494,17 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
 
     def _read_json(self) -> dict[str, Any]:
         raw_length = self.headers.get("Content-Length", "0")
-        length = int(raw_length) if raw_length.isdigit() else 0
+        if not raw_length.isdigit():
+            raise ValueError("invalid Content-Length")
+        length = int(raw_length)
         if length <= 0:
             return {}
         if length > MAX_REQUEST_BODY:
             raise ValueError(f"Request body exceeds maximum allowed size ({MAX_REQUEST_BODY} bytes)")
-        return json.loads(self.rfile.read(length).decode("utf-8"))
+        try:
+            return json.loads(self.rfile.read(length).decode("utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+            raise ValueError(f"invalid JSON: {exc}") from exc
 
     def _send_json(self, payload: dict[str, Any], status: HTTPStatus = HTTPStatus.OK) -> None:
         data = json.dumps(payload, indent=2, sort_keys=True, default=str).encode("utf-8")
@@ -426,6 +521,17 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
     def log_message(self, format: str, *args: Any) -> None:  # noqa: A002
         LOGGER.info("http_request client=%s message=%s", self.address_string(), format % args)
 
+    def send_error(self, code: int, message: str | None = None, explain: str | None = None) -> None:
+        """Override to add security headers to error responses."""
+        try:
+            self.send_response(code)
+            self._security_headers()
+            self.end_headers()
+            if message:
+                self.wfile.write(message.encode("utf-8"))
+        except OSError:
+            pass
+
 
 def create_server(host: str = "127.0.0.1", port: int = 8787) -> ThreadingHTTPServer:
     return ThreadingHTTPServer((host, port), HostedWebUiHandler)
@@ -435,9 +541,18 @@ def _rate_limit_cleanup_loop() -> None:
     while True:
         time.sleep(RATE_LIMIT_WINDOW)
         _clean_rate_limit_store()
+        _clean_csrf_store()
 
 
 def main() -> None:
+    # Validate production mode on startup
+    if AUTH_MANAGER.is_production():
+        try:
+            AUTH_MANAGER._validate_production()
+        except RuntimeError as exc:
+            LOGGER.error("production_mode_validation_failed: %s", exc)
+            raise SystemExit(1) from exc
+
     logging.basicConfig(
         level=os.getenv("VULNORAIQ_LOG_LEVEL", "INFO"),
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
@@ -451,14 +566,24 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run the VulnoraIQ hosted web UI.")
     parser.add_argument("--host", default=os.getenv("VULNORAIQ_HOST", "127.0.0.1"))
     parser.add_argument("--port", type=int, default=int(os.getenv("VULNORAIQ_PORT", "8787")))
+    parser.add_argument("--production", action="store_true", help="Enable production mode validation")
     args = parser.parse_args()
+
+    if args.production or AUTH_MANAGER.is_production():
+        try:
+            AUTH_MANAGER._validate_production()
+        except RuntimeError as exc:
+            LOGGER.error("production_mode_validation_failed: %s", exc)
+            raise SystemExit(1) from exc
 
     threading.Thread(target=_rate_limit_cleanup_loop, daemon=True).start()
     server = create_server(args.host, args.port)
-    LOGGER.info("web_ui_started url=http://%s:%s auth_enabled=%s backend=%s",
-                args.host, args.port, AUTH_MANAGER.enabled(),
+    env_label = "production" if AUTH_MANAGER.is_production() else "development"
+    LOGGER.info("web_ui_started env=%s url=http://%s:%s auth_enabled=%s backend=%s",
+                env_label, args.host, args.port, AUTH_MANAGER.enabled(),
                 os.getenv("VULNORAIQ_JOB_STORE_BACKEND", "sqlite"))
-    _audit("server_start", AUTH_MANAGER.anonymous(), f"host={args.host} port={args.port}")
+    _audit("server_start", AUTH_MANAGER.anonymous(), "",
+           f"env={env_label} host={args.host} port={args.port}")
     server.serve_forever()
 
 

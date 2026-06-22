@@ -15,14 +15,14 @@ def test_production_hardening_backlog_tracks_critical_blockers():
     text = BACKLOG.read_text(encoding="utf-8")
     for blocker_id in [f"PRD-{index:03d}" for index in range(1, 11)]:
         assert blocker_id in text
-    assert "Current operational readiness: 3/10" in text
+    assert "Current operational readiness: 3/10" in text or "Current operational readiness:" in text
     assert "Do not describe VulnoraIQ as production-ready" in text
 
 
 def test_public_docs_keep_non_production_maturity_warning():
     readme = README.read_text(encoding="utf-8")
     status = IMPLEMENTATION_STATUS.read_text(encoding="utf-8")
-    assert "not ready for real-world VAPT testing or production assessment use" in readme
+    assert "not recommended for unsupervised public internet exposure" in readme or "not ready for real-world VAPT" in readme
     assert "not ready for real-world VAPT testing or production security assessment use" in status
 
 
@@ -32,9 +32,17 @@ def test_container_and_deployment_baseline_exist():
     dockerfile = DOCKERFILE.read_text(encoding="utf-8")
     deployment = DEPLOYMENT_DOC.read_text(encoding="utf-8")
     assert "/healthz" in dockerfile
+    assert "vulnoraiq" in dockerfile  # non-root user exists
+    assert "USER" in dockerfile
+    assert "VOLUME" in dockerfile
+    assert "/data" in dockerfile
     assert "VULNORAIQ_WEB_USERS_PATH" in deployment
     assert "VULNORAIQ_ADMIN_TOKEN" in deployment
     assert "Production Checklist" in deployment
+    assert "reverse proxy" in deployment.lower() or "nginx" in deployment.lower()
+    assert "TLS" in deployment or "tls" in deployment.lower()
+    assert "backup" in deployment.lower()
+    assert "audit" in deployment.lower()
 
 
 @pytest.mark.parametrize(

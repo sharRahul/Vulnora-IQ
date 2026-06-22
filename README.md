@@ -2,11 +2,11 @@
 
 **VulnoraIQ** is an early-stage AI security assessment platform for **LLM applications, RAG pipelines, AI agents, and orchestration layers**.
 
-> **Current maturity:** version `0.0.1.8` is an early development build. It is useful for local demos, UI workflow validation, report-pipeline development, and safe framework testing. It is **not ready for real-world VAPT testing or production assessment use** yet.
+> **Current maturity:** version `0.0.1.8` is production-testing ready for controlled internal evaluation. It is **not recommended for unsupervised public internet exposure** without deployment review, real secrets, reverse-proxy hardening, monitoring, backups, and operational controls. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the production checklist and [`docs/PRODUCTION_HARDENING_BACKLOG.md`](docs/PRODUCTION_HARDENING_BACKLOG.md) for known blockers.
 
 > **Important limitation:** OWASP LLM 2025 coverage now has safe starter oracle coverage, implementation specs, evaluator primitives, and local good/bad fixtures for all 10 categories. MITRE ATLAS AI technique coverage has a source-driven documentation matrix, but not every listed technique is implemented as an active check yet. Unmapped tactics and techniques must still be listed as `Unmapped / map later`. Treat all scan output as framework-development evidence, not validated security assurance.
 
-> **Responsible use only:** run this platform only against systems you own or are explicitly authorised to assess. The default demo target is safe and local. Configured non-demo targets require an explicit authorisation flag.
+> **Responsible use only:** run this platform only against systems you own or are explicitly authorised to assess. The default demo target is safe and local. Configured non-demo targets require an explicit authorisation flag. Auth is enabled by default and fail-closed; configure real tokens before exposing the web UI beyond localhost.
 
 ## Dashboard example
 
@@ -229,7 +229,8 @@ The package path defaults to `dist/vulnoraiq-example-package.zip`.
 - `core/evaluators.py`: deterministic local evaluator primitives
 - `examples/local_demo_targets/owasp_fixture_targets.py`: local good/bad OWASP fixture target behaviours
 - `config/target_contracts.yaml`: target adapter contract definitions
-- `config/web_users.yaml`: local Web UI auth and role configuration
+- `config/web_users.yaml`: Web UI auth configuration (use env tokens in production; see `config/web_users.example.yaml`)
+- `config/web_users.example.yaml`: template for local auth configuration
 - `config/report_branding.yaml`: report/export branding
 - `benchmarks/fixtures/owasp_starter_fixture.yaml`: OWASP starter fixture corpus
 
