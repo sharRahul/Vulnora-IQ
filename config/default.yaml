@@ -1,6 +1,6 @@
 framework:
   name: llm-vapt-framework
-  version: 0.8.0
+  version: 0.9.0
   safe_mode: true
 
 execution:
@@ -40,3 +40,6 @@ rag_corpus:
 
 agent_runtime:
   manifest_path: config/agent_runtime.yaml
+
+mitre_atlas:
+  mapping_path: config/mitre_atlas_mapping.yaml
