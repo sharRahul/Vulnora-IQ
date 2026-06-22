@@ -1,6 +1,6 @@
 # Local Demo Targets
 
-These examples are safe local fixtures for framework development and demonstrations.
+These examples are safe local fixtures for VulnoraIQ development and demonstrations.
 
 They are not production services and should not be exposed to the internet.
 
@@ -22,10 +22,10 @@ targets:
     auth: none
 ```
 
-Then run the framework with explicit authorisation because this is a configured non-demo target:
+Then run VulnoraIQ with explicit authorisation because this is a configured non-demo target:
 
 ```bash
-python scripts/run_scan.py --target local_safe_echo --profile baseline --authorised
+vulnoraiq --target local_safe_echo --profile baseline --authorised
 ```
 
 ## Control-gap fixture
