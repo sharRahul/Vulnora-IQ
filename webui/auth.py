@@ -23,6 +23,7 @@ _ENV_ADMIN_TOKEN = "VULNORAIQ_ADMIN_TOKEN"
 _ENV_ANALYST_TOKEN = "VULNORAIQ_ANALYST_TOKEN"
 _ENV_VIEWER_TOKEN = "VULNORAIQ_VIEWER_TOKEN"
 _ENV_PRODUCTION = "VULNORAIQ_ENV"
+_ENV_AUTH_MODE = "VULNORAIQ_AUTH_MODE"
 
 _DEFAULT_PERMISSIONS: dict[str, set[str]] = {
     "viewer": {"view_scans", "download_artifacts"},
@@ -32,8 +33,19 @@ _DEFAULT_PERMISSIONS: dict[str, set[str]] = {
 
 _INTERNAL_ADMIN_TOKEN = "vulnoraiq-internal-admin-token"
 
-# Minimum token length for production mode
 _MIN_TOKEN_LENGTH = 20
+
+# Proxy identity header names
+_PROXY_HEADER_USER = "X-Authenticated-User"
+_PROXY_HEADER_EMAIL = "X-Authenticated-Email"
+_PROXY_HEADER_GROUPS = "X-Authenticated-Groups"
+_PROXY_HEADER_ROLE = "X-VulnoraIQ-Role"
+
+_DEFAULT_ROLE_MAPPING: dict[str, str] = {
+    "admin": "admin",
+    "analyst": "analyst",
+    "viewer": "viewer",
+}
 
 
 class WebAuthManager:
@@ -41,6 +53,10 @@ class WebAuthManager:
 
     Auth is enabled by default (VULNORAIQ_AUTH_ENABLED=true).
     Set VULNORAIQ_AUTH_ENABLED=false to disable (not recommended for production).
+
+    Auth modes (VULNORAIQ_AUTH_MODE):
+      token (default) - env var token matching with constant-time comparison
+      trusted_proxy  - identity headers from trusted reverse proxy
 
     Token env vars (mutually exclusive with file config):
       VULNORAIQ_ADMIN_TOKEN  - full access
@@ -64,6 +80,9 @@ class WebAuthManager:
 
     def is_production(self) -> bool:
         return os.getenv(_ENV_PRODUCTION, "").strip().lower() == "production"
+
+    def auth_mode(self) -> str:
+        return os.getenv(_ENV_AUTH_MODE, "token").strip().lower()
 
     def _validate_production(self) -> None:
         if not self.is_production():
@@ -101,7 +120,6 @@ class WebAuthManager:
         return self._env_tokens
 
     def has_file_auth(self) -> bool:
-        """Return True if the file-based auth config exists and has any active users."""
         if not self.path.exists():
             return False
         users = self.load().get("users", [])
@@ -119,7 +137,6 @@ class WebAuthManager:
         env_val = os.getenv(_ENV_AUTH_ENABLED)
         if env_val is not None:
             return env_val.lower() in ("1", "true", "yes")
-        # In production mode, default to enabled
         if self.is_production():
             return True
         cfg = self.load()
@@ -138,13 +155,11 @@ class WebAuthManager:
         if not token:
             return None
 
-        # Internal admin token is disabled in production
         if not self.is_production() and token == _INTERNAL_ADMIN_TOKEN:
             return AuthPrincipal("internal", "admin", _DEFAULT_PERMISSIONS["admin"], authenticated=True)
 
         env_tokens = self._load_env_tokens()
         if env_tokens:
-            # Constant-time comparison
             for candidate, role in env_tokens.items():
                 if hmac.compare_digest(candidate, token):
                     return AuthPrincipal(
@@ -152,7 +167,6 @@ class WebAuthManager:
                     )
             return None
 
-        # File-based fallback (not allowed in production)
         if self.is_production():
             return None
 
@@ -166,6 +180,28 @@ class WebAuthManager:
                     str(user.get("username")), role, self.permissions_for_role(role), authenticated=True
                 )
         return None
+
+    def authenticate_proxy_identity(
+        self,
+        headers: dict[str, str],
+        trusted: bool,
+        role_mapping: dict[str, str] | None = None,
+    ) -> AuthPrincipal | None:
+        """Authenticate via trusted reverse-proxy identity headers."""
+        if not self.enabled():
+            return AuthPrincipal("anonymous", "analyst", _DEFAULT_PERMISSIONS["analyst"], authenticated=False)
+
+        if not trusted:
+            return None
+
+        username = headers.get(_PROXY_HEADER_USER, "").strip()
+        if not username:
+            return None
+
+        role_header = headers.get(_PROXY_HEADER_ROLE, "").strip().lower()
+        mapping = role_mapping or _DEFAULT_ROLE_MAPPING
+        role = mapping.get(role_header, "viewer")
+        return AuthPrincipal(f"proxy:{username}", role, self.permissions_for_role(role), authenticated=True)
 
     def permissions_for_role(self, role: str) -> set[str]:
         if role in _DEFAULT_PERMISSIONS:

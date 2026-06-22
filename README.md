@@ -2,7 +2,7 @@
 
 **VulnoraIQ** is an early-stage AI security assessment platform for **LLM applications, RAG pipelines, AI agents, and orchestration layers**.
 
-> **Current maturity:** version `0.0.1.8` is production-testing ready for controlled internal evaluation. It is **not recommended for unsupervised public internet exposure** without deployment review, real secrets, reverse-proxy hardening, monitoring, backups, and operational controls. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the production checklist and [`docs/PRODUCTION_HARDENING_BACKLOG.md`](docs/PRODUCTION_HARDENING_BACKLOG.md) for known blockers.
+> **Current maturity:** version `0.2.0` is ready for **controlled internal enterprise deployment**. It is **not recommended for unsupervised public internet exposure or multi-tenant SaaS hosting** without additional controls (OIDC/SSO, horizontal scaling, penetration testing, tenant isolation). See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the production checklist, [`docs/PRODUCTION_READINESS_SCORECARD.md`](docs/PRODUCTION_READINESS_SCORECARD.md) for scored readiness, and [`docs/PRODUCTION_HARDENING_BACKLOG.md`](docs/PRODUCTION_HARDENING_BACKLOG.md) for remaining gaps.
 
 > **Important limitation:** OWASP LLM 2025 coverage now has safe starter oracle coverage, implementation specs, evaluator primitives, and local good/bad fixtures for all 10 categories. MITRE ATLAS AI technique coverage has a source-driven documentation matrix, but not every listed technique is implemented as an active check yet. Unmapped tactics and techniques must still be listed as `Unmapped / map later`. Treat all scan output as framework-development evidence, not validated security assurance.
 
@@ -20,7 +20,7 @@ AI application security needs more than prompt-level checks. VulnoraIQ provides 
 
 The current implementation provides:
 
-- Modern hosted Web UI with realtime progress, role-aware auth hooks, persistent JSON job storage, executive dashboards, scan history, and artifact download
+- Modern hosted Web UI with realtime progress (SSE), role-aware auth (env tokens / trusted proxy headers), production SQLite job persistence with WAL mode, CSRF protection, rate limiting, security headers, audit logging, executive dashboards, scan history, artifact download, and Prometheus metrics
 - Functional acceptance runner that generates demo reports, validates required output fields, and refreshes the README dashboard example image
 - OWASP LLM 2025 implementation specs in `docs/owasp/` for all 10 categories
 - MITRE ATLAS Matrix for AI planning register in `docs/MITRE_ATLAS_AI_MATRIX.md`
@@ -139,6 +139,12 @@ The demo target uses an in-memory echo client, so the platform can be explored w
 
 ```bash
 vulnoraiq-web --host 127.0.0.1 --port 8787
+```
+
+Set `VULNORAIQ_ENV=production` with a valid `VULNORAIQ_ADMIN_TOKEN` (20+ characters) for production mode:
+
+```bash
+VULNORAIQ_ENV=production VULNORAIQ_ADMIN_TOKEN="your-strong-token-here-min-20-chars" vulnoraiq-web
 ```
 
 Open:

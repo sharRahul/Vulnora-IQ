@@ -1,7 +1,7 @@
 framework:
   name: vulnoraiq
   display_name: VulnoraIQ
-  version: 0.0.1.8
+  version: 0.2.0
   safe_mode: true
 
 execution:
@@ -42,7 +42,7 @@ web_ui:
   port: 8787
   output_root: reports/output/webui
   users_path: config/web_users.yaml
-  job_store_path: reports/output/webui/jobs.json
+  job_store_path: reports/output/webui/jobs.db
 
 approval_gates:
   high_impact_actions_require_approval: true

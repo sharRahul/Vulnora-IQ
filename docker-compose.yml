@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  vulnoraiq:
+    build: .
+    image: vulnoraiq:production-candidate
+    container_name: vulnoraiq-web
+    restart: unless-stopped
+    ports:
+      - "8787:8787"
+    volumes:
+      - vulnoraiq_data:/data
+      - ./config:/app/config:ro
+    env_file:
+      - .env.production
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8787/healthz', timeout=3).read()"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    environment:
+      - VULNORAIQ_HOST=0.0.0.0
+      - VULNORAIQ_PORT=8787
+      - VULNORAIQ_JOB_STORE_PATH=/data/jobs.db
+      - VULNORAIQ_WEB_OUTPUT_ROOT=/data/reports
+
+volumes:
+  vulnoraiq_data:

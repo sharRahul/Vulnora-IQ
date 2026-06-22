@@ -1,5 +1,11 @@
 FROM python:3.12-slim AS runtime
 
+LABEL org.opencontainers.image.title="VulnoraIQ" \
+      org.opencontainers.image.description="AI security assessment framework for LLM applications, RAG systems, agents, and orchestration layers" \
+      org.opencontainers.image.source="https://github.com/sharRahul/vulnoraiq" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.version="0.2.0"
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     VULNORAIQ_HOST=0.0.0.0 \
@@ -15,7 +21,12 @@ WORKDIR /app
 RUN addgroup --system --gid 1001 vulnoraiq && \
     adduser --system --uid 1001 --gid 1001 --no-create-home vulnoraiq
 
+# Install runtime dependencies first for layer caching
 COPY pyproject.toml README.md ./
+RUN pip install --no-cache-dir -e . --no-cache-dir && \
+    rm -rf /root/.cache/pip
+
+# Copy application code (no dev/test artifacts)
 COPY agent_testing ./agent_testing
 COPY benchmarks ./benchmarks
 COPY config ./config
@@ -30,10 +41,9 @@ COPY reports ./reports
 COPY scripts ./scripts
 COPY webui ./webui
 
-RUN pip install --no-cache-dir -e . --no-cache-dir && \
-    rm -rf /root/.cache/pip
-
-RUN mkdir -p /data && chown -R vulnoraiq:vulnoraiq /data /app
+RUN chown -R vulnoraiq:vulnoraiq /app && \
+    mkdir -p /data && \
+    chown vulnoraiq:vulnoraiq /data
 
 USER vulnoraiq
 

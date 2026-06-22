@@ -9,6 +9,7 @@ import os
 import secrets
 import threading
 import time
+import uuid
 from collections.abc import Callable
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -28,6 +29,7 @@ from reports.report_generator import MarkdownReportGenerator
 from reports.sarif_report_generator import SarifReportGenerator
 from webui.auth import AuthPrincipal, WebAuthManager
 from webui.persistent_jobs import JobStore, PersistedScanJob, create_job_store
+from webui.production_checks import ProductionConfigError, validate_all
 
 LOGGER = logging.getLogger("vulnoraiq.webui")
 AUDIT_LOG = logging.getLogger("vulnoraiq.audit")
@@ -54,22 +56,44 @@ if TRUST_PROXY_HEADERS and _TRUSTED_PROXY_CIDRS_ENV:
         if cidr:
             TRUSTED_PROXY_NETS.append(ipaddress.ip_network(cidr, strict=False))
 
+# Scan concurrency limits
+MAX_CONCURRENT_SCANS = int(os.getenv("VULNORAIQ_MAX_CONCURRENT_SCANS", "5"))
+SCAN_QUEUE_LIMIT = int(os.getenv("VULNORAIQ_SCAN_QUEUE_LIMIT", "20"))
+_active_scans: set[str] = set()
+_active_scans_lock = threading.Lock()
+
 # Rate limiter state
 _rate_limit_store: dict[str, list[float]] = {}
 _rate_limit_lock = threading.Lock()
 
 # CSRF token store
-_csrf_tokens: dict[str, dict[str, Any]] = {}  # session_key -> {"token": str, "expires": float}
+_csrf_tokens: dict[str, dict[str, Any]] = {}
 _csrf_token_lock = threading.Lock()
-CSRF_TOKEN_TTL = int(os.getenv("VULNORAIQ_CSRF_TOKEN_TTL", "300"))  # 5 minutes
+CSRF_TOKEN_TTL = int(os.getenv("VULNORAIQ_CSRF_TOKEN_TTL", "300"))
+
+# Metrics counters
+_metrics: dict[str, int] = {}
+_metrics_lock = threading.Lock()
+
+
+def _inc_metric(name: str) -> None:
+    with _metrics_lock:
+        _metrics[name] = _metrics.get(name, 0) + 1
+
+
+def _get_metrics_snapshot() -> dict[str, int]:
+    with _active_scans_lock:
+        active_count = len(_active_scans)
+    with _metrics_lock:
+        snapshot = dict(_metrics)
+    snapshot["active_scans"] = active_count
+    return snapshot
 
 
 def _resolve_client_ip(handler: BaseHTTPRequestHandler) -> str:
-    """Resolve client IP, respecting proxy trust settings."""
     direct_ip = handler.client_address[0]
     if not TRUST_PROXY_HEADERS:
         return direct_ip
-    # Only trust proxy headers when request comes from a trusted proxy
     try:
         addr = ipaddress.ip_address(direct_ip)
     except ValueError:
@@ -79,7 +103,6 @@ def _resolve_client_ip(handler: BaseHTTPRequestHandler) -> str:
         return direct_ip
     forwarded = handler.headers.get("X-Forwarded-For", "").strip()
     if forwarded:
-        # Use the leftmost address (original client)
         client = forwarded.split(",")[0].strip()
         try:
             ipaddress.ip_address(client)
@@ -89,12 +112,50 @@ def _resolve_client_ip(handler: BaseHTTPRequestHandler) -> str:
     return direct_ip
 
 
-def _audit(event: str, principal: AuthPrincipal, client_ip: str = "", detail: str = "") -> None:
-    AUDIT_LOG.info(
-        "event=%s user=%s role=%s authenticated=%s ip=%s detail=%s",
-        event, principal.username, principal.role,
-        str(principal.authenticated).lower(), client_ip, detail,
-    )
+def _is_trusted_proxy(handler: BaseHTTPRequestHandler) -> bool:
+    if not TRUST_PROXY_HEADERS:
+        return False
+    try:
+        addr = ipaddress.ip_address(handler.client_address[0])
+    except ValueError:
+        return False
+    return any(addr in net for net in TRUSTED_PROXY_NETS)
+
+
+def _generate_request_id() -> str:
+    return uuid.uuid4().hex[:16]
+
+
+def _safe_audit_field(value: str | None, max_len: int = 200) -> str:
+    if value is None:
+        return ""
+    return value[:max_len].replace("\n", "\\n").replace("\r", "\\r")
+
+
+def _audit_structured(
+    event: str,
+    principal: AuthPrincipal,
+    request_id: str = "",
+    client_ip: str = "",
+    method: str = "",
+    path: str = "",
+    status: int = 0,
+    detail: str = "",
+) -> None:
+    record = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "event": _safe_audit_field(event),
+        "request_id": _safe_audit_field(request_id),
+        "user": _safe_audit_field(principal.username),
+        "role": _safe_audit_field(principal.role),
+        "authenticated": str(principal.authenticated).lower(),
+        "client_ip": _safe_audit_field(client_ip),
+        "method": _safe_audit_field(method),
+        "path": _safe_audit_field(path),
+        "status": status,
+        "detail": _safe_audit_field(detail),
+    }
+    AUDIT_LOG.info(json.dumps(record, default=str))
 
 
 def _rate_limit(client_ip: str) -> bool:
@@ -122,7 +183,6 @@ def _clean_rate_limit_store() -> None:
 
 
 def _csrf_session_key(principal: AuthPrincipal, client_ip: str) -> str:
-    """Bind CSRF token to authenticated principal or client IP."""
     if principal.authenticated:
         return f"user:{principal.username}"
     return f"ip:{client_ip}"
@@ -187,7 +247,24 @@ def validate_scan_request(payload: dict[str, Any]) -> tuple[str, str, bool]:
     return target, profile, authorised
 
 
+def _acquire_scan_slot(job_id: str) -> bool:
+    with _active_scans_lock:
+        if len(_active_scans) >= MAX_CONCURRENT_SCANS:
+            return False
+        _active_scans.add(job_id)
+    return True
+
+
+def _release_scan_slot(job_id: str) -> None:
+    with _active_scans_lock:
+        _active_scans.discard(job_id)
+
+
 def run_scan_job(job_id: str) -> None:
+    if not _acquire_scan_slot(job_id):
+        LOGGER.warning("scan_slot_denied job_id=%s max_concurrent=%d", job_id, MAX_CONCURRENT_SCANS)
+        return
+
     def mutate(fn: Callable[[PersistedScanJob], None]) -> None:
         JOB_STORE.update(job_id, fn)
 
@@ -240,8 +317,10 @@ def run_scan_job(job_id: str) -> None:
             item.add_event("completed", "Scan completed and reports are ready.", 100)
 
         mutate(complete)
+        _inc_metric("scans_completed")
         LOGGER.info("scan_job_completed job_id=%s target=%s profile=%s", job.id, job.target, job.profile)
     except Exception:  # pragma: no cover
+        _inc_metric("scans_failed")
         LOGGER.exception("scan_job_failed job_id=%s", job_id)
         err_msg = "internal scan error"
 
@@ -252,10 +331,12 @@ def run_scan_job(job_id: str) -> None:
             item.add_event("failed", err_msg, 100, level="error")
 
         mutate(fail)
+    finally:
+        _release_scan_slot(job_id)
 
 
 class HostedWebUiHandler(BaseHTTPRequestHandler):
-    server_version = "VulnoraIQWebUI/0.0.1.5"
+    server_version = "VulnoraIQWebUI/0.2.0"
 
     def _client_ip(self) -> str:
         return _resolve_client_ip(self)
@@ -264,17 +345,21 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
         client_ip = self._client_ip()
         return _csrf_session_key(principal, client_ip)
 
+    def _request_id(self) -> str:
+        req_id = self.headers.get("X-Request-ID", "").strip()
+        if req_id and len(req_id) <= 64 and req_id.isalnum():
+            return req_id
+        return _generate_request_id()
+
     def _security_headers(self, suppress_hsts: bool = False) -> None:
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("X-XSS-Protection", "0")
-        # Only emit HSTS when we can be confident we're behind TLS
         if not suppress_hsts:
             forwarded_proto = self.headers.get("X-Forwarded-Proto", "").strip().lower()
             if TRUST_PROXY_HEADERS and forwarded_proto == "https":
                 self.send_header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
             elif not TRUST_PROXY_HEADERS and self._client_ip() == "127.0.0.1":
-                # Localhost development - skip HSTS
                 pass
             else:
                 self.send_header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
@@ -288,8 +373,9 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
 
     def _check_rate_limit(self, principal: AuthPrincipal, client_ip: str) -> bool:
         if not _rate_limit(client_ip):
+            _inc_metric("rate_limit_exceeded")
             LOGGER.warning("rate_limit_exceeded ip=%s user=%s", client_ip, principal.username)
-            _audit("rate_limit_exceeded", principal, client_ip)
+            _audit_structured("rate_limit_exceeded", principal, client_ip=client_ip, detail="rate limit exceeded")
             self._send_json({"error": "rate limit exceeded"}, status=HTTPStatus.TOO_MANY_REQUESTS)
             return False
         return True
@@ -297,15 +383,52 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
     def _send_error_response(self, status: HTTPStatus, message: str) -> None:
         self._send_json({"error": message}, status=status)
 
-    def do_GET(self) -> None:  # noqa: N802
-        parsed = urlparse(self.path)
-        path = parsed.path
+    def _principal(self, client_ip: str) -> AuthPrincipal | None:
+        mode = AUTH_MANAGER.auth_mode()
+        if mode == "trusted_proxy":
+            headers_dict = {k: self.headers.get(k, "") for k in (
+                "X-Authenticated-User", "X-Authenticated-Email",
+                "X-Authenticated-Groups", "X-VulnoraIQ-Role",
+            )}
+            return AUTH_MANAGER.authenticate_proxy_identity(
+                headers_dict, trusted=_is_trusted_proxy(self),
+            )
+        token = self.headers.get(AUTH_MANAGER.header_name())
+        return AUTH_MANAGER.authenticate_token(token)
+
+    def _handle_request(self, method: str, path: str) -> None:
+        request_id = self._request_id()
         client_ip = self._client_ip()
 
-        if path == "/healthz":
+        try:
+            self._do_route(method, path, client_ip, request_id)
+        except ValueError as exc:
+            _inc_metric("bad_request")
+            _audit_structured("malformed_json", AUTH_MANAGER.anonymous(), request_id, client_ip, method, path, 400, str(exc))
+            self._send_error_response(HTTPStatus.BAD_REQUEST, str(exc))
+        except Exception:  # pragma: no cover
+            _inc_metric("internal_error")
+            LOGGER.exception("internal_error method=%s path=%s", method, path)
+            _audit_structured("internal_error", AUTH_MANAGER.anonymous(), request_id, client_ip, method, path, 500, "internal server error")
+            self._send_error_response(HTTPStatus.INTERNAL_SERVER_ERROR, "internal server error")
+
+    def _do_route(self, method: str, path: str, client_ip: str, request_id: str) -> None:
+        if method == "GET":
+            self._do_GET_routes(path, client_ip, request_id)
+        elif method == "POST":
+            self._do_POST_routes(path, client_ip, request_id)
+        else:
+            self.send_error(HTTPStatus.METHOD_NOT_ALLOWED, "Method not allowed")
+
+    def _do_GET_routes(self, path: str, client_ip: str, request_id: str) -> None:
+        parsed = urlparse(path)
+        clean_path = parsed.path
+        req_id = request_id
+
+        if clean_path == "/healthz":
             self._send_json({"status": "ok", "service": "vulnoraiq-web", "started_at": STARTED_AT.isoformat()})
             return
-        if path == "/readyz":
+        if clean_path == "/readyz":
             config = load_config()
             ready = bool(config.get("targets")) and bool(config.get("profiles"))
             self._send_json(
@@ -318,84 +441,141 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
                 status=HTTPStatus.OK if ready else HTTPStatus.SERVICE_UNAVAILABLE,
             )
             return
+        if clean_path == "/metrics":
+            if os.getenv("VULNORAIQ_METRICS_AUTH_REQUIRED", "true").strip().lower() in ("1", "true", "yes"):
+                principal = self._principal(client_ip)
+                if not principal:
+                    _audit_structured("auth_failure", AUTH_MANAGER.anonymous(), req_id, client_ip, "GET", clean_path, 401, "metrics auth required")
+                    self._send_error_response(HTTPStatus.UNAUTHORIZED, "authentication required")
+                    return
+            self._serve_metrics()
+            return
 
         principal = self._principal(client_ip)
         if not principal:
-            _audit("auth_failure", AUTH_MANAGER.anonymous(), client_ip, "no token provided")
+            _inc_metric("auth_failures")
+            _audit_structured("auth_failure", AUTH_MANAGER.anonymous(), req_id, client_ip, "GET", clean_path, 401, "no token provided")
             self._send_error_response(HTTPStatus.UNAUTHORIZED, "authentication required")
             return
 
         if not self._check_rate_limit(principal, client_ip):
             return
 
-        if path == "/api/csrf-token":
+        if clean_path == "/api/csrf-token":
             session_key = self._session_key(principal)
             token = _csrf_token_for(session_key)
             self._send_json({"csrf_token": token})
             return
-        if path == "/":
+        if clean_path == "/":
             self._serve_static("index.html")
             return
-        if path.startswith("/static/"):
-            self._serve_static(path.removeprefix("/static/"))
+        if clean_path.startswith("/static/"):
+            self._serve_static(clean_path.removeprefix("/static/"))
             return
-        if path == "/api/config":
-            self._send_json(load_config())
+        if clean_path == "/api/config":
+            full_config = load_config()
+            if AUTH_MANAGER.can(principal, "manage_runtime"):
+                safe_config = full_config
+            else:
+                safe_config = {
+                    "profiles": {k: {"description": v.get("description", "")} for k, v in full_config.get("profiles", {}).items()},
+                    "web_auth_enabled": full_config.get("web_auth_enabled", False),
+                }
+            self._send_json(safe_config)
             return
-        if path == "/api/scans":
+        if clean_path == "/api/scans":
             if not AUTH_MANAGER.can(principal, "view_scans"):
-                _audit("authz_failure", principal, client_ip, "view_scans")
+                _inc_metric("authz_failures")
+                _audit_structured("authz_failure", principal, req_id, client_ip, "GET", clean_path, 403, "view_scans")
                 self._forbidden()
                 return
             self._send_json({"jobs": [job.to_dict(include_events=False) for job in JOB_STORE.list()]})
             return
-        if path.startswith("/api/scans/"):
-            self._handle_scan_get(path, principal, client_ip)
+        if clean_path.startswith("/api/scans/"):
+            self._handle_scan_get(clean_path, principal, client_ip, req_id)
             return
         self.send_error(HTTPStatus.NOT_FOUND, "Not found")
 
-    def do_POST(self) -> None:  # noqa: N802
-        parsed = urlparse(self.path)
-        path = parsed.path
-        client_ip = self._client_ip()
+    def _do_POST_routes(self, path: str, client_ip: str, request_id: str) -> None:
+        clean_path = path
+        req_id = request_id
 
         principal = self._principal(client_ip)
         if not principal:
-            _audit("auth_failure", AUTH_MANAGER.anonymous(), client_ip, "no token provided")
+            _inc_metric("auth_failures")
+            _audit_structured("auth_failure", AUTH_MANAGER.anonymous(), req_id, client_ip, "POST", clean_path, 401, "no token provided")
             self._send_error_response(HTTPStatus.UNAUTHORIZED, "authentication required")
             return
 
         if not self._check_rate_limit(principal, client_ip):
             return
 
-        if path == "/api/scans":
+        if clean_path == "/api/scans":
             session_key = self._session_key(principal)
             csrf_token = self.headers.get("X-CSRF-Token")
             if not _validate_csrf(session_key, csrf_token):
-                _audit("csrf_failure", principal, client_ip, "invalid or missing CSRF token")
+                _inc_metric("csrf_failures")
+                _audit_structured("csrf_failure", principal, req_id, client_ip, "POST", clean_path, 403, "invalid or missing CSRF token")
                 self._send_error_response(HTTPStatus.FORBIDDEN, "invalid or missing CSRF token")
                 return
+
+            content_length_raw = self.headers.get("Content-Length", "0")
+            if not content_length_raw.isdigit():
+                _inc_metric("bad_request")
+                _audit_structured("malformed_json", principal, req_id, client_ip, "POST", clean_path, 400, "invalid Content-Length")
+                self._send_error_response(HTTPStatus.BAD_REQUEST, "invalid Content-Length")
+                return
+
+            length = int(content_length_raw)
+            if length > MAX_REQUEST_BODY:
+                _inc_metric("oversized_request")
+                _audit_structured("oversized_request", principal, req_id, client_ip, "POST", clean_path, 413, f"request body exceeds {MAX_REQUEST_BODY} bytes")
+                self._send_error_response(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, f"request body exceeds maximum allowed size ({MAX_REQUEST_BODY} bytes)")
+                return
+
             try:
-                payload = self._read_json()
-                target, profile, authorised = validate_scan_request(payload)
-                required_permission = "start_demo_scan" if target == "demo" else "start_configured_scan"
-                if not AUTH_MANAGER.can(principal, required_permission):
-                    _audit("authz_failure", principal, client_ip, f"missing {required_permission}")
-                    self._forbidden()
+                raw_body = self.rfile.read(length).decode("utf-8")
+                payload = json.loads(raw_body)
+            except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
+                _inc_metric("bad_request")
+                _audit_structured("malformed_json", principal, req_id, client_ip, "POST", clean_path, 400, "malformed JSON body")
+                self._send_error_response(HTTPStatus.BAD_REQUEST, "invalid JSON in request body")
+                return
+
+            target, profile, authorised = validate_scan_request(payload)
+            required_permission = "start_demo_scan" if target == "demo" else "start_configured_scan"
+            if not AUTH_MANAGER.can(principal, required_permission):
+                _inc_metric("authz_failures")
+                _audit_structured("authz_failure", principal, req_id, client_ip, "POST", clean_path, 403, f"missing {required_permission}")
+                self._forbidden()
+                return
+
+            # Check concurrency limits
+            with _active_scans_lock:
+                if len(_active_scans) >= SCAN_QUEUE_LIMIT:
+                    _inc_metric("scan_queue_full")
+                    _audit_structured("scan_queue_full", principal, req_id, client_ip, "POST", clean_path, 429, "scan queue at capacity")
+                    self._send_error_response(HTTPStatus.TOO_MANY_REQUESTS, "scan queue at capacity")
                     return
-                job = JOB_STORE.create(target, profile, authorised, created_by=principal.username)
-                _audit("scan_created", principal, client_ip, f"target={target} profile={profile} job_id={job.id}")
-                LOGGER.info("scan_job_accepted job_id=%s target=%s profile=%s user=%s",
-                            job.id, target, profile, principal.username)
-                threading.Thread(target=run_scan_job, args=(job.id,), daemon=True).start()
-                self._send_json(job.to_dict(), status=HTTPStatus.ACCEPTED)
-            except ValueError as exc:
-                self._send_json({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+
+            job = JOB_STORE.create(target, profile, authorised, created_by=principal.username)
+            _inc_metric("scans_created")
+            _audit_structured("scan_created", principal, req_id, client_ip, "POST", clean_path, 202, f"target={target} profile={profile} job_id={job.id}")
+            LOGGER.info("scan_job_accepted job_id=%s target=%s profile=%s user=%s",
+                        job.id, target, profile, principal.username)
+            threading.Thread(target=run_scan_job, args=(job.id,), daemon=True).start()
+            self._send_json(job.to_dict(), status=HTTPStatus.ACCEPTED)
             return
 
         self.send_error(HTTPStatus.NOT_FOUND, "Not found")
 
-    def _handle_scan_get(self, path: str, principal: AuthPrincipal, client_ip: str) -> None:
+    def do_GET(self) -> None:  # noqa: N802
+        self._handle_request("GET", self.path)
+
+    def do_POST(self) -> None:  # noqa: N802
+        self._handle_request("POST", self.path)
+
+    def _handle_scan_get(self, path: str, principal: AuthPrincipal, client_ip: str, request_id: str) -> None:
         parts = [unquote(item) for item in path.split("/") if item]
         if len(parts) < 3:
             self.send_error(HTTPStatus.NOT_FOUND, "Scan not found")
@@ -407,7 +587,8 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
             return
         if len(parts) == 3:
             if not AUTH_MANAGER.can(principal, "view_scans"):
-                _audit("authz_failure", principal, client_ip, "view_scans")
+                _inc_metric("authz_failures")
+                _audit_structured("authz_failure", principal, request_id, client_ip, "GET", path, 403, "view_scans")
                 self._forbidden()
                 return
             self._send_json(job.to_dict())
@@ -415,25 +596,28 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
         action = parts[3]
         if action == "events":
             if not AUTH_MANAGER.can(principal, "view_scans"):
-                _audit("authz_failure", principal, client_ip, "view_scans")
+                _audit_structured("authz_failure", principal, request_id, client_ip, "GET", path, 403, "view_scans")
                 self._forbidden()
                 return
             self._send_events(job_id)
             return
         if action == "artifact" and len(parts) == 5:
             if not AUTH_MANAGER.can(principal, "download_artifacts"):
-                _audit("authz_failure", principal, client_ip, "download_artifacts")
+                _inc_metric("authz_failures")
+                _audit_structured("authz_failure", principal, request_id, client_ip, "GET", path, 403, "download_artifacts")
                 self._forbidden()
                 return
-            self._send_artifact(job, parts[4], client_ip)
+            self._send_artifact(job, parts[4], client_ip, request_id)
             return
         self.send_error(HTTPStatus.NOT_FOUND, "Scan resource not found")
 
-    def _principal(self, client_ip: str) -> AuthPrincipal | None:
-        token = self.headers.get(AUTH_MANAGER.header_name())
-        return AUTH_MANAGER.authenticate_token(token)
+    def _send_artifact(self, job: PersistedScanJob, artifact_name: str, client_ip: str, request_id: str) -> None:
+        name = artifact_name.replace("\\", "/")
+        if "/" in name or ".." in name:
+            _audit_structured("artifact_traversal_attempt", AUTH_MANAGER.anonymous(), request_id, client_ip, "GET", f"/api/scans/{job.id}/artifact/{artifact_name}", 400, "path traversal detected")
+            self._send_error_response(HTTPStatus.BAD_REQUEST, "invalid artifact name")
+            return
 
-    def _send_artifact(self, job: PersistedScanJob, artifact_name: str, client_ip: str) -> None:
         path = job.outputs.get(artifact_name)
         if not path:
             self.send_error(HTTPStatus.NOT_FOUND, "Artifact not found")
@@ -443,11 +627,14 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.NOT_FOUND, "Artifact file not found")
             return
         data = file_path.read_bytes()
-        _audit("artifact_download", self._principal(client_ip) or AUTH_MANAGER.anonymous(),
-               client_ip, f"artifact={artifact_name} job={job.id}")
+        _inc_metric("artifact_downloads")
+        _audit_structured("artifact_download", self._principal(client_ip) or AUTH_MANAGER.anonymous(),
+                          request_id, client_ip, "GET", f"/api/scans/{job.id}/artifact/{artifact_name}", 200,
+                          f"artifact={artifact_name} job={job.id}")
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", mimetypes.guess_type(file_path.name)[0] or "application/octet-stream")
-        self.send_header("Content-Disposition", f'attachment; filename="{file_path.name}"')
+        safe_filename = file_path.name.replace('"', "")
+        self.send_header("Content-Disposition", f'attachment; filename="{safe_filename}"')
         self.send_header("Content-Length", str(len(data)))
         self._security_headers()
         self.end_headers()
@@ -492,6 +679,73 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _serve_metrics(self) -> None:
+        metrics = _get_metrics_snapshot()
+        lines = [
+            "# HELP vulnoraiq_up Process uptime",
+            "# TYPE vulnoraiq_up gauge",
+            "vulnoraiq_up 1",
+            "# HELP vulnoraiq_started_at Unix timestamp when the process started",
+            "# TYPE vulnoraiq_started_at gauge",
+            f"vulnoraiq_started_at {STARTED_AT.timestamp():.0f}",
+            "# HELP vulnoraiq_http_requests_total Total HTTP requests by method",
+            "# TYPE vulnoraiq_http_requests_total counter",
+        ]
+        for method in ("GET", "POST"):
+            count = metrics.get(f"http_{method}_total", 0)
+            lines.append(f'vulnoraiq_http_requests_total{{method="{method}"}} {count}')
+        lines.extend([
+            "# HELP vulnoraiq_auth_failures_total Authentication failure count",
+            "# TYPE vulnoraiq_auth_failures_total counter",
+            f"vulnoraiq_auth_failures_total {metrics.get('auth_failures', 0)}",
+            "# HELP vulnoraiq_authz_failures_total Authorization failure count",
+            "# TYPE vulnoraiq_authz_failures_total counter",
+            f"vulnoraiq_authz_failures_total {metrics.get('authz_failures', 0)}",
+            "# HELP vulnoraiq_csrf_failures_total CSRF validation failure count",
+            "# TYPE vulnoraiq_csrf_failures_total counter",
+            f"vulnoraiq_csrf_failures_total {metrics.get('csrf_failures', 0)}",
+            "# HELP vulnoraiq_rate_limit_exceeded_total Rate limit exceeded count",
+            "# TYPE vulnoraiq_rate_limit_exceeded_total counter",
+            f"vulnoraiq_rate_limit_exceeded_total {metrics.get('rate_limit_exceeded', 0)}",
+            "# HELP vulnoraiq_scans_created_total Total scans created",
+            "# TYPE vulnoraiq_scans_created_total counter",
+            f"vulnoraiq_scans_created_total {metrics.get('scans_created', 0)}",
+            "# HELP vulnoraiq_scans_completed_total Total scans completed",
+            "# TYPE vulnoraiq_scans_completed_total counter",
+            f"vulnoraiq_scans_completed_total {metrics.get('scans_completed', 0)}",
+            "# HELP vulnoraiq_scans_failed_total Total scans failed",
+            "# TYPE vulnoraiq_scans_failed_total counter",
+            f"vulnoraiq_scans_failed_total {metrics.get('scans_failed', 0)}",
+            "# HELP vulnoraiq_active_scans Currently active scan count",
+            "# TYPE vulnoraiq_active_scans gauge",
+            f"vulnoraiq_active_scans {metrics.get('active_scans', 0)}",
+            "# HELP vulnoraiq_artifact_downloads_total Artifact download count",
+            "# TYPE vulnoraiq_artifact_downloads_total counter",
+            f"vulnoraiq_artifact_downloads_total {metrics.get('artifact_downloads', 0)}",
+            "# HELP vulnoraiq_bad_requests_total Malformed request count",
+            "# TYPE vulnoraiq_bad_requests_total counter",
+            f"vulnoraiq_bad_requests_total {metrics.get('bad_request', 0)}",
+            "# HELP vulnoraiq_oversized_requests_total Oversized request count",
+            "# TYPE vulnoraiq_oversized_requests_total counter",
+            f"vulnoraiq_oversized_requests_total {metrics.get('oversized_request', 0)}",
+            "# HELP vulnoraiq_scan_queue_full_total Scan queue full rejections",
+            "# TYPE vulnoraiq_scan_queue_full_total counter",
+            f"vulnoraiq_scan_queue_full_total {metrics.get('scan_queue_full', 0)}",
+            "# HELP vulnoraiq_internal_errors_total Internal server error count",
+            "# TYPE vulnoraiq_internal_errors_total counter",
+            f"vulnoraiq_internal_errors_total {metrics.get('internal_error', 0)}",
+            "# HELP vulnoraiq_build_info Build and version information",
+            "# TYPE vulnoraiq_build_info gauge",
+            f'vulnoraiq_build_info{{version="{self.server_version}",backend="sqlite"}} 1',
+        ])
+        data = "\n".join(lines).encode("utf-8")
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "text/plain; version=0.0.4")
+        self.send_header("Content-Length", str(len(data)))
+        self._security_headers()
+        self.end_headers()
+        self.wfile.write(data)
+
     def _read_json(self) -> dict[str, Any]:
         raw_length = self.headers.get("Content-Length", "0")
         if not raw_length.isdigit():
@@ -511,6 +765,7 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(data)))
+        self.send_header("X-Request-ID", self._request_id())
         self._security_headers()
         self.end_headers()
         self.wfile.write(data)
@@ -522,13 +777,17 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
         LOGGER.info("http_request client=%s message=%s", self.address_string(), format % args)
 
     def send_error(self, code: int, message: str | None = None, explain: str | None = None) -> None:
-        """Override to add security headers to error responses."""
         try:
             self.send_response(code)
+            if message:
+                self.send_header("Content-Type", "text/plain")
+                body = message.encode("utf-8")
+                self.send_header("Content-Length", str(len(body)))
+            self.send_header("X-Request-ID", self._request_id())
             self._security_headers()
             self.end_headers()
             if message:
-                self.wfile.write(message.encode("utf-8"))
+                self.wfile.write(body)
         except OSError:
             pass
 
@@ -545,14 +804,6 @@ def _rate_limit_cleanup_loop() -> None:
 
 
 def main() -> None:
-    # Validate production mode on startup
-    if AUTH_MANAGER.is_production():
-        try:
-            AUTH_MANAGER._validate_production()
-        except RuntimeError as exc:
-            LOGGER.error("production_mode_validation_failed: %s", exc)
-            raise SystemExit(1) from exc
-
     logging.basicConfig(
         level=os.getenv("VULNORAIQ_LOG_LEVEL", "INFO"),
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
@@ -567,6 +818,7 @@ def main() -> None:
     parser.add_argument("--host", default=os.getenv("VULNORAIQ_HOST", "127.0.0.1"))
     parser.add_argument("--port", type=int, default=int(os.getenv("VULNORAIQ_PORT", "8787")))
     parser.add_argument("--production", action="store_true", help="Enable production mode validation")
+    parser.add_argument("--skip-production-checks", action="store_true", help="Skip production config validation")
     args = parser.parse_args()
 
     if args.production or AUTH_MANAGER.is_production():
@@ -576,14 +828,26 @@ def main() -> None:
             LOGGER.error("production_mode_validation_failed: %s", exc)
             raise SystemExit(1) from exc
 
+        if not args.skip_production_checks:
+            try:
+                results = validate_all(host=args.host)
+                failed = [r for r in results if r["status"] != "pass"]
+                if failed:
+                    for fail in failed:
+                        LOGGER.error("PRODUCTION_CONFIG_FAILURE check=%s error=%s", fail["check"], fail.get("error", "unknown"))
+                    raise ProductionConfigError(f"Production config validation failed ({len(failed)} checks).")
+                LOGGER.info("All production configuration checks passed (%d checks).", len(results))
+            except ProductionConfigError:
+                raise SystemExit(1) from None
+
     threading.Thread(target=_rate_limit_cleanup_loop, daemon=True).start()
     server = create_server(args.host, args.port)
     env_label = "production" if AUTH_MANAGER.is_production() else "development"
     LOGGER.info("web_ui_started env=%s url=http://%s:%s auth_enabled=%s backend=%s",
                 env_label, args.host, args.port, AUTH_MANAGER.enabled(),
                 os.getenv("VULNORAIQ_JOB_STORE_BACKEND", "sqlite"))
-    _audit("server_start", AUTH_MANAGER.anonymous(), "",
-           f"env={env_label} host={args.host} port={args.port}")
+    _audit_structured("server_start", AUTH_MANAGER.anonymous(), "",
+                      "", "", "", 0, f"env={env_label} host={args.host} port={args.port}")
     server.serve_forever()
 
 

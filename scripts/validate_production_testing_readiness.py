@@ -51,6 +51,14 @@ class ProductionTestingReadinessValidator:
             self._check_legacy_server_absent(),
             self._check_auth_defaults_enabled(),
             self._check_security_hardening(),
+            self._check_production_config_validation(),
+            self._check_backup_restore_scripts(),
+            self._check_scorecard_and_runbook_docs(),
+            self._check_docker_compose(),
+            self._check_container_config(),
+            self._check_migration_doc(),
+            self._check_assessment_assurance_doc(),
+            self._check_pip_audit_in_ci(),
         ]
         functional_summary: FunctionalTestSummary | None = None
         if run_functional:
@@ -231,6 +239,125 @@ class ProductionTestingReadinessValidator:
         status = "pass" if not errors else "fail"
         details["errors"] = errors
         return ReadinessCheck("security_hardening", status, "Security hardening checks.", details)
+
+    def _check_production_config_validation(self) -> ReadinessCheck:
+        checks_path = Path("webui/production_checks.py")
+        if not checks_path.exists():
+            return ReadinessCheck("production_config_validation", "fail",
+                                  "webui/production_checks.py missing.", {})
+        script_path = Path("scripts/validate_runtime_production_config.py")
+        script_exists = script_path.exists()
+        test_path = Path("tests/test_production_config_validation.py")
+        test_exists = test_path.exists()
+        details: dict[str, Any] = {
+            "checks_module_exists": checks_path.exists(),
+            "validation_script_exists": script_exists,
+            "test_exists": test_exists,
+        }
+        errors: list[str] = []
+        if not script_exists:
+            errors.append("validate_runtime_production_config.py not found")
+        if not test_exists:
+            errors.append("test_production_config_validation.py not found")
+        status = "pass" if not errors else "fail"
+        details["errors"] = errors
+        return ReadinessCheck("production_config_validation", status,
+                              "Production startup validation checks.", details)
+
+    def _check_backup_restore_scripts(self) -> ReadinessCheck:
+        backup = Path("scripts/backup_sqlite_store.py")
+        restore = Path("scripts/restore_sqlite_store.py")
+        test = Path("tests/test_backup_restore.py")
+        errors = []
+        if not backup.exists():
+            errors.append("backup_sqlite_store.py not found")
+        if not restore.exists():
+            errors.append("restore_sqlite_store.py not found")
+        if not test.exists():
+            errors.append("test_backup_restore.py not found")
+        status = "pass" if not errors else "fail"
+        return ReadinessCheck("backup_restore_scripts", status,
+                              "Backup/restore scripts and tests.",
+                              {"backup_exists": backup.exists(), "restore_exists": restore.exists(),
+                               "test_exists": test.exists(), "errors": errors})
+
+    def _check_scorecard_and_runbook_docs(self) -> ReadinessCheck:
+        docs = ["PRODUCTION_READINESS_SCORECARD.md", "RUNBOOK.md",
+                "INCIDENT_RESPONSE.md", "RELEASE_CHECKLIST.md"]
+        base = Path("docs")
+        missing = [d for d in docs if not (base / d).exists()]
+        status = "pass" if not missing else "fail"
+        return ReadinessCheck("scorecard_and_runbook_docs", status,
+                              "Scorecard, runbook, incident response, release checklist docs.",
+                              {"existing": [d for d in docs if (base / d).exists()],
+                               "missing": missing})
+
+    def _check_docker_compose(self) -> ReadinessCheck:
+        compose = Path("docker-compose.yml")
+        env_example = Path(".env.production.example")
+        errors = []
+        if not compose.exists():
+            errors.append("docker-compose.yml not found")
+        if not env_example.exists():
+            errors.append(".env.production.example not found")
+        status = "pass" if not errors else "fail"
+        return ReadinessCheck("docker_compose", status,
+                              "Docker Compose and production env example.",
+                              {"compose_exists": compose.exists(),
+                               "env_example_exists": env_example.exists(), "errors": errors})
+
+    def _check_container_config(self) -> ReadinessCheck:
+        dockerfile = Path("Dockerfile")
+        if not dockerfile.exists():
+            return ReadinessCheck("container_config", "fail", "Dockerfile not found.", {})
+        text = dockerfile.read_text(encoding="utf-8")
+        checks = {
+            "non_root_user": "USER vulnoraiq" in text,
+            "volume_data": 'VOLUME ["/data"]' in text or "VOLUME /data" in text,
+            "healthcheck": "HEALTHCHECK" in text,
+            "oci_labels": "org.opencontainers.image" in text,
+            "pip_no_cache": "pip install --no-cache-dir" in text,
+        }
+        details: dict[str, Any] = {**checks}
+        errors = [k for k, v in checks.items() if not v]
+        smoke = Path("scripts/container_smoke_test.py")
+        details["smoke_test_script_exists"] = smoke.exists()
+        if not smoke.exists():
+            errors.append("container_smoke_test.py not found")
+        details["errors"] = errors
+        status = "pass" if not errors else "fail"
+        return ReadinessCheck("container_config", status, "Container security hardening.", details)
+
+    def _check_migration_doc(self) -> ReadinessCheck:
+        doc = Path("docs/MIGRATION.md")
+        return ReadinessCheck("migration_doc", "pass" if doc.exists() else "fail",
+                              "Migration guide.", {"exists": doc.exists()})
+
+    def _check_assessment_assurance_doc(self) -> ReadinessCheck:
+        doc = Path("docs/ASSESSMENT_ASSURANCE.md")
+        return ReadinessCheck("assessment_assurance_doc", "pass" if doc.exists() else "fail",
+                              "Assessment assurance doc.", {"exists": doc.exists()})
+
+    def _check_pip_audit_in_ci(self) -> ReadinessCheck:
+        ci = Path(".github/workflows/ci.yml")
+        python_ci = Path(".github/workflows/python-ci.yml")
+        details: dict[str, Any] = {}
+        errors: list[str] = []
+        if ci.exists():
+            text = ci.read_text(encoding="utf-8")
+            details["ci_yml_pip_audit"] = "pip_audit" in text or "pip-audit" in text
+            details["ci_yml_pip_check"] = "pip check" in text
+            if not details["ci_yml_pip_audit"]:
+                errors.append("ci.yml missing pip-audit")
+        if python_ci.exists():
+            text = python_ci.read_text(encoding="utf-8")
+            details["python_ci_yml_pip_audit"] = "pip_audit" in text or "pip-audit" in text
+            details["python_ci_yml_pip_check"] = "pip check" in text
+            if not details["python_ci_yml_pip_audit"]:
+                errors.append("python-ci.yml missing pip-audit")
+        details["errors"] = errors
+        status = "pass" if not errors else "fail"
+        return ReadinessCheck("pip_audit_in_ci", status, "Dependency and supply-chain checks in CI.", details)
 
     @staticmethod
     def _overall_status(checks: list[ReadinessCheck]) -> str:

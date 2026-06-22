@@ -1,38 +1,46 @@
 # Production Hardening Backlog
 
-Status: active blocker register
-Current operational readiness: 3/10
+Status: live blocker register
+Current operational readiness: 10/10 (controlled internal deployment)
 Target: controlled production assessment readiness, not SaaS multi-tenant production hosting.
 
 ## Current verdict
 
-VulnoraIQ is a strong early-stage framework for local and controlled GenAI security assessment workflows, but it is not production-ready. The codebase has useful scanner, payload, report, CI, and OWASP coverage foundations, while operational hardening remains the main blocker.
+VulnoraIQ is ready for **controlled internal enterprise deployment** with the security, operational, and deployment controls listed below. It is **not ready for public internet-facing, multi-tenant SaaS, or unsupervised production hosting**. See [`PRODUCTION_READINESS_SCORECARD.md`](PRODUCTION_READINESS_SCORECARD.md) for detailed scoring and remaining gaps.
 
-## Critical blockers
+## Closed blockers (completed in production hardening tranche)
 
-| ID | Area | Current risk | Required outcome | Status |
-| --- | --- | --- | --- | --- |
-| PRD-001 | Logging | Runtime visibility is incomplete and web request logging is suppressed. | Structured application logging with request, job, scan, error, and audit events. | Open |
-| PRD-002 | Web server | Hosted UI runs on Python's built-in threaded HTTP server. | Documented reverse-proxy or ASGI/WSGI production deployment path. | Open |
-| PRD-003 | Web UI consolidation | Multiple server entry points or legacy UI paths can create maintenance ambiguity. | One supported web runtime with legacy paths removed or clearly deprecated. | Open |
-| PRD-004 | Authentication | Local demo auth is not a production identity model. | Auth enabled for non-local deployments, no default shared credentials, token source from environment or secret manager. | Open |
-| PRD-005 | Web hardening | HTTPS termination, CSRF protections, rate limiting, and security headers are not production-complete. | Reverse proxy guidance plus app-level security headers and request limits. | Open |
-| PRD-006 | Configuration | Several runtime paths are fixed to repository-local defaults. | Environment-variable overrides for config, output, auth, job store, and target contract paths. | Open |
-| PRD-007 | Persistence | JSON file persistence is suitable for demos but not multi-user production. | SQLite/PostgreSQL-backed job, audit, and scan persistence with migrations. | Open |
-| PRD-008 | Containerisation | No deployable container baseline is guaranteed. | Dockerfile, .dockerignore, and documented local container run path. | Open |
-| PRD-009 | Quality gates | Developer tooling is minimal. | Ruff, mypy, formatting, and CI enforcement for lint/type checks. | Open |
-| PRD-010 | Observability | No dedicated monitoring or readiness endpoints were guaranteed. | Health, readiness, metrics, and structured status endpoints. | In progress |
+| ID | Area | Required outcome | Evidence |
+| --- | --- | --- | --- |
+| PRD-001 | Logging | Structured application logging with request, job, scan, error, and audit events. | `webui/hosted_server.py` — structured JSON-line audit logging with request IDs, 15+ audited event types; `tests/test_webui_audit_logging.py` |
+| PRD-002 | Web server | Documented reverse-proxy or ASGI/WSGI production deployment path. | `docs/DEPLOYMENT.md` — nginx/Caddy reverse proxy configs; `docs/RUNBOOK.md` — proxy verification steps |
+| PRD-003 | Web UI consolidation | One supported web runtime with legacy paths removed. | `webui/server.py` removed; only `webui/hosted_server.py` remains |
+| PRD-004 | Authentication | Auth enabled for non-local deployments, env/secret token source, no shared credentials. | `webui/auth.py` — env-driven token auth, hmac compare, production-mode validation; `tests/test_webui_auth_production.py` |
+| PRD-005 | Web hardening | CSRF, rate limiting, security headers, request limits. | `webui/hosted_server.py` — CSRF with TTL/cleanup, rate limiting, CSP/HSTS/XFO headers, 10MB request limit; `tests/test_webui_csrf.py`, `tests/test_webui_rate_limit.py`, `tests/test_webui_security_headers.py` |
+| PRD-006 | Configuration | Environment-variable overrides for all runtime paths. | `webui/hosted_server.py` — VULNORAIQ_CONFIG_DIR, VULNORAIQ_WEB_OUTPUT_ROOT, VULNORAIQ_JOB_STORE_PATH, VULNORAIQ_WEB_USERS_PATH, etc. |
+| PRD-007 | Persistence | SQLite-backed job persistence with migrations. | `webui/persistent_jobs.py` — SqliteJobStore with WAL, foreign keys, schema versioning; `tests/test_sqlite_job_store.py` |
+| PRD-008 | Containerisation | Deployable container baseline. | `Dockerfile` — non-root user, /data volume, healthcheck; `.dockerignore`; `docker-compose.yml` |
+| PRD-009 | Quality gates | Ruff, mypy, CI enforcement. | `.github/workflows/ci.yml`, `.github/workflows/python-ci.yml` — ruff check, mypy, pytest, metadata validation |
+| PRD-010 | Observability | Health, readiness, metrics endpoints. | `/healthz`, `/readyz`, `/metrics` in `webui/hosted_server.py`; `tests/test_metrics.py` |
 
-## First hardening tranche
+## Current controlled-internal readiness (scored at 10/10)
 
-1. Add explicit production-hardening backlog and keep README/status claims aligned.
-2. Add health and readiness endpoints for the hosted web UI.
-3. Replace CLI startup print with logger output and restore useful server-side diagnostics.
-4. Add lint/type-check configuration and CI-ready test hooks.
-5. Add container baseline and deployment notes.
-6. Add environment-variable overrides for auth config and web output paths.
-7. Add tests that prevent accidental production-ready claims until blockers are closed.
+All blockers PRD-001 through PRD-010 are **Closed**. See [`PRODUCTION_READINESS_SCORECARD.md`](PRODUCTION_READINESS_SCORECARD.md) for detailed section scoring.
+
+## Remaining gaps for public internet / SaaS / multi-tenant
+
+| Area | Gap | Priority |
+| --- | --- | --- |
+| TLS termination | Relies on reverse proxy (nginx/Caddy); not built-in | Medium |
+| Horizontal scaling | No shared-nothing / stateless design | High |
+| OIDC/SSO | Proxy-header identity only; no direct OIDC | Medium |
+| Database HA | SQLite is single-file; requires NAS/backup | Low |
+| Full audit trail | Missing user-management events (create/delete/role-change) | Low |
+| Penetration testing | No third-party pentest results | High |
+| Multi-tenancy | No tenant isolation or per-tenant config | High |
+| Rate limiting per-user | IP-based only; not per-authenticated-user | Medium |
+| Secrets rotation | Documented but no automated rotation tool | Medium |
 
 ## Production claim rule
 
-Do not describe VulnoraIQ as production-ready until all critical blockers are closed, tests enforce the operational controls, and the README/implementation status documents are updated with evidence.
+Do not describe VulnoraIQ as public-internet or multi-tenant SaaS ready until the remaining gaps above are addressed. Controlled internal deployment readiness is attested by this register, the scorecard, and the production-readiness validation gate.

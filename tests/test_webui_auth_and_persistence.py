@@ -246,10 +246,9 @@ def test_proxy_ip_rejects_malformed_forwarded(monkeypatch) -> None:
 
 def test_audit_event_includes_client_ip(monkeypatch) -> None:
     from webui.auth import AuthPrincipal
-    from webui.hosted_server import _audit
+    from webui.hosted_server import _audit_structured
     p = AuthPrincipal("admin", "admin", {"view_scans"}, authenticated=True)
-    # Just verify the function doesn't crash
-    _audit("test_event", p, "10.0.0.1", "test detail")
+    _audit_structured("test_event", p, client_ip="10.0.0.1", detail="test detail")
 
 
 # --- Security headers tests ---
