@@ -2,7 +2,7 @@
 
 An AI security assessment framework for **LLM applications, RAG pipelines, AI agents, and orchestration layers**.
 
-> **Current maturity:** version `1.0.0` provides a working local/demo-safe enterprise starter platform. Start with [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md) to see what is implemented, partial, or planned.
+> **Current maturity:** version `1.1.0` provides a working local/demo-safe enterprise starter platform with a modern Web UI. Start with [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md) to see what is implemented, partial, or planned.
 
 > **Responsible use only:** run this framework only against systems you own or are explicitly authorised to assess. The default demo target is safe and local. Configured non-demo targets require an explicit authorisation flag.
 
@@ -12,6 +12,7 @@ AI application security needs more than prompt-level checks. This repository pro
 
 The current implementation provides:
 
+- Modern Web UI for launching scans, realtime progress, executive dashboards, scan history, and artifact download
 - OWASP LLM 2025 starter mapping
 - MITRE ATLAS mapping catalog with AML technique IDs and refresh tooling
 - Safe demo target with no external API keys
@@ -56,6 +57,8 @@ The roadmap now focuses on deeper production adapters, larger benchmark corpora,
 ## Architecture
 
 ```text
+Operator Browser: Modern Web UI | CLI | CI
+        ↓
 Target AI Systems: demo echo target | local demo app | configured HTTP/Chat/Ollama/Webhook targets
         ↓
 Integration Layer: DemoEchoClient | HttpJsonTargetClient | ChatCompletionsTargetClient | OllamaGenerateTargetClient | WebhookJsonTargetClient
@@ -70,7 +73,7 @@ Governance Layer: policy rules | exceptions | approval evidence | RAG manifest |
         ↓
 Assessment Profiles: baseline | rag | agent | full
         ↓
-Outputs: Markdown | JSON | SARIF-style | dashboards | report diff | trends | benchmarks | release package
+Outputs: Web dashboard | Markdown | JSON | SARIF-style | dashboards | report diff | trends | benchmarks | release package
 ```
 
 ## Repository structure
@@ -89,6 +92,7 @@ llm-vapt-framework/
 ├── payloads/                # Safe payload schema and libraries
 ├── reports/                 # Markdown, JSON, SARIF-style, diff, and policy-trend generation
 ├── dashboards/              # Markdown, HTML, and diff-trend dashboard generation
+├── webui/                   # Modern Web UI server and static frontend
 ├── tests/                   # Unit tests
 ├── scripts/                 # CLI entry points, release package builder, ATLAS refresh
 └── docs/                    # Architecture, status, mapping, governance docs
@@ -112,6 +116,22 @@ The default command writes:
 - `reports/output/scan-report.sarif`
 - `reports/output/dashboard.md`
 - `reports/output/dashboard.html`
+
+## Web UI command
+
+Run the modern Web UI:
+
+```bash
+llm-vapt-web --host 127.0.0.1 --port 8787
+```
+
+Open:
+
+```text
+http://127.0.0.1:8787
+```
+
+The Web UI supports scan launch, realtime progress via Server-Sent Events, completed dashboard views, scan history, and downloadable Markdown/JSON/SARIF/dashboard artifacts. See [`docs/web-ui.md`](docs/web-ui.md).
 
 ## Run tests
 
@@ -213,7 +233,7 @@ Read [`docs/module-authoring.md`](docs/module-authoring.md) before adding module
 
 ## Configuration
 
-- `config/default.yaml`: engine defaults and paths for reports, approvals, RAG, agent, ATLAS, benchmarks, and release packaging
+- `config/default.yaml`: engine defaults and paths for reports, Web UI, approvals, RAG, agent, ATLAS, benchmarks, and release packaging
 - `config/targets.yaml`: target definitions and adapter examples
 - `config/attack_profiles.yaml`: selective module execution
 - `config/policies.yaml`: governance thresholds and blocking conditions
