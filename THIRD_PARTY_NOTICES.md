@@ -11,7 +11,7 @@ VulnoraIQ includes documentation and planning data derived from MITRE ATLAS.
 - Data source currently used by VulnoraIQ: `https://raw.githubusercontent.com/mitre-atlas/atlas-data/main/dist/v6/ATLAS-2026.05.yaml`
 - Derived VulnoraIQ file: `docs/MITRE_ATLAS_AI_MATRIX.md`
 
-MITRE ATLAS data is copyright 2021-2026 MITRE and is licensed under the Apache License, Version 2.0.
+MITRE ATLAS data is Copyright 2021-2026 MITRE and is licensed under the Apache License, Version 2.0.
 
 VulnoraIQ's use of MITRE ATLAS data does not imply endorsement by MITRE.
 
