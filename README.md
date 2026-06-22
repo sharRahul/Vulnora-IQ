@@ -2,7 +2,7 @@
 
 **VulnoraIQ** is an early-stage AI security assessment and VAPT platform for **LLM applications, RAG pipelines, AI agents, and orchestration layers**.
 
-> **Current maturity:** version `0.0.1.6` is an early development build. It is useful for local demos, UI workflow validation, report-pipeline development, and safe framework testing. It is **not ready for real-world VAPT testing or production assessment use** yet.
+> **Current maturity:** version `0.0.1.7` is an early development build. It is useful for local demos, UI workflow validation, report-pipeline development, and safe framework testing. It is **not ready for real-world VAPT testing or production assessment use** yet.
 
 > **Important limitation:** OWASP LLM 2025 coverage now has safe starter oracle coverage, implementation specs, evaluator primitives, and local good/bad fixtures for all 10 categories. MITRE ATLAS AI technique coverage has a source-driven documentation matrix, but not every listed technique is implemented as an active check yet. Unmapped tactics and techniques must still be listed as `Unmapped / map later`. Treat all scan output as framework-development evidence, not validated security assurance.
 
@@ -18,6 +18,7 @@ The current implementation provides:
 - OWASP LLM 2025 implementation specs in `docs/owasp/` for all 10 categories
 - MITRE ATLAS Matrix for AI planning register in `docs/MITRE_ATLAS_AI_MATRIX.md`
 - Source-driven ATLAS matrix generator with explicit `Unmapped / map later` backlog preservation
+- Third-party notices for MITRE ATLAS-derived documentation and planning data
 - OWASP LLM 2025 safe starter oracle coverage for all 10 categories
 - Deterministic local evaluator primitives and local good/bad OWASP fixture targets
 - Structured evidence records and oracle results for module interactions
@@ -34,7 +35,7 @@ The current implementation provides:
 - Markdown, JSON, SARIF-style, Markdown dashboard, HTML dashboard, trend, diff, and branded HTML export outputs
 - Benchmark regression suite and OWASP starter fixture corpus
 - Safe release-package builder for demo outputs and non-sensitive examples
-- Package metadata release gate that checks OWASP docs, MITRE ATLAS matrix docs, evaluators, fixtures, version alignment, and CLI entries
+- Package metadata release gate that checks OWASP docs, MITRE ATLAS matrix docs, third-party notices, evaluators, fixtures, version alignment, and CLI entries
 - Explicit non-demo authorisation gate
 - Python CI across supported versions with tests, metadata gates, target contract validation, benchmark fixture validation, scan smoke tests, trends, exports, and release artifacts
 
@@ -111,6 +112,7 @@ vulnoraiq/
 ├── dashboards/              # Markdown, HTML, and diff-trend dashboard generation
 ├── webui/                   # Hosted Web UI server, auth, persistent jobs, and static frontend
 ├── tests/                   # Unit tests
+├── THIRD_PARTY_NOTICES.md   # Third-party attribution and license notices
 └── scripts/                 # CLI entry points, package validation, release package builder, ATLAS refresh
 ```
 
@@ -198,6 +200,7 @@ The package path defaults to `dist/vulnoraiq-example-package.zip`.
 
 - `docs/MITRE_ATLAS_AI_MATRIX.md`: MITRE ATLAS AI planning matrix and technique implementation register
 - `scripts/generate_mitre_atlas_matrix.py`: source-driven matrix generator with unmapped backlog preservation
+- `THIRD_PARTY_NOTICES.md`: third-party attribution and license notices, including MITRE ATLAS
 - `docs/owasp/`: OWASP LLM 2025 implementation specs
 - `config/owasp_oracles.yaml`: safe OWASP starter oracle definitions
 - `config/mitre_atlas_mapping.yaml`: local MITRE ATLAS technique catalog and module mapping
@@ -216,6 +219,8 @@ The package path defaults to `dist/vulnoraiq-example-package.zip`.
 4. System-level starter coverage across LLM, RAG, tool, memory, and orchestration layers.
 5. CI/CD-ready direction for prompt, corpus, agent, release-gate, and regression checks.
 
-## License
+## License and third-party notices
 
-MIT. See `LICENSE`.
+VulnoraIQ-specific source code and documentation are licensed under this repository's license. See `LICENSE`.
+
+Some documentation and planning data is derived from MITRE ATLAS. MITRE ATLAS data is copyright 2021-2026 MITRE and licensed under the Apache License, Version 2.0. See `THIRD_PARTY_NOTICES.md`.
