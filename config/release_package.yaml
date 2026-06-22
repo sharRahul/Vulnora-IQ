@@ -25,6 +25,7 @@ include_paths:
   - config/agent_runtime.yaml
   - config/agent_execution_scenarios.yaml
   - config/release_package.yaml
+  - core/evaluators.py
   - benchmarks/benchmark_suite.yaml
   - benchmarks/fixtures/owasp_starter_fixture.yaml
   - examples/local_demo_targets/README.md
