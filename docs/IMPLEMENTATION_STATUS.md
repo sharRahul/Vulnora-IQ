@@ -2,28 +2,42 @@
 
 This document separates current working capability from roadmap items so users can understand what is ready today.
 
-> **Current maturity:** VulnoraIQ version `0.0.1.2` is an early development build. It is suitable for local demos, framework development, UI workflow validation, and report-pipeline testing. It is **not ready for real-world VAPT testing or production security assessment use**.
+> **Current maturity:** VulnoraIQ version `0.0.1.3` is an early development build. It is suitable for local demos, framework development, UI workflow validation, and report-pipeline testing. It is **not ready for real-world VAPT testing or production security assessment use**.
 
-> **Important limitation:** OWASP LLM 2025 coverage now has safe starter oracle coverage for all 10 categories, but the checks are still not production-validated. Treat output as development evidence, not validated security assurance.
+> **Important limitation:** OWASP LLM 2025 coverage now has implementation specs, safe starter oracle coverage, deterministic local evaluator primitives, and local good/bad fixtures for all 10 categories. The checks are still not production-validated. Treat output as development evidence, not validated security assurance.
+
+## Seven-phase implementation status
+
+| Phase | Status | Completed implementation |
+| --- | --- | --- |
+| Phase 1 — OWASP depth | Working-alpha starter | `docs/owasp/` now contains implementation specs for all 10 OWASP LLM 2025 categories. |
+| Phase 2 — Safe demo fixtures | Working-alpha starter | `examples/local_demo_targets/owasp_fixture_targets.py` models local good/bad control behaviour for all 10 categories. |
+| Phase 3 — Stronger evaluators | Working-alpha starter | `core/evaluators.py` adds deterministic local evaluators for text checks, schema checks, source access, provenance, approval, citations, action boundaries, resource limits, and manual review. |
+| Phase 4 — Contract-tested adapters | Working starter | `config/target_contracts.yaml` and `integrations/contract_validation.py` validate configured target adapter shapes before authorised testing. |
+| Phase 5 — Web UI hardening foundations | Working starter | `webui/hosted_server.py`, `webui/auth.py`, and `webui/persistent_jobs.py` add hosted entry point, role-aware auth hooks, and persistent JSON job storage. |
+| Phase 6 — Report quality and presentation | Working starter | Report generation includes structured evidence; `reports/html_export_package.py` builds a branded export bundle. |
+| Phase 7 — Release gates | Working starter | `scripts/validate_package_metadata.py` checks package/version/CLI/docs/fixtures/evaluators; CI runs metadata, contract, fixture, scan, trend, export, and package gates. |
 
 ## Current working capability
 
 | Area | Status | Notes |
 | --- | --- | --- |
-| Python package scaffold | Working starter | VulnoraIQ version `0.0.1.2` installs as a Python package with CLI entry points for assessment, Web UI, dashboard generation, report diffing, benchmark runs, trend outputs, ATLAS refresh, HTML export, package metadata validation, and release package building. |
+| Python package scaffold | Working starter | VulnoraIQ version `0.0.1.3` installs as a Python package with CLI entry points for assessment, Web UI, dashboard generation, report diffing, benchmark runs, trend outputs, ATLAS refresh, HTML export, package metadata validation, and release package building. |
 | Modern Web UI | Working starter | `webui/hosted_server.py`, `webui/auth.py`, `webui/persistent_jobs.py`, and `webui/static/` provide a browser console for launching demo scans, realtime progress via Server-Sent Events, completed dashboard views, scan history, role-aware auth hooks, persistent JSON job storage, and artifact downloads. |
 | Demo target | Working | The default `demo` target uses an in-memory echo client and requires no external API keys. |
-| Local demo targets | Working starter | `examples/local_demo_targets/` contains a safe HTTP JSON target and a control-gap fixture for local demonstration and tests. |
+| Local demo targets | Working-alpha starter | `examples/local_demo_targets/` contains safe HTTP JSON, control-gap, and OWASP good/bad fixture targets for local demonstration and tests. |
 | Configured target adapters | Working starter | `integrations/adapters.py`, `config/target_contracts.yaml`, and `integrations/contract_validation.py` support chat-completions-compatible, Ollama-style generate, webhook JSON, and HTTP JSON endpoint shapes, with contract-shape validation and explicit authorisation. |
 | Profiles | Working starter | `baseline`, `rag`, `agent`, and `full` profiles are defined in `config/attack_profiles.yaml`, but coverage depth is still starter-level. |
 | Scanner | Working starter | The scanner loads config, selects a profile, runs configured modules, scores findings, attaches metadata, evaluates policy, attaches OWASP oracle coverage metadata, and returns a scan result. Findings are not yet validated as production-grade security assertions. |
 | Module plugin interface | Working starter | `modules/base.py`, `modules/starter.py`, and `modules/registry.py` provide a formal module protocol, starter module implementation, registry lookup, and structured oracle-backed evidence. |
+| Deterministic evaluators | Working-alpha starter | `core/evaluators.py` provides local evaluator primitives that can be reused by OWASP checks, fixtures, CI, and future report confidence scoring. |
 | Payload libraries | Working starter | `core/payload_loader.py` loads safe YAML payload libraries from `payloads/` and maps them to module names. |
 | Non-demo authorisation gate | Working | Configured targets outside demo mode require the explicit CLI authorisation flag. |
 | Policy-as-code | Working starter | Policy YAML is evaluated by `core/policy_engine.py` for sensitive marker checks, severity thresholds, agent runtime governance, RAG corpus/retrieval integrity, approval gates, and scoped exceptions. |
 | Policy exceptions | Working starter | `config/policy_exceptions.yaml` and `core/exception_registry.py` support owner, reason, expiry, target, profile, approval reference, and compensating control metadata. |
 | Approval evidence validation | Working starter | `config/approval_evidence.yaml` and `core/approval_evidence.py` validate approval references and local SHA-256 integrity signatures before exceptions suppress policy outcomes. |
-| OWASP LLM 2025 oracle coverage | Working starter | `config/owasp_oracles.yaml` and `core/evidence_model.py` provide safe starter oracle coverage for all 10 OWASP LLM 2025 categories, including expected/forbidden response signals and required evidence fields. |
+| OWASP LLM 2025 implementation specs | Working-alpha starter | `docs/owasp/` defines scope, safe strategy, expected good/bad behaviour, evidence, evaluators, severity rationale, and working criteria for all 10 categories. |
+| OWASP LLM 2025 oracle coverage | Working starter | `config/owasp_oracles.yaml` and `core/evidence_model.py` provide safe starter oracle coverage for all 10 OWASP LLM 2025 categories. |
 | Evidence model and test oracles | Working starter | `core/evidence_model.py` creates structured `InteractionEvidence` and `OracleResult` records for module output and report evidence. |
 | Report generation | Working starter | Markdown, JSON, and SARIF-style reports include findings, structured evidence, oracle results, and policy evaluation, but conclusions are only as mature as the starter checks. |
 | Report diffing | Working starter | `reports/report_diff.py` compares two structured JSON reports, emits JSON/Markdown diffs, and can fail on regression. |
@@ -40,7 +54,7 @@ This document separates current working capability from roadmap items so users c
 | RAG retrieval testing | Working starter | `config/rag_retrieval_scenarios.yaml` and `rag_testing/retrieval_harness.py` validate expected retrieval, access boundaries, approved sources, and source-trust scoring. |
 | Agent runtime governance | Working starter | `config/agent_runtime.yaml` and `agent_testing/runtime_manifest.py` validate tool allowlists, high-impact approvals, memory integrity settings, and orchestration plan requirements. |
 | Agent execution testing | Working starter | `config/agent_execution_scenarios.yaml` and `agent_testing/execution_harness.py` validate simulated tool calls, approval points, memory writes, integrity references, and rollback-plan coverage. |
-| Package metadata validation | Working starter | `scripts/validate_package_metadata.py` verifies package name, framework display name, version consistency, CLI entry points, and README maturity warnings before release. |
+| Package metadata validation | Working starter | `scripts/validate_package_metadata.py` verifies package name, framework display name, version consistency, CLI entry points, README maturity warnings, OWASP docs, evaluator suite, and OWASP fixture target before release. |
 | CI | Working starter | GitHub Actions installs the package, runs tests across supported Python versions, validates Web UI wiring, package metadata, target contracts, benchmark fixtures, runs smoke assessments, generates report diffs, trend outputs, benchmarks, HTML export packages, release packages, and uploads artifacts. |
 
 ## Current safe usage
@@ -57,14 +71,7 @@ Use the CLI demo mode:
 vulnoraiq --target demo --profile baseline
 ```
 
-Build policy and diff trends:
-
-```bash
-vulnoraiq-policy-trend --input-dir reports/output
-vulnoraiq-diff-trend --input-dir reports/output
-```
-
-Run benchmarks and metadata gates:
+Run benchmarks and release gates:
 
 ```bash
 vulnoraiq-benchmark --manifest benchmarks/benchmark_suite.yaml --fail-on-regression
@@ -90,9 +97,9 @@ For any configured target outside demo mode:
 
 ## Implementation roadmap status
 
-All implementation items previously listed in this file have been completed as **working starter** capabilities.
+All seven phases requested for this pass have been completed as **working-alpha starter** or **working starter** capabilities.
 
-The next phase should be planning and implementation detail for the OWASP-specific documentation and check depth under `docs/owasp*` or the equivalent OWASP documentation folder. That phase should decide what each OWASP category needs before any claim of real-world VAPT readiness.
+The next phase should go through the OWASP docs category by category and decide what each check needs to become production-validated, including payload depth, evidence quality, false-positive handling, and operator report language.
 
 ## Documentation rule
 
