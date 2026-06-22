@@ -28,7 +28,17 @@ jobs:
           pip install -e .[dev]
 
       - name: Run tests
-        run: pytest -q
+        run: |
+          mkdir -p reports/output/ci-logs
+          pytest -q 2>&1 | tee reports/output/ci-logs/pytest-${{ matrix.python-version }}.log
+          test ${PIPESTATUS[0]} -eq 0
+
+      - name: Upload pytest log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vulnoraiq-pytest-log-${{ matrix.python-version }}
+          path: reports/output/ci-logs/pytest-${{ matrix.python-version }}.log
 
       - name: Validate package metadata
         run: python scripts/validate_package_metadata.py
