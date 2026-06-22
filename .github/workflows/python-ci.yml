@@ -32,13 +32,31 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          from webui.server import STATIC_DIR, load_config
+          from webui.hosted_server import STATIC_DIR, load_config
           assert (STATIC_DIR / 'index.html').exists()
           assert (STATIC_DIR / 'styles.css').exists()
           assert (STATIC_DIR / 'app.js').exists()
           config = load_config()
           assert 'demo' in config['targets']
           assert 'baseline' in config['profiles']
+          PY
+
+      - name: Validate package metadata
+        run: python scripts/validate_package_metadata.py
+
+      - name: Validate target contracts
+        run: python - <<'PY'
+          from integrations.contract_validation import TargetContractValidator
+          result = TargetContractValidator().validate()
+          assert result.status in {'pass', 'warn'}
+          assert not result.errors
+          PY
+
+      - name: Validate benchmark fixtures
+        run: python - <<'PY'
+          from benchmarks.fixture_validation import BenchmarkFixtureValidator
+          result = BenchmarkFixtureValidator().validate()
+          assert result.status == 'pass'
           PY
 
       - name: Run baseline assessment smoke test
@@ -97,6 +115,9 @@ jobs:
             --output-dir reports/output/benchmarks \
             --summary-output reports/output/benchmarks/benchmark-summary.json \
             --fail-on-regression
+
+      - name: Build branded HTML export package
+        run: python -m reports.html_export_package --input-dir reports/output --output reports/output/vulnoraiq-html-export.zip
 
       - name: Build release package smoke test
         run: python scripts/build_release_package.py --manifest config/release_package.yaml
