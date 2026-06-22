@@ -14,6 +14,7 @@ def test_sarif_report_contains_results(tmp_path) -> None:
 
     data = json.loads(output.read_text(encoding="utf-8"))
     assert data["version"] == "2.1.0"
+    assert data["runs"][0]["tool"]["driver"]["name"] == "VulnoraIQ"
     assert data["runs"][0]["results"]
     assert data["runs"][0]["tool"]["driver"]["rules"]
 
@@ -25,6 +26,6 @@ def test_html_dashboard_contains_summary(tmp_path) -> None:
     output = HtmlDashboardGenerator().generate_from_report(report, tmp_path / "dashboard.html")
 
     html = output.read_text(encoding="utf-8")
-    assert "LLM Assessment Dashboard" in html
+    assert "VulnoraIQ Assessment Dashboard" in html
     assert "Policy evaluation" in html
     assert "Raw structured report" in html
