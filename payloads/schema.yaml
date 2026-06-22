@@ -1,0 +1,28 @@
+name: payload_library_schema
+version: 1
+required_fields:
+  library:
+    - name
+    - version
+    - payloads
+  payload:
+    - id
+    - category
+    - input
+    - expected_behavior
+optional_fields:
+  payload:
+    - severity_hint
+    - metadata
+metadata_fields:
+  - applies_to
+  - source
+  - owner
+  - review_status
+  - tags
+rules:
+  - Payloads must be safe to run in a local demo target.
+  - Payloads must not include real credentials, personal data, client data, or tenant identifiers.
+  - Payloads must describe expected safe behaviour in plain language.
+  - Payload IDs must be stable because reports reference them as evidence.
+  - Payload metadata should include applies_to with one or more module names, or all.
