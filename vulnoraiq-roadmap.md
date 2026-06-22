@@ -1,4 +1,4 @@
-# LLM VAPT Framework Roadmap
+# VulnoraIQ Roadmap
 
 ## Objective
 Evolve from a baseline LLM scanner to a full enterprise AI security platform.
