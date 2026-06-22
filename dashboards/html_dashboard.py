@@ -53,9 +53,9 @@ class HtmlDashboardGenerator:
 <head>
   <meta charset=\"utf-8\">
   <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
-  <title>LLM Assessment Dashboard - {target}</title>
+  <title>VulnoraIQ Assessment Dashboard - {target}</title>
   <style>
-    body {{ font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif; margin: 2rem; line-height: 1.5; }}
+    body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 2rem; line-height: 1.5; }}
     .cards {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }}
     .card {{ border: 1px solid #d0d7de; border-radius: 8px; padding: 1rem; background: #f6f8fa; }}
     .value {{ font-size: 1.6rem; font-weight: 700; }}
@@ -66,7 +66,7 @@ class HtmlDashboardGenerator:
   </style>
 </head>
 <body>
-  <h1>LLM Assessment Dashboard</h1>
+  <h1>VulnoraIQ Assessment Dashboard</h1>
   <div class=\"cards\">
     <div class=\"card\"><div>Target</div><div class=\"value\">{target}</div></div>
     <div class=\"card\"><div>Profile</div><div class=\"value\">{profile}</div></div>
