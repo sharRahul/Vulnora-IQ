@@ -6,7 +6,7 @@ This document separates current working capability from roadmap items so users c
 
 | Area | Status | Notes |
 | --- | --- | --- |
-| Python package scaffold | Working | Version `1.1.0` installs as a Python package with CLI entry points for assessment, Web UI, dashboard generation, report diffing, benchmark runs, trend outputs, ATLAS refresh, and release package building. |
+| Python package scaffold | Working | VulnoraIQ version `1.2.0` installs as a Python package with CLI entry points for assessment, Web UI, dashboard generation, report diffing, benchmark runs, trend outputs, ATLAS refresh, and release package building. |
 | Modern Web UI | Working starter | `webui/server.py` and `webui/static/` provide a browser console for launching scans, realtime progress via Server-Sent Events, completed dashboard views, scan history, and artifact downloads. |
 | Demo target | Working | The default `demo` target uses an in-memory echo client and requires no external API keys. |
 | Local demo targets | Working starter | `examples/local_demo_targets/` contains a safe HTTP JSON target and a control-gap fixture for local demonstration and tests. |
@@ -41,38 +41,38 @@ This document separates current working capability from roadmap items so users c
 Run the Web UI:
 
 ```bash
-llm-vapt-web --host 127.0.0.1 --port 8787
+vulnoraiq-web --host 127.0.0.1 --port 8787
 ```
 
 Use the CLI demo mode:
 
 ```bash
-python scripts/run_scan.py --target demo --profile baseline
+vulnoraiq --target demo --profile baseline
 ```
 
 Compare two structured JSON reports:
 
 ```bash
-python -m reports.report_diff --baseline reports/output/baseline.json --current reports/output/current.json
+vulnoraiq-diff --baseline reports/output/baseline.json --current reports/output/current.json
 ```
 
 Build policy and diff trends:
 
 ```bash
-python -m reports.policy_trends --input-dir reports/output
-python -m dashboards.diff_trend_dashboard --input-dir reports/output
+vulnoraiq-policy-trend --input-dir reports/output
+vulnoraiq-diff-trend --input-dir reports/output
 ```
 
 Run benchmarks:
 
 ```bash
-python -m benchmarks.run_benchmarks --manifest benchmarks/benchmark_suite.yaml --fail-on-regression
+vulnoraiq-benchmark --manifest benchmarks/benchmark_suite.yaml --fail-on-regression
 ```
 
 Build a safe local release package after generating demo outputs:
 
 ```bash
-python scripts/build_release_package.py --manifest config/release_package.yaml
+vulnoraiq-package --manifest config/release_package.yaml
 ```
 
 For any configured target outside demo mode:
