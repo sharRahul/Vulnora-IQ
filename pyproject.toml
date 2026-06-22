@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "llm-vapt-framework"
-version = "0.10.0"
+version = "0.11.0"
 description = "AI-native VAPT framework for LLM applications, RAG systems, agents, and orchestration layers."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -23,6 +23,7 @@ dev = ["pytest>=8.0.0"]
 llm-vapt = "scripts.run_scan:main"
 llm-vapt-dashboard = "dashboards.generate_dashboard:main"
 llm-vapt-diff = "reports.report_diff:main"
+llm-vapt-package = "scripts.build_release_package:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
