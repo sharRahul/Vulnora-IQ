@@ -1,0 +1,9 @@
+source:
+  default_url: https://raw.githubusercontent.com/Straitcode/mitre-atlas-data/main/dist/ATLAS.yaml
+  local_fallback: config/mitre_atlas_mapping.yaml
+output:
+  mapping_path: config/mitre_atlas_mapping.yaml
+rules:
+  - Refresh tooling must validate generated mappings before writing over the working catalog.
+  - CI should use local fixture mode unless network refresh is explicitly requested.
+  - Generated mappings should preserve local module_mappings and update only known technique metadata.
