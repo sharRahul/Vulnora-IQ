@@ -1,65 +1,69 @@
 # LLM VAPT Framework
 
-An AI-native Vulnerability Assessment and Penetration Testing framework for **LLM applications, RAG pipelines, AI agents, and orchestration layers**.
+An AI security assessment framework for **LLM applications, RAG pipelines, AI agents, and orchestration layers**.
 
-The project extends VAPT beyond prompt-level testing into full AI system assessment: model endpoints, retrieval layers, tools, memory, orchestrators, governance controls, and reporting.
+> **Current maturity:** this repository is a working starter framework, not a complete enterprise platform yet. Start with [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md) to see what is implemented, partial, or planned.
 
-> **Responsible use only:** run this framework only against systems you own or are explicitly authorised to test. Payloads and modules are safe starter assessment scaffolding and should be customised only inside an approved red-team engagement process.
+> **Responsible use only:** run this framework only against systems you own or are explicitly authorised to assess. The default demo target is safe and local. Configured non-demo targets require an explicit authorisation flag.
 
 ## Why this exists
 
-Existing AI security tools are strong in specific areas: probe libraries, prompt regression, attack-chain automation, and model robustness testing. This framework combines those strengths and adds an enterprise VAPT structure for:
+AI application security needs more than prompt-level checks. This repository provides a practical structure for assessing model endpoints, retrieval layers, tools, memory, orchestration, governance controls, and reporting.
 
-- OWASP Top 10 for LLM Applications 2025 mapping
-- Agent and tool abuse testing
-- RAG poisoning and retrieval manipulation simulation
-- Orchestrator attack-chain modelling
-- Policy-as-code guardrails
-- Audit-ready evidence and reporting
-- MITRE ATLAS mapping for threat-informed AI security testing
+The current implementation provides:
+
+- OWASP LLM 2025 starter mapping
+- Safe demo target with no external API keys
+- Baseline, RAG, agent, and full profile definitions
+- Scanner, starter check runner, scoring, and result model
+- Markdown reporting with evidence details
+- Explicit non-demo authorisation gate
+- Minimal HTTP JSON target adapter for approved targets
+
+The roadmap includes deeper RAG fixtures, agent harnesses, policy enforcement, MITRE ATLAS mapping, dashboards, and CI-friendly output formats.
 
 ## OWASP LLM 2025 coverage
 
-| OWASP ID | Risk | Module path |
+| OWASP ID | Risk | Module path / status |
 |---|---|---|
-| LLM01:2025 | Prompt Injection | `modules/owasp_llm01_prompt_injection/` |
-| LLM02:2025 | Sensitive Information Disclosure | `modules/owasp_llm02_sensitive_information_disclosure/` |
-| LLM03:2025 | Supply Chain | `modules/owasp_llm03_supply_chain/` |
-| LLM04:2025 | Data and Model Poisoning | `modules/owasp_llm04_data_and_model_poisoning/` |
-| LLM05:2025 | Improper Output Handling | `modules/owasp_llm05_improper_output_handling/` |
-| LLM06:2025 | Excessive Agency | `modules/owasp_llm06_excessive_agency/` |
-| LLM07:2025 | System Prompt Leakage | `modules/owasp_llm07_system_prompt_leakage/` |
-| LLM08:2025 | Vector and Embedding Weaknesses | `modules/owasp_llm08_vector_embedding_weaknesses/` |
-| LLM09:2025 | Misinformation | `modules/owasp_llm09_misinformation/` |
-| LLM10:2025 | Unbounded Consumption | `modules/owasp_llm10_unbounded_consumption/` |
+| LLM01:2025 | Prompt Injection | Starter check |
+| LLM02:2025 | Sensitive Information Disclosure | Starter check |
+| LLM03:2025 | Supply Chain | Starter check |
+| LLM04:2025 | Data and Model Poisoning | Starter check |
+| LLM05:2025 | Improper Output Handling | Starter check |
+| LLM06:2025 | Excessive Agency | Starter check |
+| LLM07:2025 | System Prompt Leakage | Starter check |
+| LLM08:2025 | Vector and Embedding Weaknesses | Starter check |
+| LLM09:2025 | Misinformation | Starter check |
+| LLM10:2025 | Unbounded Consumption | Starter check |
 
 ## Architecture
 
 ```text
-Target AI Systems: LLM APIs | RAG pipelines | Agents | Orchestrators
+Target AI Systems: demo echo target | configured HTTP JSON target
         ↓
-Integration Layer: OpenAI | Azure OpenAI | LangChain | Semantic Kernel | Custom Agent
+Integration Layer: DemoEchoClient | HttpJsonTargetClient
         ↓
-Core Engine: Scanner | Test Runner | Orchestrator | Results Engine | Risk Scoring
+Core Engine: Scanner | Test Runner | Results Engine | Risk Scoring
         ↓
-Testing Modules: OWASP LLM 2025 | RAG Testing | Agent Testing | Payload Libraries
+Testing Profiles: baseline | rag | agent | full
         ↓
-Governance + Reporting: Policy-as-Code | Evidence | Executive | Technical | Risk Matrix
+Reporting: Markdown report with finding evidence and recommendations
 ```
 
 ## Repository structure
 
 ```text
 llm-vapt-framework/
-├── config/                 # Targets, attack profiles, policies, mappings
-├── core/                   # Scanner, orchestrator, runner, scoring, results model
-├── integrations/           # Provider and agent adapters
-├── modules/                # OWASP LLM Top 10 2025 modules
-├── rag_testing/            # RAG poisoning, retrieval, embedding, corpus checks
-├── agent_testing/          # Agent chain, tool execution, memory, multi-agent tests
-├── payloads/               # Safe starter payload libraries
+├── config/                 # Targets, profiles, policies, mappings
+├── core/                   # Scanner, runner, scoring, results model
+├── integrations/           # Demo and HTTP JSON adapters
+├── modules/                # Reserved for future pluggable module implementations
+├── rag_testing/            # Reserved for RAG fixtures and harnesses
+├── agent_testing/          # Reserved for agent fixtures and harnesses
+├── payloads/               # Reserved for safe starter payload libraries
 ├── reports/                # Markdown report generation and templates
-├── dashboards/             # Visualisation helpers
+├── dashboards/             # Reserved for visualisation helpers
 ├── tests/                  # Unit tests
 ├── scripts/                # CLI and CI entry points
 └── docs/                   # Architecture, roadmap, mapping, governance docs
@@ -82,7 +86,7 @@ The demo target uses an in-memory echo client, so the framework can be explored 
 pytest -q
 ```
 
-## Example scan command
+## Example demo command
 
 ```bash
 python scripts/run_scan.py \
@@ -90,6 +94,20 @@ python scripts/run_scan.py \
   --profile baseline \
   --output reports/output/demo-report.md
 ```
+
+## Configured target command
+
+Only use this for systems you own or are explicitly authorised to assess:
+
+```bash
+python scripts/run_scan.py \
+  --target custom_http_agent \
+  --profile baseline \
+  --authorised \
+  --output reports/output/authorised-target-report.md
+```
+
+Before running against a configured target, replace the placeholder endpoint in `config/targets.yaml` and set any required token environment variable.
 
 ## Configuration
 
@@ -102,10 +120,10 @@ python scripts/run_scan.py \
 ## Design principles
 
 1. Audit-friendly by default.
-2. Payload-driven testing.
-3. System-level coverage across LLM, RAG, tool, memory, and orchestration layers.
-4. Safe extensibility for authorised testing.
-5. CI/CD ready for prompt, corpus, agent, and release-gate checks.
+2. Safe local demo first.
+3. Explicit authorisation for configured targets.
+4. System-level coverage roadmap across LLM, RAG, tool, memory, and orchestration layers.
+5. CI/CD-ready direction for prompt, corpus, agent, and release-gate checks.
 
 ## License
 
