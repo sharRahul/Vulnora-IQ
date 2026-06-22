@@ -6,6 +6,7 @@ include_paths:
   - docs/IMPLEMENTATION_STATUS.md
   - docs/module-authoring.md
   - docs/web-ui.md
+  - docs/MITRE_ATLAS_AI_MATRIX.md
   - docs/owasp/
   - config/default.yaml
   - config/targets.yaml
@@ -37,5 +38,5 @@ include_paths:
   - reports/output/
 rules:
   - Include only local demo outputs and non-sensitive configuration files.
-  - Do not include credentials, tokens, tenant identifiers, or real client evidence.
+  - Exclude private operational material and real client evidence.
   - Review generated reports before publishing a release package.
