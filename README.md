@@ -2,9 +2,9 @@
 
 **VulnoraIQ** is an early-stage AI security assessment and VAPT platform for **LLM applications, RAG pipelines, AI agents, and orchestration layers**.
 
-> **Current maturity:** version `0.0.1.4` is an early development build. It is useful for local demos, UI workflow validation, report-pipeline development, and safe framework testing. It is **not ready for real-world VAPT testing or production assessment use** yet.
+> **Current maturity:** version `0.0.1.5` is an early development build. It is useful for local demos, UI workflow validation, report-pipeline development, and safe framework testing. It is **not ready for real-world VAPT testing or production assessment use** yet.
 
-> **Important limitation:** OWASP LLM 2025 coverage now has safe starter oracle coverage, implementation specs, evaluator primitives, and local good/bad fixtures for all 10 categories. MITRE ATLAS AI technique coverage has a documentation matrix, but not every listed technique is implemented as an active check yet. Treat all scan output as framework-development evidence, not validated security assurance.
+> **Important limitation:** OWASP LLM 2025 coverage now has safe starter oracle coverage, implementation specs, evaluator primitives, and local good/bad fixtures for all 10 categories. MITRE ATLAS AI technique coverage has a source-driven documentation matrix, but not every listed technique is implemented as an active check yet. Unmapped tactics and techniques must still be listed as `Unmapped / map later`. Treat all scan output as framework-development evidence, not validated security assurance.
 
 > **Responsible use only:** run this platform only against systems you own or are explicitly authorised to assess. The default demo target is safe and local. Configured non-demo targets require an explicit authorisation flag.
 
@@ -17,6 +17,7 @@ The current implementation provides:
 - Modern hosted Web UI with realtime progress, role-aware auth hooks, persistent JSON job storage, executive dashboards, scan history, and artifact download
 - OWASP LLM 2025 implementation specs in `docs/owasp/` for all 10 categories
 - MITRE ATLAS Matrix for AI planning register in `docs/MITRE_ATLAS_AI_MATRIX.md`
+- Source-driven ATLAS matrix generator with explicit `Unmapped / map later` backlog preservation
 - OWASP LLM 2025 safe starter oracle coverage for all 10 categories
 - Deterministic local evaluator primitives and local good/bad OWASP fixture targets
 - Structured evidence records and oracle results for module interactions
@@ -56,7 +57,15 @@ The next phase should go through `docs/owasp/` and `docs/MITRE_ATLAS_AI_MATRIX.m
 
 ## MITRE ATLAS coverage planning
 
-Use [`docs/MITRE_ATLAS_AI_MATRIX.md`](docs/MITRE_ATLAS_AI_MATRIX.md) as the planning register for adding ATLAS techniques into VulnoraIQ. It lists the currently configured AML techniques, current module mappings, implementation status, and next implementation work.
+Use [`docs/MITRE_ATLAS_AI_MATRIX.md`](docs/MITRE_ATLAS_AI_MATRIX.md) as the planning register for adding ATLAS tactics, techniques, and sub-techniques into VulnoraIQ. The source-driven generator adds OWASP and VulnoraIQ candidate mapping columns. If a tactic or technique cannot be confidently mapped, it is still listed as `Unmapped / map later` so it can be reviewed later.
+
+Regenerate the matrix from the official MITRE ATLAS data source:
+
+```bash
+vulnoraiq-generate-atlas-matrix \
+  --source https://raw.githubusercontent.com/mitre-atlas/atlas-data/main/dist/v6/ATLAS-2026.05.yaml \
+  --output docs/MITRE_ATLAS_AI_MATRIX.md
+```
 
 ## Architecture
 
@@ -188,6 +197,7 @@ The package path defaults to `dist/vulnoraiq-example-package.zip`.
 ## Configuration highlights
 
 - `docs/MITRE_ATLAS_AI_MATRIX.md`: MITRE ATLAS AI planning matrix and technique implementation register
+- `scripts/generate_mitre_atlas_matrix.py`: source-driven matrix generator with unmapped backlog preservation
 - `docs/owasp/`: OWASP LLM 2025 implementation specs
 - `config/owasp_oracles.yaml`: safe OWASP starter oracle definitions
 - `config/mitre_atlas_mapping.yaml`: local MITRE ATLAS technique catalog and module mapping
