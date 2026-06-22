@@ -21,7 +21,7 @@ dev = ["pytest>=8.0.0"]
 
 [project.scripts]
 vulnoraiq = "scripts.run_scan:main"
-vulnoraiq-web = "webui.server:main"
+vulnoraiq-web = "webui.hosted_server:main"
 vulnoraiq-dashboard = "dashboards.generate_dashboard:main"
 vulnoraiq-diff = "reports.report_diff:main"
 vulnoraiq-package = "scripts.build_release_package:main"
