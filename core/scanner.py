@@ -6,17 +6,19 @@ from typing import Any
 
 import yaml
 
+from core.policy_engine import PolicyEngine
 from core.test_runner import TestRunner
 from core.types import ScanContext, ScanResult, TargetClient
 from integrations.base import DemoEchoClient, HttpJsonTargetClient
 
 
 class Scanner:
-    """High-level scan entry point."""
+    """High-level assessment entry point."""
 
     def __init__(self, config_dir: str | Path = "config") -> None:
         self.config_dir = Path(config_dir)
         self.runner = TestRunner()
+        self.policy_engine = PolicyEngine()
 
     def scan(
         self,
@@ -28,7 +30,7 @@ class Scanner:
         config = self._load_config()
         profile = config["attack_profiles"].get("profiles", {}).get(profile_name)
         if not profile:
-            raise ValueError(f"Unknown attack profile: {profile_name}")
+            raise ValueError(f"Unknown assessment profile: {profile_name}")
 
         self._require_authorisation(target_name=target_name, target=target, authorised=authorised, config=config)
         target_client = target or self._default_target(target_name, config=config)
@@ -39,13 +41,20 @@ class Scanner:
             config=config,
         )
         findings = self.runner.run_modules(profile["modules"], context)
-        return ScanResult(
+        result = ScanResult(
             target_name=target_name,
             profile_name=profile_name,
             findings=findings,
             started_at=context.started_at,
             completed_at=datetime.now(timezone.utc),
+            metadata={
+                "framework": config.get("default", {}).get("framework", {}),
+                "profile_description": profile.get("description", ""),
+                "authorised": authorised or target_name == "demo",
+            },
         )
+        result.policy_results = self.policy_engine.evaluate(result, config)
+        return result
 
     def _require_authorisation(
         self,
@@ -59,7 +68,7 @@ class Scanner:
         is_demo = target_name == "demo" and target is None
         if policy_enabled and not is_demo and not authorised:
             raise PermissionError(
-                "Non-demo scans require explicit authorisation. Re-run with the CLI authorisation flag "
+                "Configured targets require explicit authorisation. Re-run with the CLI authorisation flag "
                 "only for systems you own or are permitted to assess."
             )
 
@@ -75,7 +84,7 @@ class Scanner:
             endpoint = target_config.get("endpoint")
             if not endpoint or str(endpoint).endswith("example.invalid/agent"):
                 raise ValueError(
-                    f"Target '{target_name}' is a placeholder. Configure a real authorised endpoint before scanning."
+                    f"Target '{target_name}' is a placeholder. Configure a real authorised endpoint before assessment."
                 )
             timeout = int(config.get("default", {}).get("execution", {}).get("request_timeout_seconds", 30))
             return HttpJsonTargetClient(
