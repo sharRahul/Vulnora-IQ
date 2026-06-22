@@ -9,17 +9,19 @@ This document separates current working capability from roadmap items so users c
 | Python package scaffold | Working | The project installs as a Python package with CLI entry points for assessment and dashboard generation. |
 | Demo target | Working | The default `demo` target uses an in-memory echo client and requires no external API keys. |
 | Profiles | Working | `baseline`, `rag`, `agent`, and `full` profiles are defined in `config/attack_profiles.yaml`. |
-| Scanner | Working | The scanner loads config, selects a profile, runs configured starter checks, scores findings, attaches metadata, and returns a scan result. |
+| Scanner | Working | The scanner loads config, selects a profile, runs configured modules, scores findings, attaches metadata, evaluates policy, and returns a scan result. |
+| Module plugin interface | Working starter | `modules/base.py`, `modules/starter.py`, and `modules/registry.py` provide a formal module protocol, starter module implementation, and registry lookup. |
+| Payload libraries | Working starter | `core/payload_loader.py` loads safe YAML payload libraries from `payloads/` and maps them to module names. |
 | Non-demo authorisation gate | Working | Configured targets outside demo mode require the explicit CLI authorisation flag. |
 | Policy-as-code | Working starter | Policy YAML is evaluated by `core/policy_engine.py` for sensitive marker checks, agent tool allowlists, RAG corpus integrity metadata, and approval gates. |
-| Report generation | Working | Markdown and JSON reports include executive summary, severity counts, findings, evidence JSON, and policy evaluation. |
-| Dashboard generation | Working | `dashboards/generate_dashboard.py` generates a Markdown dashboard from a structured JSON report. |
+| Report generation | Working | Markdown, JSON, and SARIF-style reports include findings, evidence, and policy evaluation. |
+| Dashboard generation | Working | Markdown and HTML dashboards are generated from the structured JSON report. |
 | HTTP JSON target adapter | Starter | A minimal HTTP JSON adapter exists for explicitly authorised local or owned targets. |
-| OWASP LLM 2025 mapping | Partial | Checks are mapped to OWASP LLM 2025 IDs in config and module definitions. |
+| OWASP LLM 2025 mapping | Partial | Checks are mapped to OWASP LLM 2025 IDs in config and module metadata. |
 | MITRE ATLAS mapping | Pending | A validated ATLAS mapping table still needs to be added. Existing output marks this as pending rather than complete. |
-| RAG testing | Starter | RAG-related profile entries and policy metadata exist, but corpus fixtures and retrieval harnesses are not complete. |
-| Agent testing | Starter | Agent-related profile entries and allowlist policy checks exist, but full tool, memory, and multi-agent harnesses are not complete. |
-| CI | Working starter | GitHub Actions installs the package, runs tests across supported Python versions, and runs a demo smoke assessment. |
+| RAG testing | Starter | RAG-related profile entries, payload libraries, and policy metadata exist, but retrieval harnesses are not complete. |
+| Agent testing | Starter | Agent-related profile entries, payload libraries, and allowlist policy checks exist, but full tool, memory, and multi-agent harnesses are not complete. |
+| CI | Working starter | GitHub Actions installs the package, runs tests across supported Python versions, and runs a demo smoke assessment producing Markdown, JSON, SARIF, and dashboard artifacts. |
 
 ## Current safe usage
 
@@ -33,7 +35,9 @@ This produces:
 
 - `reports/output/scan-report.md`
 - `reports/output/scan-report.json`
+- `reports/output/scan-report.sarif`
 - `reports/output/dashboard.md`
+- `reports/output/dashboard.html`
 
 For any configured target outside demo mode:
 
@@ -46,15 +50,15 @@ For any configured target outside demo mode:
 ## Gap backlog
 
 1. Add validated MITRE ATLAS mapping data.
-2. Add a formal module plugin interface instead of hard-coded starter definitions.
-3. Add payload library schemas and safe local payload fixtures.
-4. Add RAG corpus fixtures, retrieval checks, source-trust scoring, and corpus integrity validation.
-5. Add agent tool-permission, memory-integrity, and orchestration harnesses.
-6. Expand policy-as-code to support severity thresholds, exception files, and signed approvals.
-7. Add SARIF-style output for CI use.
-8. Add HTML dashboard output.
-9. Add contributor docs for writing new modules and target adapters.
-10. Add release versioning and packaged example outputs.
+2. Add deeper RAG retrieval harnesses and corpus integrity checks.
+3. Add agent tool-permission, memory-integrity, and orchestration harnesses.
+4. Expand policy-as-code to support severity thresholds, exception files, and signed approvals.
+5. Add release versioning and packaged example outputs.
+6. Add richer target adapters for common enterprise patterns.
+7. Add report diffing between two assessment runs.
+8. Add an exceptions register with owner, expiry, and approval metadata.
+9. Add example vulnerable local demo applications.
+10. Add benchmark datasets for repeatable regression testing.
 
 ## Documentation rule
 
