@@ -33,7 +33,9 @@ jobs:
           python scripts/run_scan.py --target demo --profile baseline \
             --output reports/output/demo-report.md \
             --json-output reports/output/demo-report.json \
-            --dashboard-output reports/output/demo-dashboard.md
+            --sarif-output reports/output/demo-report.sarif \
+            --dashboard-output reports/output/demo-dashboard.md \
+            --html-dashboard-output reports/output/demo-dashboard.html
 
       - name: Upload demo reports
         uses: actions/upload-artifact@v4
