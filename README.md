@@ -4,7 +4,7 @@
 
 It is designed to run on a **laptop, workstation, lab machine, or internal server** so security teams can test AI agents and LLM applications they own or are explicitly authorised to assess.
 
-VulnoraIQ helps teams collect evidence, score findings, generate reports, and track OWASP LLM / OWASP GenAI / Agentic / MITRE ATLAS coverage as the framework matures.
+VulnoraIQ helps teams collect evidence, score findings, generate reports, and track OWASP LLM / OWASP GenAI / OWASP AI Testing Guide / Agentic / MITRE ATLAS coverage as the framework matures.
 
 ---
 
@@ -19,6 +19,7 @@ VulnoraIQ helps teams collect evidence, score findings, generate reports, and tr
 | Local laptop / workstation demo | Complete |
 | Self-hosted internal server deployment | Complete with production configuration validation |
 | OWASP LLM coverage | Complete for current safe local/internal assessment scope |
+| OWASP AI Testing Guide integration | Complete for current safe methodology-harness scope with local AI agent target templates |
 | GenAI Security readiness | Complete for `DSGAI01–DSGAI21` controlled internal scenario-harness scope |
 | Agentic Applications readiness | Complete for controlled internal phase gates |
 | Certified VAPT-grade security assurance | Not claimed |
@@ -34,6 +35,7 @@ It must **not** be described as certified VAPT-grade assurance or a real-world V
 For details, see:
 
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — deployment and production configuration
+- [`docs/AI_TESTING_GUIDE_INTEGRATION.md`](docs/AI_TESTING_GUIDE_INTEGRATION.md) — OWASP AI Testing Guide integration and local AI agent targets
 - [`docs/PRODUCTION_READINESS_SCORECARD.md`](docs/PRODUCTION_READINESS_SCORECARD.md) — scored readiness
 - [`docs/PRODUCTION_HARDENING_BACKLOG.md`](docs/PRODUCTION_HARDENING_BACKLOG.md) — remaining gaps and accepted risks
 - [`docs/genai/PRODUCTION_READINESS_PLAN.md`](docs/genai/PRODUCTION_READINESS_PLAN.md) — GenAI Security readiness plan
@@ -64,8 +66,9 @@ The screenshot below is the VulnoraIQ Web UI home screen, captured from the runn
 ### Assessment framework
 
 - Safe local demo target with no external API keys.
-- Baseline, RAG, agent, and full assessment profiles.
+- Baseline, RAG, agent, full, and OWASP AI Testing Guide foundation assessment profiles.
 - Configured target adapters for HTTP JSON, chat-completions-compatible APIs, Ollama-style generate APIs, and webhook JSON shapes.
+- Local OWASP lab AI agent target templates for running authorised Web UI scans against actual local agents instead of the demo echo target.
 - Explicit authorisation gate for non-demo targets.
 - Scanner, scoring, result model, policy evaluation, scoped policy exceptions, and approval evidence validation.
 - Markdown, JSON, SARIF-style, Markdown dashboard, HTML dashboard, diff, trend, benchmark, and branded HTML export outputs.
@@ -74,6 +77,7 @@ The screenshot below is the VulnoraIQ Web UI home screen, captured from the runn
 
 - Complete OWASP LLM Top 10 2025 implementation specs for all 10 categories in [`docs/owasp/`](docs/owasp/).
 - Complete safe oracle coverage for all 10 OWASP LLM 2025 categories in the current local/internal assessment scope.
+- OWASP AI Testing Guide foundation suite in [`config/attack_profiles.yaml`](config/attack_profiles.yaml), safe payloads in [`payloads/ai_testing_guide.yaml`](payloads/ai_testing_guide.yaml), and usage guidance in [`docs/AI_TESTING_GUIDE_INTEGRATION.md`](docs/AI_TESTING_GUIDE_INTEGRATION.md).
 - Complete GenAI Security scenario-harness coverage for `DSGAI01–DSGAI21` in [`benchmarks/fixtures/genai/scenarios.yaml`](benchmarks/fixtures/genai/scenarios.yaml).
 - GenAI deterministic evaluator primitives in [`core/genai_evaluators.py`](core/genai_evaluators.py).
 - GenAI readiness gate in [`scripts/validate_genai_readiness.py`](scripts/validate_genai_readiness.py).
@@ -171,7 +175,7 @@ Once the console is open in your browser:
    means you can run scans. Use **Refresh checks** to re-run them at any time.
 2. **Choose what to run.** In *Choose tests and run scan*, pick a **Target** (start with the
    safe local `demo` target) and a **Test option** — either a full assessment suite or a
-   single focused OWASP LLM / RAG / agentic test from the categorised catalogue. The
+   single focused OWASP LLM / OWASP AI Testing Guide / RAG / agentic test from the categorised catalogue. The
    *Run readiness* panel summarises exactly what will run before you start.
 3. **Authorise configured targets.** The `demo` target needs no authorisation. For any
    configured non-demo target you must tick the authorisation checkbox confirming you own
@@ -185,6 +189,8 @@ Once the console is open in your browser:
    dashboard artifacts from the *Outputs for presentation* section.
 7. **Stop the server** when you are done with the red **Stop local server** button in the
    startup panel — the local server shuts down cleanly and the launcher window exits.
+
+To test an actual local AI agent, run the agent on one of the documented loopback contracts and select one of the `owasp_lab_*` targets. See [`docs/AI_TESTING_GUIDE_INTEGRATION.md`](docs/AI_TESTING_GUIDE_INTEGRATION.md).
 
 ---
 
@@ -247,8 +253,8 @@ Only use configured targets against systems you own or are explicitly authorised
 
 ```bash
 vulnoraiq \
-  --target custom_http_agent \
-  --profile baseline \
+  --target owasp_lab_agent_http \
+  --profile ai_testing_guide_foundation \
   --authorised
 ```
 
@@ -294,6 +300,7 @@ python scripts/container_smoke_test.py
 | Readiness scorecard | [`docs/PRODUCTION_READINESS_SCORECARD.md`](docs/PRODUCTION_READINESS_SCORECARD.md) |
 | Hardening backlog | [`docs/PRODUCTION_HARDENING_BACKLOG.md`](docs/PRODUCTION_HARDENING_BACKLOG.md) |
 | Assessment assurance limits | [`docs/ASSESSMENT_ASSURANCE.md`](docs/ASSESSMENT_ASSURANCE.md) |
+| OWASP AI Testing Guide integration and local agent testing | [`docs/AI_TESTING_GUIDE_INTEGRATION.md`](docs/AI_TESTING_GUIDE_INTEGRATION.md) |
 | GenAI Security readiness | [`docs/genai/PRODUCTION_READINESS_PLAN.md`](docs/genai/PRODUCTION_READINESS_PLAN.md) |
 | Agentic Applications readiness | [`docs/AGENTIC_APPLICATIONS_PRODUCTION_READINESS_PLAN.md`](docs/AGENTIC_APPLICATIONS_PRODUCTION_READINESS_PLAN.md) |
 | Implementation status | [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md) |
