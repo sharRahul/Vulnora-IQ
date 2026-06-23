@@ -1,7 +1,7 @@
 (() => {
   const TOKEN_STORAGE_KEY = 'vulnoraiq.token';
   const qs = (selector) => document.querySelector(selector);
-  const state = { templates: {}, runtimes: [], dockerAvailable: false };
+  const state = { templates: {}, runtimes: [], dockerAvailable: false, dockerPath: '', dockerStatusMessage: '' };
 
   function escapeHtml(value) {
     return String(value ?? '')
@@ -119,6 +119,8 @@
       state.templates = data.templates || {};
       state.runtimes = data.runtimes || [];
       state.dockerAvailable = Boolean(data.docker_available);
+      state.dockerPath = data.docker_path || '';
+      state.dockerStatusMessage = data.docker_status_message || '';
       renderTemplates();
       renderRuntimes();
     } catch (error) {
@@ -148,9 +150,14 @@
 
   function renderRuntimes() {
     const list = qs('#agent-runtime-list');
+    const startButton = qs('#agent-runtime-form button[type="submit"]');
     if (!list) return;
+    if (startButton) startButton.disabled = !state.dockerAvailable;
     const running = state.runtimes.filter((runtime) => runtime.status === 'running');
-    const dockerMessage = state.dockerAvailable ? '' : '<div class="empty-state compact-empty">Docker is not available on this machine or is not on PATH.</div>';
+    const statusText = state.dockerStatusMessage || (state.dockerAvailable ? 'Docker CLI detected.' : 'Docker CLI was not found.');
+    const dockerMessage = state.dockerAvailable
+      ? `<div class="empty-state compact-empty">Docker detected: ${escapeHtml(statusText)}${state.dockerPath ? `<br>${escapeHtml(state.dockerPath)}` : ''}</div>`
+      : `<div class="empty-state compact-empty">${escapeHtml(statusText)}</div>`;
     const runtimeCards = running.map((runtime) => `
       <article class="agent-runtime-card">
         <div>
@@ -172,6 +179,10 @@
     event.preventDefault();
     const message = qs('#agent-runtime-message');
     const button = qs('#agent-runtime-form button[type="submit"]');
+    if (!state.dockerAvailable) {
+      message.textContent = state.dockerStatusMessage || 'Docker is not available to the WebUI runtime.';
+      return;
+    }
     const provider = qs('#agent-provider').value;
     const payload = {
       template_id: qs('#agent-template').value,
@@ -207,7 +218,7 @@
     } catch (error) {
       message.textContent = error.message || 'Unable to start Docker AI agent.';
     } finally {
-      button.disabled = false;
+      button.disabled = !state.dockerAvailable;
     }
   }
 
