@@ -67,9 +67,15 @@ class ReleasePackage:
     file_count: int
 
 
+def _is_generated_output(path: Path) -> bool:
+    return len(path.parts) >= 2 and path.parts[0] == "reports" and path.parts[1] == "output"
+
+
 def _is_excluded(path: Path) -> bool:
     parts = set(path.parts)
     if parts & EXCLUDED_PARTS:
+        return True
+    if _is_generated_output(path):
         return True
     if path.suffix in EXCLUDED_SUFFIXES:
         return True
