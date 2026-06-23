@@ -134,6 +134,28 @@ python scripts/validate_runtime_production_config.py
 vulnoraiq-web --host 127.0.0.1 --port 8787
 ```
 
+### Stopping the Web UI server
+
+If the Web UI is running in the foreground, stop it with `Ctrl+C` in the terminal where `vulnoraiq-web` is running.
+
+If it was started in the background, find the process that is listening on port `8787` and terminate it:
+
+```bash
+lsof -ti :8787 | xargs kill
+```
+
+Use a forced kill only if the process does not stop cleanly:
+
+```bash
+lsof -ti :8787 | xargs kill -9
+```
+
+For Docker Compose deployments, stop the service with:
+
+```bash
+docker compose down
+```
+
 ---
 
 ## Running authorised scans
