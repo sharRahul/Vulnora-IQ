@@ -49,6 +49,19 @@
     if (actionList) actionList.closest('section')?.remove();
   }
 
+  function injectLicenseBadge() {
+    if (qs('#license-badge')) return;
+    const badge = document.createElement('a');
+    badge.id = 'license-badge';
+    badge.className = 'license-badge';
+    badge.href = 'https://www.apache.org/licenses/LICENSE-2.0';
+    badge.target = '_blank';
+    badge.rel = 'noopener noreferrer';
+    badge.setAttribute('aria-label', 'VulnoraIQ license: Apache License 2.0');
+    badge.textContent = 'Apache-2.0';
+    document.body.appendChild(badge);
+  }
+
   function renderList(selector, items, emptyMessage) {
     const container = qs(selector);
     if (!container) return;
@@ -202,6 +215,7 @@
   bootstrapTokenFromUrl();
 
   document.addEventListener('DOMContentLoaded', () => {
+    injectLicenseBadge();
     removeQuickStartColumn();
     const refreshButton = qs('#startup-refresh');
     const stopButton = qs('#stop-server');
