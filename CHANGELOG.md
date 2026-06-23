@@ -9,6 +9,8 @@ All notable changes to this project will be documented in this file.
 - Release-only Windows, Linux, and macOS artifact build workflow triggered by published GitHub Releases or manual dispatch only.
 - Platform release package builder for `vulnoraiq-<version>-windows.zip`, `vulnoraiq-<version>-linux.zip`, and `vulnoraiq-<version>-macos.zip`.
 - Release artifact documentation in `docs/RELEASE_ARTIFACTS.md`.
+- Python package build workflow for wheel/source distributions, with manual TestPyPI/PyPI publishing using trusted publishing.
+- PyPI package publishing documentation in `docs/PYPI_PACKAGE.md`.
 - Cross-platform local Web UI launchers for standalone laptop/workstation use:
   - `launch-vulnoraiq-webui.bat`
   - `launch-vulnoraiq-webui.command`
@@ -21,7 +23,8 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Project license changed from MIT to Apache License 2.0.
-- Package metadata now declares `Apache-2.0`, and package metadata validation checks the project license file and third-party notice alignment.
+- Package metadata now declares `Apache-2.0`, includes license files, PyPI classifiers, project URLs, keywords, and a release extra for package builds.
+- Package metadata validation now checks PyPI publishing metadata and release extras.
 - Documentation now consistently describes VulnoraIQ as a self-hosted laptop/workstation/internal-server application for authorised AI assessment work.
 - Current-scope readiness items are now consistently marked **Complete** for the self-hosted/internal assessment scope.
 - README, docs index, deployment guide, security policy, implementation status, readiness scorecard, backlog, release checklist, assurance, runbook, incident response, GenAI readiness plan, and Agentic Applications readiness plan were aligned to the same product positioning and completion vocabulary.
@@ -33,6 +36,7 @@ All notable changes to this project will be documented in this file.
 - This release does not claim certified VAPT-grade assurance or independently validated real-environment GenAI detection coverage.
 - Launcher mode is intended for local laptop/workstation use only; exposed or shared deployments must use production mode with auth enabled and production configuration validation.
 - Platform release artifacts are zip packages with platform launchers, not signed native installers.
+- PyPI publication is opt-in and should be tested on TestPyPI before publishing to PyPI.
 
 ## [0.2.0] - 2026-06-22
 
