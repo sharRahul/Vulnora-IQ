@@ -17,6 +17,7 @@ This folder contains the operational, security, production-readiness, assurance,
 | Day-2 operations, local/server startup, shutdown, and troubleshooting | [`RUNBOOK.md`](RUNBOOK.md) |
 | Release gates and RC/final tagging | [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) |
 | Release-only Windows/Linux/macOS artifact builds | [`RELEASE_ARTIFACTS.md`](RELEASE_ARTIFACTS.md) |
+| Python wheel/source package build and PyPI publishing | [`PYPI_PACKAGE.md`](PYPI_PACKAGE.md) |
 | Incident handling | [`INCIDENT_RESPONSE.md`](INCIDENT_RESPONSE.md) |
 | Upgrade from `0.0.1.x` to `0.2.0` | [`MIGRATION.md`](MIGRATION.md) |
 | Web UI categorized test catalog | [`WEB_UI_TEST_CATALOG.md`](WEB_UI_TEST_CATALOG.md) |
@@ -45,6 +46,7 @@ It must **not** be described as:
 | --- | --- |
 | Standalone local launcher | Complete: cross-platform launcher files, startup/dependency checks, local browser open, startup panel, and loopback-only stop control |
 | Release artifact workflow | Complete: Windows, Linux, and macOS zip packages are built only on published GitHub Releases or manual release-build dispatch |
+| Python package workflow | Complete: wheel/source distributions are built on published GitHub Releases or manual dispatch, with TestPyPI/PyPI publish controlled by manual workflow input |
 | Auth | Complete: fail-closed token auth for hosted/production mode; trusted reverse-proxy identity mode available |
 | Production startup validation | Complete: runtime checks via `webui/production_checks.py` and `scripts/validate_runtime_production_config.py` |
 | Web hardening | Complete: CSRF, request-size limits, rate limiting, security headers, structured errors |
