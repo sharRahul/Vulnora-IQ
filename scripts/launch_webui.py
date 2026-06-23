@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import json
 import logging
 import os
 import socket
@@ -20,19 +21,112 @@ from urllib.request import urlopen
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT_ROOT = ROOT / "reports" / "output" / "webui"
 DEFAULT_JOB_STORE = DEFAULT_OUTPUT_ROOT / "jobs.db"
+LAUNCHER_SETTINGS_PATH = DEFAULT_OUTPUT_ROOT / "launcher-settings.json"
+LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1"}
 
 
 def _status_item(name: str, status: str, detail: str) -> dict[str, str]:
     return {"name": name, "status": status, "detail": detail}
 
 
+def _option_item(
+    key: str,
+    name: str,
+    value: str,
+    detail: str,
+    *,
+    editable: bool = True,
+    input_type: str = "text",
+    status: str = "pass",
+) -> dict[str, Any]:
+    return {
+        "key": key,
+        "name": name,
+        "value": value,
+        "detail": detail,
+        "editable": editable,
+        "input_type": input_type,
+        "status": status,
+    }
+
+
 def _module_available(name: str) -> bool:
     return importlib.util.find_spec(name) is not None
 
 
+def _load_launcher_settings() -> dict[str, Any]:
+    if not LAUNCHER_SETTINGS_PATH.exists():
+        return {}
+    try:
+        data = json.loads(LAUNCHER_SETTINGS_PATH.read_text(encoding="utf-8") or "{}")
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _save_launcher_settings(settings: dict[str, Any]) -> None:
+    LAUNCHER_SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    LAUNCHER_SETTINGS_PATH.write_text(json.dumps(settings, indent=2, sort_keys=True), encoding="utf-8")
+
+
+def _coerce_safe_path(value: Any, field_name: str) -> Path:
+    text = str(value or "").strip()
+    if not text:
+        raise ValueError(f"{field_name} cannot be empty")
+    if "\x00" in text:
+        raise ValueError(f"{field_name} contains an invalid character")
+    return Path(text).expanduser()
+
+
+def _coerce_port(value: Any) -> int:
+    try:
+        port = int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("Port must be a number") from exc
+    if port < 1024 or port > 65535:
+        raise ValueError("Port must be between 1024 and 65535")
+    return port
+
+
+def _validate_launcher_settings(raw: dict[str, Any], current_host: str, current_port: int) -> dict[str, Any]:
+    host = str(raw.get("host", current_host) or current_host).strip()
+    if host not in LOOPBACK_HOSTS:
+        raise ValueError("Local launcher host must stay on loopback: 127.0.0.1, localhost, or ::1")
+
+    port = _coerce_port(raw.get("port", current_port))
+    output_root = _coerce_safe_path(raw.get("output_root", os.getenv("VULNORAIQ_WEB_OUTPUT_ROOT", str(DEFAULT_OUTPUT_ROOT))), "Output root")
+    job_store_path = _coerce_safe_path(
+        raw.get("job_store_path", os.getenv("VULNORAIQ_JOB_STORE_PATH", str(output_root / "jobs.db"))),
+        "Job store path",
+    )
+    if job_store_path.suffix.lower() != ".db":
+        raise ValueError("Job store path must point to a .db SQLite file")
+
+    return {
+        "host": host,
+        "port": port,
+        "output_root": str(output_root),
+        "job_store_path": str(job_store_path),
+    }
+
+
+def _selected_launcher_settings(default_host: str, default_port: int) -> dict[str, Any]:
+    saved = _load_launcher_settings()
+    try:
+        return _validate_launcher_settings(saved, default_host, default_port)
+    except ValueError:
+        return {
+            "host": default_host,
+            "port": default_port,
+            "output_root": str(Path(os.getenv("VULNORAIQ_WEB_OUTPUT_ROOT", str(DEFAULT_OUTPUT_ROOT))).expanduser()),
+            "job_store_path": str(Path(os.getenv("VULNORAIQ_JOB_STORE_PATH", str(DEFAULT_JOB_STORE))).expanduser()),
+        }
+
+
 def build_startup_status(host: str, port: int, shutdown_allowed: bool) -> dict[str, Any]:
-    output_root = Path(os.getenv("VULNORAIQ_WEB_OUTPUT_ROOT", str(DEFAULT_OUTPUT_ROOT)))
-    job_store_path = Path(os.getenv("VULNORAIQ_JOB_STORE_PATH", str(DEFAULT_JOB_STORE)))
+    selected = _selected_launcher_settings(host, port)
+    output_root = Path(os.getenv("VULNORAIQ_WEB_OUTPUT_ROOT", selected["output_root"]))
+    job_store_path = Path(os.getenv("VULNORAIQ_JOB_STORE_PATH", selected["job_store_path"]))
     python_ok = sys.version_info >= (3, 10)
     dependency_checks = [
         _status_item(
@@ -89,26 +183,17 @@ def build_startup_status(host: str, port: int, shutdown_allowed: bool) -> dict[s
     blocked = any(item["status"] == "fail" for item in dependency_checks)
     warnings = any(item["status"] == "warn" for item in dependency_checks)
     status = "blocked" if blocked else "warning" if warnings else "ready"
-    quick_start_actions = [
-        _status_item("Create output directory", "pass", f"Ensured {output_root} exists before server startup."),
-        _status_item("Configure local job store", "pass", f"Using SQLite path {job_store_path}."),
-        _status_item("Open browser", "pass", f"Browser launched at http://{host}:{port}/."),
-        _status_item("Local session", "pass", "Launcher mode runs on loopback for local self-hosted assessment work."),
-        _status_item(
-            "Stop button",
-            "pass" if shutdown_allowed else "warn",
-            "Enabled only for loopback launcher mode with explicit shutdown permission.",
-        ),
-    ]
-    change_options = [
-        _status_item("Host", "pass", f"Current host: {host}. Change with --host or edit the launcher file."),
-        _status_item("Port", "pass", f"Current port: {port}. Change with --port or edit the launcher file."),
-        _status_item("Output root", "pass", f"Current output root: {output_root}. Change VULNORAIQ_WEB_OUTPUT_ROOT."),
-        _status_item("Job store", "pass", f"Current job store: {job_store_path}. Change VULNORAIQ_JOB_STORE_PATH."),
-        _status_item(
+    configuration_options = [
+        _option_item("host", "Host", str(selected["host"]), "Loopback host selected for the local launcher."),
+        _option_item("port", "Port", str(selected["port"]), "Browser port selected for the local launcher.", input_type="number"),
+        _option_item("output_root", "Output root", str(selected["output_root"]), "Reports and dashboard artifacts are written here."),
+        _option_item("job_store_path", "Job store", str(selected["job_store_path"]), "SQLite database used for scan history."),
+        _option_item(
+            "auth_enabled",
             "Auth",
-            "pass",
-            f"Launcher auth setting: {os.getenv('VULNORAIQ_AUTH_ENABLED', 'false')} for local loopback mode.",
+            os.getenv("VULNORAIQ_AUTH_ENABLED", "false"),
+            "Local launcher auth state. Use hosted production mode for shared or exposed deployments.",
+            editable=False,
         ),
     ]
     return {
@@ -125,19 +210,22 @@ def build_startup_status(host: str, port: int, shutdown_allowed: bool) -> dict[s
         "started_at": datetime.now(timezone.utc).isoformat(),
         "shutdown_allowed": shutdown_allowed,
         "dependency_checks": dependency_checks,
-        "quick_start_actions": quick_start_actions,
-        "change_options": change_options,
+        "configuration_options": configuration_options,
+        "settings_file": str(LAUNCHER_SETTINGS_PATH),
     }
 
 
 def _configure_environment(args: argparse.Namespace) -> None:
     DEFAULT_OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
+    selected = _selected_launcher_settings(args.host, args.port)
+    Path(str(selected["output_root"])).mkdir(parents=True, exist_ok=True)
+    Path(str(selected["job_store_path"])).parent.mkdir(parents=True, exist_ok=True)
     os.environ.setdefault("VULNORAIQ_ENV", "development")
     os.environ.setdefault("VULNORAIQ_AUTH_ENABLED", "false")
     os.environ.setdefault("VULNORAIQ_ENABLE_WEB_SHUTDOWN", "true")
     os.environ.setdefault("VULNORAIQ_JOB_STORE_BACKEND", "sqlite")
-    os.environ.setdefault("VULNORAIQ_JOB_STORE_PATH", str(DEFAULT_JOB_STORE))
-    os.environ.setdefault("VULNORAIQ_WEB_OUTPUT_ROOT", str(DEFAULT_OUTPUT_ROOT))
+    os.environ.setdefault("VULNORAIQ_JOB_STORE_PATH", str(selected["job_store_path"]))
+    os.environ.setdefault("VULNORAIQ_WEB_OUTPUT_ROOT", str(selected["output_root"]))
     os.environ.setdefault("VULNORAIQ_HOST", args.host)
     os.environ.setdefault("VULNORAIQ_PORT", str(args.port))
 
@@ -163,7 +251,7 @@ def _wait_for_health(url: str, timeout: float = 12.0) -> bool:
 def _shutdown_allowed_for(host: str) -> bool:
     env_value = os.getenv("VULNORAIQ_ENABLE_WEB_SHUTDOWN", "true").strip().lower()
     enabled = env_value in ("1", "true", "yes")
-    return enabled and host in {"127.0.0.1", "localhost", "::1"}
+    return enabled and host in LOOPBACK_HOSTS
 
 
 def _open_browser_when_ready(base_url: str) -> None:
@@ -184,6 +272,7 @@ def run_launcher(args: argparse.Namespace) -> int:
         webbrowser.open(f"{base_url}/?launcher=1")
         return 0
 
+    import webui.hosted_server as hosted_runtime  # noqa: PLC0415
     from webui.hosted_server import (  # noqa: PLC0415
         AUTH_MANAGER,
         HostedWebUiHandler,
@@ -219,6 +308,47 @@ def run_launcher(args: argparse.Namespace) -> int:
 
         def _do_POST_routes(self, path: str, client_ip: str, request_id: str) -> None:
             clean_path = path.split("?", 1)[0]
+            if clean_path == "/api/startup/settings":
+                principal = self._principal(client_ip)
+                if not principal:
+                    _inc_metric("auth_failures")
+                    _audit_structured(
+                        "auth_failure",
+                        AUTH_MANAGER.anonymous(),
+                        request_id,
+                        client_ip,
+                        "POST",
+                        clean_path,
+                        401,
+                        "startup settings auth required",
+                    )
+                    self._send_error_response(HTTPStatus.UNAUTHORIZED, "authentication required")
+                    return
+                if not self._check_rate_limit(principal, client_ip):
+                    return
+                if not _validate_csrf(self._session_key(principal), self.headers.get("X-CSRF-Token")):
+                    _inc_metric("csrf_failures")
+                    self._send_error_response(HTTPStatus.FORBIDDEN, "invalid or missing CSRF token")
+                    return
+                if "application/json" not in self.headers.get("Content-Type", "").lower():
+                    self._send_error_response(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, "Content-Type must be application/json")
+                    return
+                settings = _validate_launcher_settings(self._read_json(), args.host, args.port)
+                _save_launcher_settings(settings)
+                output_root = Path(str(settings["output_root"]))
+                job_store_path = Path(str(settings["job_store_path"]))
+                output_root.mkdir(parents=True, exist_ok=True)
+                job_store_path.parent.mkdir(parents=True, exist_ok=True)
+                os.environ["VULNORAIQ_WEB_OUTPUT_ROOT"] = str(output_root)
+                os.environ["VULNORAIQ_JOB_STORE_PATH"] = str(job_store_path)
+                hosted_runtime.OUTPUT_ROOT = output_root
+                hosted_runtime.JOB_STORE = hosted_runtime.create_job_store()
+                response = build_startup_status(args.host, args.port, shutdown_allowed)
+                response["settings_message"] = (
+                    "Settings saved. Output root and job store apply now; host and port apply after restarting the local launcher."
+                )
+                self._send_json(response)
+                return
             if clean_path == "/api/server/shutdown":
                 principal = self._principal(client_ip)
                 if not principal:
@@ -300,9 +430,15 @@ def run_launcher(args: argparse.Namespace) -> int:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    saved = _load_launcher_settings()
+    default_host = str(saved.get("host", "127.0.0.1"))
+    try:
+        default_port = _coerce_port(saved.get("port", 8787))
+    except ValueError:
+        default_port = 8787
     parser = argparse.ArgumentParser(description="Launch the local VulnoraIQ Web UI and open it in a browser.")
-    parser.add_argument("--host", default="127.0.0.1", help="Host/interface to bind. Default: 127.0.0.1")
-    parser.add_argument("--port", type=int, default=8787, help="Port to bind. Default: 8787")
+    parser.add_argument("--host", default=default_host, help="Host/interface to bind. Default: 127.0.0.1")
+    parser.add_argument("--port", type=int, default=default_port, help="Port to bind. Default: 8787")
     parser.add_argument("--no-browser", action="store_true", help="Start the server without opening a browser window")
     return parser.parse_args(argv)
 
