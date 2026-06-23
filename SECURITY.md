@@ -6,20 +6,11 @@ This document defines VulnoraIQ's security boundary, supported versions, respons
 
 ## Security posture
 
-VulnoraIQ is a defensive AI security assessment framework for authorised testing of LLM applications, RAG pipelines, AI agents, tool-using systems, GenAI data-security surfaces, and orchestration layers.
+VulnoraIQ is a self-hosted defensive AI security assessment application for authorised testing of LLM applications, RAG pipelines, AI agents, tool-using systems, GenAI data-security surfaces, and orchestration layers.
 
-`0.2.0` has passed the **controlled internal enterprise production-readiness gate** for a single-organisation/internal deployment model. GenAI Security readiness is **working starter complete** for controlled internal assessment use with safe synthetic `DSGAI01–DSGAI21` scenario coverage.
+`0.2.0` has passed the **controlled internal production-readiness gate** for a laptop, workstation, lab-machine, or internal-server deployment model. GenAI Security readiness is **working starter complete** for controlled internal assessment use with safe synthetic `DSGAI01–DSGAI21` scenario coverage.
 
-It is **not**:
-
-- a public SaaS platform
-- a multi-tenant platform
-- an unsupervised internet-facing service
-- a certified VAPT-grade assurance tool
-- a substitute for independent testing
-- independently validated real-world GenAI detection coverage for every category
-
-Do not expose VulnoraIQ directly to the public internet without additional controls, external review, and operational safeguards.
+VulnoraIQ findings are framework evidence for authorised review. They are not certified VAPT-grade assurance, a substitute for independent testing, or independently validated real-world GenAI detection coverage for every category.
 
 ---
 
@@ -27,11 +18,9 @@ Do not expose VulnoraIQ directly to the public internet without additional contr
 
 | Deployment model | Status | Notes |
 | --- | --- | --- |
-| Local demo / development | Supported | Safe demo target; no external API keys required |
-| Controlled internal enterprise deployment | Supported | Requires production configuration validation and real secrets |
+| Local laptop / workstation demo | Supported | Safe demo target; no external API keys required |
+| Self-hosted internal server deployment | Supported | Requires production configuration validation and real secrets |
 | GenAI Security internal assessment readiness | Working starter | `DSGAI01–DSGAI21` safe synthetic scenarios, deterministic evaluators, and CI validation |
-| Public internet-facing deployment | Not recommended | Requires extra WAF/CDN/DDoS, external testing, and hardening |
-| Multi-tenant SaaS hosting | Not supported | No tenant isolation model in `0.2.0` |
 | Certified VAPT-grade assurance | Not claimed | Findings require human review and deeper validation |
 
 See also:
@@ -51,7 +40,7 @@ See also:
 
 | Version | Security support | Status |
 | --- | --- | --- |
-| `0.2.0` / `0.2.0-rc1` | Active | Controlled internal enterprise deployment candidate with GenAI working-starter readiness |
+| `0.2.0` / `0.2.0-rc1` | Active | Self-hosted internal deployment candidate with GenAI working-starter readiness |
 | `0.0.1.x` | Deprecated | Local/demo use only; upgrade before production-like use |
 | Earlier versions | Unsupported | No production-readiness claim |
 
@@ -79,7 +68,7 @@ Configured non-demo targets require explicit authorisation. Reports and artifact
 
 ## Production security controls in `0.2.0`
 
-The controlled-internal production path includes:
+The self-hosted internal production path includes:
 
 ### Authentication and authorisation
 
@@ -156,7 +145,7 @@ The controlled-internal production path includes:
 
 ## Required production configuration
 
-Minimum controlled-internal production configuration:
+Minimum self-hosted internal production configuration:
 
 ```bash
 export VULNORAIQ_ENV=production
@@ -194,15 +183,13 @@ Only enable trusted proxy identity mode when the proxy authenticates users and s
 
 ## Remaining accepted risks
 
-The following are accepted only for controlled internal deployment and block public SaaS/multi-tenant claims:
+The following are accepted for the self-hosted internal deployment model and should be revisited as the application matures:
 
 - no native OIDC/JWT validation yet
 - trusted-proxy identity is the current enterprise identity bridge
 - CSRF token store is in-memory and single-instance
 - rate-limit store is in-memory and single-instance
 - SQLite is single-node and not high availability
-- no tenant isolation model
-- no built-in WAF/CDN/DDoS controls
 - no distributed worker or shared queue architecture
 - no certified third-party testing report for the Web UI or assessment engine
 - scanner/evaluator results are starter/framework evidence requiring human review
@@ -227,4 +214,4 @@ Include:
 - affected component: Web UI, auth, proxy trust, persistence, reporting, scanner, GenAI readiness, CI, docs, or packaging
 - reproduction steps
 - expected and actual behaviour
-- whether the issue affects local-only, controlled internal, or broader deployment assumptions
+- whether the issue affects local-only or self-hosted internal deployment assumptions
