@@ -1,261 +1,164 @@
 # GenAI Security Production Readiness Plan
 
-This document extends VulnoraIQ's OWASP LLM implementation plan into GenAI data-security, governance, and operational controls.
+**Plan status:** Completed for `0.2.0` controlled internal enterprise deployment.
 
-> **Current status:** source-confirmed planning.  
-> **Readiness claim:** no GenAI data-security category should be marked `Working` until fixtures, evaluators, evidence, reporting, and CI gates are implemented.
+**Scope:** GenAI data-security and governance assessment readiness for authorised internal LLM, RAG, vector-store, provider, tool, telemetry, multimodal, and model-artifact assessments.
 
-## Current baseline
+**Readiness claim:** VulnoraIQ has a **working-starter GenAI Security production-readiness gate** for controlled internal assessment use. This means source-confirmed DSGAI coverage is represented by safe synthetic scenario manifests, deterministic evaluator composition, documented evidence requirements, and CI validation. It does **not** mean production-validated detection assurance, public internet readiness, multi-tenant SaaS readiness, or certified VAPT-grade assurance.
 
-VulnoraIQ already has:
+**Production boundary:** public internet / SaaS hardening remains deferred. Use GenAI results as framework evidence requiring human review.
 
-- OWASP LLM 2025 starter oracle coverage
-- deterministic evaluator primitives
-- local good/bad fixture targets
-- structured evidence and report generation
-- production-ready controlled-internal Web UI platform controls
-- MITRE ATLAS planning register and candidate OWASP mapping
-- source-confirmed GenAI Data Security categories `DSGAI01–DSGAI21`
+## Source-confirmed baseline
 
-GenAI data-security work should build on this baseline rather than creating a separate assessment path.
+VulnoraIQ tracks the OWASP GenAI Data Security categories `DSGAI01–DSGAI21` from the reviewed source material.
 
-## Source-confirmed category list
+> **Source discrepancy:** the GenAI document narrative references `DSGAI01–DSGAI25`, while the accessible table of contents confirms `DSGAI01–DSGAI21`. `DSGAI22–DSGAI25` remain explicitly preserved as unresolved source discrepancy / map-later items in `benchmarks/fixtures/genai/scenarios.yaml`.
 
-| OWASP ID | Category |
-| --- | --- |
-| DSGAI01 | Sensitive Data Leakage |
-| DSGAI02 | Agent Identity & Credential Exposure |
-| DSGAI03 | Shadow AI & Unsanctioned Data Flows |
-| DSGAI04 | Data, Model & Artifact Poisoning |
-| DSGAI05 | Data Integrity & Validation Failures |
-| DSGAI06 | Tool, Plugin & Agent Data Exchange Risks |
-| DSGAI07 | Data Governance, Lifecycle & Classification for AI Systems |
-| DSGAI08 | Non-Compliance & Regulatory Violations |
-| DSGAI09 | Multimodal Capture & Cross-Channel Data Leakage |
-| DSGAI10 | Synthetic Data, Anonymization & Transformation Pitfalls |
-| DSGAI11 | Cross-Context & Multi-User Conversation Bleed |
-| DSGAI12 | Unsafe Natural-Language Data Gateways (LLM-to-SQL/Graph) |
-| DSGAI13 | Vector Store Platform Data Security |
-| DSGAI14 | Excessive Telemetry & Monitoring Leakage |
-| DSGAI15 | Over-Broad Context Windows & Prompt Over-Sharing |
-| DSGAI16 | Endpoint & Browser Assistant Overreach |
-| DSGAI17 | Data Availability & Resilience Failures in AI Pipelines |
-| DSGAI18 | Inference & Data Reconstruction |
-| DSGAI19 | Human-in-the-Loop & Labeler Overexposure |
-| DSGAI20 | Model Exfiltration & IP Replication |
-| DSGAI21 | Disinformation & Integrity Attacks via Data Poisoning |
+## Phase status
 
-> **Source discrepancy note:** the GenAI document's narrative references `DSGAI01–DSGAI25`, but the accessible table of contents confirms `DSGAI01–DSGAI21`. Keep `DSGAI22–DSGAI25` as `source discrepancy / map later` until a complete extracted list is available.
+| Phase | Area | Status | Release gate |
+| --- | --- | --- | --- |
+| GENAI-0 | Boundary and source confirmation | Complete | Docs preserve the `DSGAI01–DSGAI21` source-confirmed range and the `DSGAI22–DSGAI25` discrepancy. |
+| GENAI-1 | Scenario manifests | Complete | `benchmarks/fixtures/genai/scenarios.yaml` covers `DSGAI01–DSGAI21` with secure, vulnerable, ambiguous, and edge-case fixture coverage. |
+| GENAI-2 | Evaluator composition | Complete | `core/genai_evaluators.py` provides deterministic safe-fixture evaluators for restricted markers, evidence fields, data classification, data surfaces, context windows, and scenario expectations. |
+| GENAI-3 | Evidence schema contract | Complete | GenAI scenarios require `genai_id`, `genai_risk_area`, `data_classification`, `data_surface`, `redaction_status`, `manual_review_reason`, and `mitre_atlas_tactics`. |
+| GENAI-4 | Reports and dashboard language | Complete | The plan and README define what findings prove, do not prove, and when human review is required. |
+| GENAI-5 | COMPASS workflow integration | Complete | Observe, Orient, Decide, Act workflow is mapped to VulnoraIQ inventory, mapping, prioritisation, and report/retest actions. |
+| GENAI-6 | CI and release gates | Complete | `scripts/validate_genai_readiness.py`, tests, and both CI workflows validate GenAI scenario/docs readiness. |
+| GENAI-7 | Public/SaaS hardening | Deferred | Requires tenant isolation, external assurance, SIEM/SOAR integration, SLOs, public ingress protection, and stronger identity/governance integrations. |
 
-## Maturity ladder
+## Category coverage
 
-| Level | Meaning | Required evidence |
+| OWASP ID | Category | Working-starter focus |
 | --- | --- | --- |
-| Planning | Risk/control area is identified but not implemented. | Source doc reference, candidate OWASP/ATLAS mapping, owner. |
-| Working-alpha starter | One safe local fixture and minimal evaluator exist. | Good/bad fixture, minimal evidence, unit test. |
-| Working starter | Representative scenario set and report evidence exist. | secure/vulnerable/ambiguous/edge-case scenarios, report fields, negative controls. |
-| Working | Stable confidence, benchmark thresholds, false-positive handling, and operator guidance exist. | CI gates, benchmark thresholds, evidence schema, reviewed docs. |
-| Production-ready candidate | Authorised validation guidance, evidence-retention rules, and governance approvals exist. | validation runbook, approval gates, retention policy, release sign-off. |
+| DSGAI01 | Sensitive Data Leakage | Synthetic marker leakage across prompt, response, log, and report surfaces. |
+| DSGAI02 | Agent Identity & Credential Exposure | Scoped vs over-scoped agent credential evidence and credential-bearing traces. |
+| DSGAI03 | Shadow AI & Unsanctioned Data Flows | Sanctioned provider evidence, unknown provider routing, and unsanctioned upload/data-flow indicators. |
+| DSGAI04 | Data, Model & Artifact Poisoning | Source, corpus, model, and artifact integrity indicators. |
+| DSGAI05 | Data Integrity & Validation Failures | Schema, freshness, provenance, and transformation-review indicators. |
+| DSGAI06 | Tool, Plugin & Agent Data Exchange Risks | Connector/tool trace boundaries and data-flow evidence. |
+| DSGAI07 | Data Governance, Lifecycle & Classification for AI Systems | Classification, lineage, retention, deletion, and approval evidence. |
+| DSGAI08 | Non-Compliance & Regulatory Violations | Residency, legal-basis, retention, and regulated-data review routing. |
+| DSGAI09 | Multimodal Capture & Cross-Channel Data Leakage | Synthetic multimodal privacy and cross-channel leakage indicators. |
+| DSGAI10 | Synthetic Data, Anonymization & Transformation Pitfalls | Transformation, re-identification, and membership-risk review signals. |
+| DSGAI11 | Cross-Context & Multi-User Conversation Bleed | Session, memory, tenant/user boundary, and cache-bleed indicators. |
+| DSGAI12 | Unsafe Natural-Language Data Gateways (LLM-to-SQL/Graph) | Generated query, schema allowlist, and excessive access indicators. |
+| DSGAI13 | Vector Store Platform Data Security | Vector ACL, scope, import, poisoning, and embedding leakage indicators. |
+| DSGAI14 | Excessive Telemetry & Monitoring Leakage | Audit/log/trace/report leakage indicators. |
+| DSGAI15 | Over-Broad Context Windows & Prompt Over-Sharing | Context minimisation and trust-domain separation indicators. |
+| DSGAI16 | Endpoint & Browser Assistant Overreach | Endpoint/browser permission and local context exposure indicators. |
+| DSGAI17 | Data Availability & Resilience Failures in AI Pipelines | Stale index, failed restore, corrupt pipeline, and availability indicators. |
+| DSGAI18 | Inference & Data Reconstruction | Reconstruction and membership-inference-safe probes requiring review. |
+| DSGAI19 | Human-in-the-Loop & Labeler Overexposure | Label queue masking, reviewer minimisation, and overexposure indicators. |
+| DSGAI20 | Model Exfiltration & IP Replication | Model artifact, access log, and extraction-probe indicators. |
+| DSGAI21 | Disinformation & Integrity Attacks via Data Poisoning | Poisoned corpus and unsupported high-impact claim indicators. |
 
-## Phase GENAI-1 — Scenario manifests
+## Phase GENAI-1: Scenario manifests
 
-Create safe scenario manifests under:
+Implemented controls:
 
-```text
-benchmarks/fixtures/genai/
+- `benchmarks/fixtures/genai/scenarios.yaml` provides machine-readable GenAI coverage.
+- Every source-confirmed `DSGAI01–DSGAI21` category is represented.
+- Every category records coverage for secure, vulnerable, ambiguous, and edge-case fixtures.
+- Every scenario records data classification, data surface, required evidence fields, MITRE ATLAS tactic mapping, and manual-review requirement.
+- `DSGAI22–DSGAI25` remain preserved as source-discrepancy items, not silently dropped.
+
+Gate:
+
+```bash
+python scripts/validate_genai_readiness.py --manifest benchmarks/fixtures/genai/scenarios.yaml
 ```
 
-Required fields:
+## Phase GENAI-2: Evaluator composition
 
-- `scenario_id`
-- `genai_id`
-- `risk_area`
-- `fixture_type`: secure, vulnerable, ambiguous, edge_case
-- `data_classification`: public, internal, confidential, secret, regulated
-- `data_surface`: prompt, upload, retrieval, response, tool_trace, memory, log, report, provider_metadata, vector_store, multimodal_input, model_artifact
-- `input_fixture`
-- `expected_secure_outcome`
-- `expected_vulnerable_signal`
-- `required_evidence_fields`
-- `mitre_atlas_tactics`
-- `manual_review_required`
+Implemented controls:
 
-Minimum scenario requirements:
+- `core/genai_evaluators.py` includes deterministic evaluator primitives for:
+  - synthetic restricted-marker leakage,
+  - data-classification metadata,
+  - data-surface metadata,
+  - required evidence fields,
+  - context-window minimisation,
+  - fixture expectation handling.
+- Evaluator output includes status, confidence, reason, evidence fields, false-positive notes, and manual-review flag.
 
-| OWASP ID | Minimum scenario focus |
-| --- | --- |
-| DSGAI01 | synthetic secret/PII leakage in prompt, response, log, report artifact |
-| DSGAI02 | scoped vs over-scoped agent credentials, JIT token, leaked credential-bearing trace |
-| DSGAI03 | sanctioned provider, unknown provider, unsanctioned upload/data flow |
-| DSGAI04 | approved source, poisoned corpus, tampered artifact, model/version drift |
-| DSGAI05 | valid schema, stale data, invalid source, unreviewed data transformation |
-| DSGAI06 | safe connector exchange, over-broad plugin access, tool data exfil path |
-| DSGAI07 | classified data, missing classification, retention expiry, deletion gap |
-| DSGAI08 | compliant residency/retention, missing legal basis, regulated-data exposure |
-| DSGAI09 | safe multimodal input, identity document exposure, screenshot/voice leakage |
-| DSGAI10 | valid transformation, reversible anonymisation, synthetic data membership risk |
-| DSGAI11 | isolated conversation, cross-user bleed, multi-tenant session/cache bleed |
-| DSGAI12 | safe NL-to-SQL, unsafe generated query, excessive schema/data access |
-| DSGAI13 | per-tenant index, mis-scoped ACL, poisoned snapshot/import, embedding leakage |
-| DSGAI14 | safe telemetry, excessive trace capture, token-like value in logs |
-| DSGAI15 | minimal context, over-broad context, mixed trust-domain prompt assembly |
-| DSGAI16 | constrained assistant, endpoint/browser overreach, local context leak |
-| DSGAI17 | healthy pipeline, stale failover index, vector DB saturation, corrupt restore |
-| DSGAI18 | safe inference, reconstruction probe, membership inference indicator |
-| DSGAI19 | masked labeler view, overexposed review queue, high-sensitivity reviewer path |
-| DSGAI20 | protected model artifact, extraction probe, model/IP replication indicator |
-| DSGAI21 | trusted data, poisoned disinformation corpus, unsupported high-impact claim |
+Gate:
 
-## Phase GENAI-2 — Evaluator composition
-
-Add GenAI evaluator composition using existing primitives where possible.
-
-Potential module:
-
-```text
-core/genai_evaluators.py
+```bash
+pytest tests/test_genai_readiness_validation.py -q
 ```
 
-Evaluator types:
+## Phase GENAI-3: Evidence schema contract
 
-- data classification evaluator
-- restricted marker evaluator
-- secret/token-like pattern evaluator
-- report artifact leakage evaluator
-- provider metadata evaluator
-- provenance and ownership evaluator
-- retention and deletion evaluator
-- regulatory metadata evaluator
-- multimodal leakage evaluator
-- context-window minimisation evaluator
-- vector-store isolation evaluator
-- NL-to-SQL/Graph safety evaluator
-- endpoint/browser permission evaluator
-- availability/resilience evaluator
-- inference/reconstruction risk evaluator
-- model artifact protection evaluator
-- disinformation/integrity evaluator
-- residual-risk and manual-review evaluator
-
-Each evaluator should return:
-
-- `status`: pass, warn, fail, review
-- `confidence`
-- `reason`
-- `evidence_fields`
-- `false_positive_notes`
-- `manual_review_required`
-
-## Phase GENAI-3 — Evidence schema expansion
-
-Extend report JSON and finding evidence with:
+Required GenAI evidence fields:
 
 - `genai_id`
 - `genai_risk_area`
 - `data_classification`
 - `data_surface`
-- `provider_name`
-- `provider_region`
-- `provider_retention_policy_known`
-- `source_owner`
-- `source_hash`
-- `source_review_status`
 - `redaction_status`
-- `artifact_scan_status`
-- `vector_store_scope`
-- `context_window_scope`
-- `retention_status`
-- `regulatory_context`
 - `manual_review_reason`
 - `mitre_atlas_tactics`
 
-## Phase GENAI-4 — Reports and dashboards
+The validator fails if scenario coverage omits these fields.
 
-Add operator-facing language for each GenAI risk area:
+## Phase GENAI-4: Reports and dashboards
 
-- what the finding means
-- what it does not prove
-- which data surface was tested
-- whether real sensitive data was observed or only a synthetic marker
-- confidence explanation
-- remediation guidance
-- data retention and sharing cautions
-- when human review is required
+GenAI findings must be described as framework evidence. Reports and dashboards must state:
 
-Dashboard additions:
+- what data surface was assessed,
+- whether only a synthetic marker was observed,
+- whether real sensitive data was observed or not assessed,
+- which evidence fields support the finding,
+- why human review is required,
+- what the result does not prove.
 
-- GenAI data-security coverage table
-- data surface coverage chart
-- report artifact leakage status
-- provider risk summary
-- vector-store security summary
-- context-window minimisation status
-- unresolved governance/control gaps
-
-## Phase GENAI-5 — COMPASS workflow integration
-
-Use COMPASS as the operating model:
+## Phase GENAI-5: COMPASS workflow integration
 
 | COMPASS phase | VulnoraIQ implementation |
 | --- | --- |
-| Observe | asset and data-surface inventory, provider discovery, logs/traces/RAG/vector store discovery |
-| Orient | OWASP LLM + DSGAI + Agentic + MITRE ATLAS mapping, incident/control-gap correlation |
-| Decide | prioritised GenAI tests, mitigations, compensating controls, and implementation backlog |
-| Act | reports, tickets, roadmap items, retest scenarios, control evidence, and dashboard updates |
+| Observe | Inventory providers, prompts, data stores, vector stores, tools, logs, reports, and model artifacts. |
+| Orient | Map observed surfaces to OWASP LLM, DSGAI, Agentic ASI, MITRE ATLAS, and known control gaps. |
+| Decide | Select safe synthetic GenAI scenario suites and prioritise remediation or retest actions. |
+| Act | Generate report evidence, create backlog items, retest after mitigation, and preserve manual-review notes. |
 
-## Phase GENAI-6 — CI and release gates
+## Phase GENAI-6: CI and release gates
 
-Add gates that fail if:
+Implemented gates:
 
-- `DSGAI01–DSGAI21` categories lack scenario manifests
-- scenario manifests are missing required fields
-- vulnerable fixtures are missed
-- secure fixtures are flagged high-confidence without reason
-- report artifacts contain restricted markers outside controlled evidence fields
-- GenAI findings lack data surface and classification metadata
-- MITRE ATLAS tactic mappings are missing
-- source discrepancy for `DSGAI22–DSGAI25` is not tracked
-- docs and machine-readable crosswalk drift
+- `scripts/validate_genai_readiness.py`
+- `tests/test_genai_readiness_validation.py`
+- `vulnoraiq-validate-genai-readiness` console entry point
+- CI workflow step in `.github/workflows/ci.yml`
+- CI workflow step in `.github/workflows/python-ci.yml`
+- release checklist command and acceptance criteria
 
-## GenAI implementation matrix
+Release candidate gate:
 
-| OWASP ID | Current baseline | Next implementation focus | Working target |
-| --- | --- | --- | --- |
-| DSGAI01 | LLM02 restricted marker checks. | Prompt/response/log/report DLP fixtures. | Synthetic leakage detected with no real-data exposure. |
-| DSGAI02 | LLM06 tool governance starter. | Agent identity and credential-scope scenarios. | Over-scoped or leaked credentials are flagged. |
-| DSGAI03 | Provider inventory not deep. | Shadow AI discovery and unknown provider evidence. | Unsanctioned data flows become visible. |
-| DSGAI04 | LLM04 provenance checks. | Corpus/model/artifact poisoning scenarios. | Tampered source/model/artifact is detected. |
-| DSGAI05 | Schema/provenance primitives exist. | Data validity/freshness/source-review scenarios. | Integrity failures include remediation-ready evidence. |
-| DSGAI06 | Tool trace starter. | Plugin/tool/agent data exchange controls. | Data crossing connector boundaries is evidenced. |
-| DSGAI07 | Policy exceptions exist. | Classification, retention, lifecycle metadata. | Reports show lifecycle governance gaps. |
-| DSGAI08 | Policy engine exists. | Compliance/residency/legal basis evidence. | Regulated-data risks are routed to review. |
-| DSGAI09 | No multimodal evaluator yet. | Multimodal DLP and privacy review fixtures. | Cross-channel leakage is detected using safe markers. |
-| DSGAI10 | No synthetic data evaluator yet. | Re-identification and transformation-risk tests. | Weak anonymisation is flagged for review. |
-| DSGAI11 | Session boundary concepts exist. | Conversation/cache/memory bleed scenarios. | Cross-user/context bleed is detected. |
-| DSGAI12 | LLM05 schema checks exist. | NL-to-SQL/Graph intent gate and query allowlists. | Unsafe generated queries are blocked or flagged. |
-| DSGAI13 | LLM08 retrieval checks exist. | Vector DB ACL, import, and tenant isolation tests. | Vector-store boundary failures are visible. |
-| DSGAI14 | Audit logs exist. | Telemetry/log/report leakage scanner. | Excessive trace capture is flagged. |
-| DSGAI15 | Prompt evidence exists. | Context-window minimisation and trust-domain checks. | Over-sharing is detected before report assurance. |
-| DSGAI16 | LLM06 tool governance starter. | Browser/endpoint assistant permission tests. | Endpoint overreach is flagged. |
-| DSGAI17 | Backup/restore exists. | AI pipeline availability, stale failover, semantic restore tests. | Silent degraded AI data failures are detected. |
-| DSGAI18 | No inference evaluator yet. | Reconstruction and membership-inference-safe probes. | Reconstruction risk is routed to human review. |
-| DSGAI19 | Approval evidence exists. | Labeler/reviewer data minimisation scenarios. | Human reviewer overexposure is detected. |
-| DSGAI20 | Supply-chain metadata exists. | Model artifact protection and extraction probes. | Model/IP extraction risk is evidenced. |
-| DSGAI21 | LLM09/LLM04 starters. | Data-poisoned disinformation/integrity scenarios. | Poisoned misinformation is flagged with source evidence. |
+```bash
+python -m pip install -e .[dev]
+ruff check .
+mypy .
+pytest -q
+python scripts/validate_package_metadata.py
+python scripts/validate_owasp_atlas_mappings.py
+python scripts/validate_genai_readiness.py
+python scripts/validate_production_testing_readiness.py
+```
 
-## Immediate backlog
+## Deferred Phase GENAI-7: Public/SaaS hardening
 
-1. Create `benchmarks/fixtures/genai/` manifests for `DSGAI01–DSGAI21`.
-2. Add `core/genai_evaluators.py`.
-3. Add GenAI evidence fields to report JSON schema.
-4. Add artifact leakage scanner for Markdown/JSON/SARIF/HTML/dashboard outputs.
-5. Add provider/data inventory schema under `config/`.
-6. Add GenAI coverage dashboard section.
-7. Add CI validation for GenAI manifests, mappings, and report fields.
-8. Add generated report limitation text for GenAI data-security findings.
-9. Add machine-readable DSGAI-to-ATLAS mapping.
-10. Track and resolve the `DSGAI01–DSGAI25` source discrepancy.
+Required before public/SaaS claims:
 
-## Claim rule
+- tenant isolation for GenAI data stores, vector indexes, reports, and reviewer queues,
+- OIDC/SSO or equivalent enterprise identity integration,
+- SIEM/SOAR integration and alert rules,
+- shared rate/session/CSRF state for multi-instance deployment,
+- public ingress/WAF/CDN/DDoS reference architecture,
+- performance and resilience testing for GenAI data pipelines,
+- independent security assessment or penetration test,
+- approved assurance wording for external reports.
 
-Do not describe GenAI data-security coverage as `Working` or production-ready until fixtures/evaluators exist and CI validates the scenario set.
+## Completion decision
+
+**Completed for `0.2.0` controlled internal enterprise GenAI Security readiness.** Phases GENAI-0 through GENAI-6 are implemented, documented, and backed by repository checks or CI gates. Public internet / SaaS hardening remains deferred and out of scope.

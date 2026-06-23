@@ -42,6 +42,7 @@ vulnoraiq-generate-atlas-matrix = "scripts.generate_mitre_atlas_matrix:main"
 vulnoraiq-html-export = "reports.html_export_package:main"
 vulnoraiq-validate-package = "scripts.validate_package_metadata:main"
 vulnoraiq-validate-owasp-atlas-mappings = "scripts.validate_owasp_atlas_mappings:main"
+vulnoraiq-validate-genai-readiness = "scripts.validate_genai_readiness:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

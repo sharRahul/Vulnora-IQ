@@ -6,9 +6,9 @@ This document defines VulnoraIQ's security boundary, supported versions, respons
 
 ## Security posture
 
-VulnoraIQ is a defensive AI security assessment framework for authorised testing of LLM applications, RAG pipelines, AI agents, tool-using systems, and orchestration layers.
+VulnoraIQ is a defensive AI security assessment framework for authorised testing of LLM applications, RAG pipelines, AI agents, tool-using systems, GenAI data-security surfaces, and orchestration layers.
 
-`0.2.0` has passed the **controlled internal enterprise production-readiness gate** for a single-organisation/internal deployment model.
+`0.2.0` has passed the **controlled internal enterprise production-readiness gate** for a single-organisation/internal deployment model. GenAI Security readiness is **working starter complete** for controlled internal assessment use with safe synthetic `DSGAI01–DSGAI21` scenario coverage.
 
 It is **not**:
 
@@ -16,7 +16,8 @@ It is **not**:
 - a multi-tenant platform
 - an unsupervised internet-facing service
 - a certified VAPT-grade assurance tool
-- a substitute for independent penetration testing
+- a substitute for independent testing
+- independently validated real-world GenAI detection coverage for every category
 
 Do not expose VulnoraIQ directly to the public internet without additional controls, external review, and operational safeguards.
 
@@ -28,6 +29,7 @@ Do not expose VulnoraIQ directly to the public internet without additional contr
 | --- | --- | --- |
 | Local demo / development | Supported | Safe demo target; no external API keys required |
 | Controlled internal enterprise deployment | Supported | Requires production configuration validation and real secrets |
+| GenAI Security internal assessment readiness | Working starter | `DSGAI01–DSGAI21` safe synthetic scenarios, deterministic evaluators, and CI validation |
 | Public internet-facing deployment | Not recommended | Requires extra WAF/CDN/DDoS, external testing, and hardening |
 | Multi-tenant SaaS hosting | Not supported | No tenant isolation model in `0.2.0` |
 | Certified VAPT-grade assurance | Not claimed | Findings require human review and deeper validation |
@@ -40,6 +42,7 @@ See also:
 - [`docs/INCIDENT_RESPONSE.md`](docs/INCIDENT_RESPONSE.md) — incident playbooks
 - [`docs/PRODUCTION_READINESS_SCORECARD.md`](docs/PRODUCTION_READINESS_SCORECARD.md) — readiness scoring
 - [`docs/PRODUCTION_HARDENING_BACKLOG.md`](docs/PRODUCTION_HARDENING_BACKLOG.md) — remaining risks
+- [`docs/genai/PRODUCTION_READINESS_PLAN.md`](docs/genai/PRODUCTION_READINESS_PLAN.md) — GenAI Security readiness plan
 - [`docs/ASSESSMENT_ASSURANCE.md`](docs/ASSESSMENT_ASSURANCE.md) — scanner/evaluator limits
 
 ---
@@ -48,7 +51,7 @@ See also:
 
 | Version | Security support | Status |
 | --- | --- | --- |
-| `0.2.0` / `0.2.0-rc1` | Active | Controlled internal enterprise deployment candidate |
+| `0.2.0` / `0.2.0-rc1` | Active | Controlled internal enterprise deployment candidate with GenAI working-starter readiness |
 | `0.0.1.x` | Deprecated | Local/demo use only; upgrade before production-like use |
 | Earlier versions | Unsupported | No production-readiness claim |
 
@@ -68,15 +71,7 @@ Allowed use:
 - defensive control testing
 - CI regression checks for your own AI systems
 - evidence collection for internal review
-
-Prohibited use:
-
-- unauthorised testing of third-party systems
-- credential theft or phishing
-- malware delivery or command execution
-- persistence, stealth, evasion, or bypass workflows
-- exploitation outside an approved scope
-- attempts to exfiltrate secrets from systems you do not own or administer
+- GenAI data-security scenario validation for approved systems
 
 Configured non-demo targets require explicit authorisation. Reports and artifacts may contain sensitive evidence and must be handled accordingly.
 
@@ -109,7 +104,7 @@ The controlled-internal production path includes:
 - malformed JSON and invalid `Content-Length` handling
 - standard JSON API errors
 - security headers on normal and error responses
-- artifact path-traversal protection
+- artifact path protection
 - role-aware `/api/config`
 - auth-protected `/metrics` by default
 
@@ -136,7 +131,17 @@ The controlled-internal production path includes:
 - `/readyz` readiness endpoint
 - Prometheus-format `/metrics` endpoint
 - structured JSON audit logs with request correlation IDs
-- audit events for auth failure, authz failure, CSRF failure, rate limiting, scan creation, scan queue full, artifact download, traversal attempts, malformed JSON, oversized requests, and internal errors
+- audit events for auth failure, authz failure, CSRF failure, rate limiting, scan creation, scan queue full, artifact download, unsafe artifact paths, malformed JSON, oversized requests, and internal errors
+
+### GenAI Security readiness controls
+
+- source-confirmed `DSGAI01–DSGAI21` scenario coverage in `benchmarks/fixtures/genai/scenarios.yaml`
+- `DSGAI22–DSGAI25` preserved as source discrepancy / map-later items
+- deterministic evaluator primitives in `core/genai_evaluators.py`
+- GenAI readiness validator in `scripts/validate_genai_readiness.py`
+- regression tests in `tests/test_genai_readiness_validation.py`
+- CI gates in both workflow paths
+- package metadata validation fails if GenAI readiness assets drift
 
 ### Container and CI
 
@@ -145,7 +150,7 @@ The controlled-internal production path includes:
 - healthcheck
 - Docker Compose example
 - `.env.production.example` with placeholders only
-- Ruff, mypy, pytest, `pip check`, `pip-audit`, package metadata validation, production readiness validation, and functional acceptance in CI/release flow
+- Ruff, mypy, pytest, `pip check`, `pip-audit`, package metadata validation, OWASP/ATLAS mapping validation, GenAI readiness validation, production readiness validation, and functional acceptance in CI/release flow
 
 ---
 
@@ -166,6 +171,8 @@ Validate before start:
 
 ```bash
 python scripts/validate_runtime_production_config.py
+python scripts/validate_owasp_atlas_mappings.py
+python scripts/validate_genai_readiness.py
 ```
 
 For reverse proxy deployments:
@@ -197,8 +204,9 @@ The following are accepted only for controlled internal deployment and block pub
 - no tenant isolation model
 - no built-in WAF/CDN/DDoS controls
 - no distributed worker or shared queue architecture
-- no certified third-party penetration-test report for the Web UI or assessment engine
+- no certified third-party testing report for the Web UI or assessment engine
 - scanner/evaluator results are starter/framework evidence requiring human review
+- GenAI Security coverage is working starter and based on safe synthetic scenarios until validated in authorised real environments
 
 ---
 
@@ -216,145 +224,7 @@ Do **not** publicly disclose an exploitable issue before maintainers have had a 
 Include:
 
 - affected version or commit
-- affected component: Web UI, auth, proxy trust, persistence, reporting, scanner, CI, docs, or packaging
+- affected component: Web UI, auth, proxy trust, persistence, reporting, scanner, GenAI readiness, CI, docs, or packaging
 - reproduction steps
-- expected vs actual behaviour
-- impact and exploitability
-- whether tokens, reports, artifacts, or target data may be exposed
-- logs or screenshots with secrets redacted
-- suggested mitigation if known
-
-Do not include real production tokens, API keys, private customer data, or sensitive scan artifacts in the report.
-
----
-
-## Severity guide
-
-| Severity | Examples |
-| --- | --- |
-| Critical | auth bypass, production token leakage, arbitrary file read/write, RCE, cross-user artifact exposure, production fail-open behaviour |
-| High | CSRF bypass on scan creation, trusted proxy spoofing, path traversal, audit-log secret leakage, unauthorised report access |
-| Medium | controlled-deployment DoS, missing security header on sensitive route, overly verbose error disclosure, broken backup validation |
-| Low | documentation mismatch, safe-demo-only issue, non-sensitive monitoring bug |
-
----
-
-## Maintainer remediation workflow
-
-For security fixes:
-
-1. Confirm scope and affected versions.
-2. Reproduce safely with a failing regression test.
-3. Fix the root cause without weakening production controls.
-4. Add or update tests.
-5. Run quality gates and production-readiness validation.
-6. Update `CHANGELOG.md`, `README.md`, `SECURITY.md`, and relevant docs if user action is required.
-7. Publish a release note or advisory when appropriate.
-
-Required validation:
-
-```bash
-ruff check .
-mypy .
-pytest -q
-python -m pip check
-pip-audit
-python scripts/validate_package_metadata.py
-python scripts/validate_production_testing_readiness.py
-python scripts/validate_runtime_production_config.py
-python scripts/validate_production_testing_readiness.py \
-  --run-functional \
-  --output-dir reports/output/production-readiness \
-  --screenshot docs/assets/vulnoraiq-dashboard-example.svg
-```
-
-If Docker is available:
-
-```bash
-docker build -t vulnoraiq:security-fix .
-python scripts/container_smoke_test.py
-```
-
----
-
-## Payload and fixture safety policy
-
-Payloads and fixtures in this repository must remain safe starter examples.
-
-Allowed:
-
-- local demo prompts
-- deterministic local good/bad fixtures
-- synthetic control-gap examples
-- benign OWASP/MITRE mapping examples
-- examples that demonstrate detection logic without enabling real-world abuse
-
-Not allowed:
-
-- live credential harvesting workflows
-- exploit chains against third-party systems
-- malware, persistence, or stealth payloads
-- instructions to bypass access controls in real environments
-- payloads intended to exfiltrate secrets outside an authorised test scope
-- destructive payloads that could harm third-party systems
-
----
-
-## Secret handling
-
-Never commit:
-
-- real `VULNORAIQ_ADMIN_TOKEN`, analyst token, or viewer token
-- target-system API keys
-- production `.env` files
-- private scan reports
-- customer artifacts
-- production SQLite databases or backups
-- SIEM credentials
-- webhook secrets
-
-Use `.env.production.example` only as a placeholder template. Real deployment values must come from environment variables, a secret manager, or secure runtime configuration.
-
----
-
-## Incident response
-
-Use [`docs/INCIDENT_RESPONSE.md`](docs/INCIDENT_RESPONSE.md) for response procedures covering:
-
-- auth token leak
-- unauthorised access attempt
-- trusted proxy spoofing attempt
-- CSRF failure spike
-- rate-limit spike or scan queue exhaustion
-- report or artifact exposure
-- corrupted SQLite store
-- failed backup or restore
-- dependency vulnerability
-- Web UI security bug
-
-Immediate containment for high/critical issues:
-
-1. Preserve logs and affected SQLite/report artifacts.
-2. Restrict network access at the reverse proxy if exposure is suspected.
-3. Rotate relevant tokens.
-4. Validate runtime config.
-5. Back up the SQLite store before destructive actions.
-6. Open a private advisory or security issue.
-
----
-
-## Assessment assurance boundary
-
-VulnoraIQ scan output is evidence for investigation. It is not automatically a confirmed vulnerability.
-
-Current coverage includes safe starter oracles, local fixtures, and implementation specs for OWASP LLM 2025 categories, plus MITRE ATLAS planning mappings. This does not prove real-world detection depth across production AI systems.
-
-Before any VAPT-grade claim, the project needs deeper evaluator logic, calibrated thresholds, richer real-world fixtures, external penetration testing, and report-language review.
-
----
-
-## Security boundary summary
-
-VulnoraIQ `0.2.0` is suitable for controlled internal enterprise deployment when configured according to [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) and validated with the production-readiness scripts.
-
-It is not yet suitable for unsupervised public internet exposure, multi-tenant SaaS hosting, or certified VAPT-grade assurance claims.
+- expected and actual behaviour
+- whether the issue affects local-only, controlled internal, or broader deployment assumptions

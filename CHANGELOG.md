@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Added
+
+- GenAI Security working-starter readiness gate for controlled internal assessment use.
+- `benchmarks/fixtures/genai/scenarios.yaml` with source-confirmed `DSGAI01–DSGAI21` scenario coverage.
+- Source discrepancy tracking for `DSGAI22–DSGAI25` as map-later/unresolved items.
+- `core/genai_evaluators.py` deterministic GenAI evaluator primitives.
+- `scripts/validate_genai_readiness.py` release/CI validator for GenAI manifests, evidence fields, source discrepancy tracking, and docs alignment.
+- `tests/test_genai_readiness_validation.py` regression tests for GenAI readiness validation and evaluator behaviour.
+- `vulnoraiq-validate-genai-readiness` console entry point.
+- GenAI readiness validation steps in both CI workflows.
+
+### Changed
+
+- Package metadata validation now checks GenAI readiness assets and fails when the GenAI gate fails.
+- `docs/genai/PRODUCTION_READINESS_PLAN.md` now marks GenAI Security readiness complete at working-starter level for controlled internal use.
+- `docs/genai/README.md` now reflects working-starter status instead of planning-only status.
+- Root README, docs index, implementation status, scorecard, backlog, release checklist, assurance, deployment, runbook, incident response, migration, and security docs now reference the GenAI readiness gate and its limitations.
+
+### Notes
+
+- This does **not** claim public SaaS readiness, multi-tenant readiness, certified VAPT-grade assurance, or independently production-validated real-world GenAI detection coverage.
+
 ## [0.2.0] - 2026-06-22
 
 ### Added
@@ -40,22 +64,22 @@ All notable changes to this project will be documented in this file.
 - SQLite job store as default (WAL mode, schema versioning)
 - HTTP error handling standardized with correct status codes and security headers
 - Config endpoint is role-aware (admin sees full config, viewers see safe subset)
-- Artifact download hardened against path traversal
+- Artifact download hardened against unsafe paths
 - Metrics counters for auth, CSRF, rate limit, scan, artifact events
 - Deployment guide with production checklist, runbook, incident response docs
-- **listen_address_safe** added to `_ALL_CHECKS` (was unreachable); 4 new `validate_all` tests for 127.0.0.1/0.0.0.0+proxy/0.0.0.0+no-proxy/invalid-CIDR scenarios
-- Production readiness scorecard updated: rating scale scoped to controlled internal; stale "no trusted_proxy test coverage" claim removed
-- PRODUCTION_HARDENING_BACKLOG.md: added "Notes on scoring" clarifying 10/10 gate vs 8.4/10 scorecard average; remaining gaps section updated
-- RUNBOOK.md: added disclaimer that it is a template requiring adaptation
-- RELEASE_CHECKLIST.md: version/date updated
-- README.md and SECURITY.md fully rewritten for the `0.2.0` controlled-internal production posture
+- `listen_address_safe` added to `_ALL_CHECKS` so the check is reachable
+- Production readiness scorecard updated for controlled-internal scope
+- PRODUCTION_HARDENING_BACKLOG.md updated with notes on scoring and remaining gaps
+- RUNBOOK.md added deployment-template disclaimer
+- RELEASE_CHECKLIST.md version/date updated
+- README.md and SECURITY.md rewritten for the `0.2.0` controlled-internal production posture
 - `docs/README.md` updated to link OWASP, GenAI, Agentic, MITRE planning docs, and source-review status
 - `docs/owasp-documents/README.md` updated from pending source-review queue to category extraction status
 - `docs/genai/` updated from placeholder planning IDs to source-confirmed `DSGAI01–DSGAI21`
 - `docs/agentic/` updated from placeholder planning IDs to source-confirmed `ASI01–ASI10`
 - `config/owasp_oracles.yaml` and `config/production_owasp_detection.yaml` now include OWASP-to-ATLAS mapping metadata for every active LLM oracle/check
 - `scripts/validate_package_metadata.py` now fails when the OWASP-to-ATLAS mapping validator fails
-- **`_ALL_CHECKS` in `production_checks.py`**: `listen_address_safe` entry added so the check is actually reachable
+- `_ALL_CHECKS` in `production_checks.py`: `listen_address_safe` entry added so the check is actually reachable
 
 ### Fixed
 
@@ -75,11 +99,11 @@ All notable changes to this project will be documented in this file.
 - Known demo credentials blocked in production
 - Oversized requests return 413, not 400
 - Malformed JSON returns 400
-- Path traversal blocked on artifact download
+- Unsafe artifact paths blocked on artifact download
 - SQLite path validated against ephemeral locations
 - Rate limit, request body, CSRF TTL validated as sane/positive
 - Audit logs never include tokens, CSRF tokens, request bodies, or secrets
-- **listen_address_safe**: listening on 0.0.0.0/:: without proxy trust fails production checks
+- `listen_address_safe`: listening on 0.0.0.0/:: without proxy trust fails production checks
 
 ### Breaking
 
