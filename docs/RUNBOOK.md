@@ -2,7 +2,7 @@
 
 This runbook is for VulnoraIQ `0.2.0` controlled internal enterprise deployments.
 
-> **Scope:** adapt paths, hostnames, secret-management steps, reverse proxy, and backup destinations to your environment. VulnoraIQ `0.2.0` is not public SaaS or multi-tenant ready. See [`DEPLOYMENT.md`](DEPLOYMENT.md), [`INCIDENT_RESPONSE.md`](INCIDENT_RESPONSE.md), and [`PRODUCTION_READINESS_SCORECARD.md`](PRODUCTION_READINESS_SCORECARD.md).
+> **Scope:** adapt paths, hostnames, secret-management steps, reverse proxy, and backup destinations to your environment. VulnoraIQ `0.2.0` is not public SaaS or multi-tenant ready. GenAI Security coverage is working starter evidence for controlled internal assessment use, not certified assurance.
 
 ## 1. Service management
 
@@ -28,58 +28,25 @@ python scripts/validate_runtime_production_config.py
 vulnoraiq-web --host 127.0.0.1 --port 8787
 ```
 
-### Start service: systemd
-
-```bash
-sudo systemctl start vulnoraiq
-sudo systemctl status vulnoraiq --no-pager
-```
-
-### Stop service
+### Stop / restart service
 
 ```bash
 # Docker Compose
 docker compose down
-
-# systemd
-sudo systemctl stop vulnoraiq
-```
-
-### Restart service
-
-```bash
-# Docker Compose
 docker compose restart
 
 # systemd
+sudo systemctl stop vulnoraiq
 sudo systemctl restart vulnoraiq
+sudo systemctl status vulnoraiq --no-pager
 ```
 
 ## 2. Health, readiness, and metrics
 
-### Liveness
-
 ```bash
 curl -f http://127.0.0.1:8787/healthz
-```
-
-Expected: HTTP `200` with service status and `started_at`.
-
-### Readiness
-
-```bash
 curl -f http://127.0.0.1:8787/readyz
-```
-
-Expected: HTTP `200` when targets and profiles are loaded. HTTP `503` means the service is alive but not ready.
-
-### Metrics
-
-`/metrics` is auth-protected by default.
-
-```bash
-curl -H "X-VulnoraIQ-Token: $VULNORAIQ_ADMIN_TOKEN" \
-  http://127.0.0.1:8787/metrics
+curl -H "X-VulnoraIQ-Token: $VULNORAIQ_ADMIN_TOKEN" http://127.0.0.1:8787/metrics
 ```
 
 Key metrics to monitor:
@@ -98,52 +65,26 @@ Key metrics to monitor:
 
 ## 3. Logs and audit events
 
-### Docker logs
-
 ```bash
 docker compose logs -f --tail=100
-```
-
-### systemd logs
-
-```bash
 sudo journalctl -u vulnoraiq -n 100 -f
 ```
 
-### Audit log format
+Audit events are JSON lines emitted by the `vulnoraiq.audit` logger. Audit logs must not contain tokens, CSRF tokens, request bodies, secrets, or full report contents.
 
-Audit events are JSON lines emitted by the `vulnoraiq.audit` logger. Events include:
+## 4. Runtime and readiness validation
 
-- `server_start`
-- `auth_failure`
-- `authz_failure`
-- `csrf_failure`
-- `rate_limit_exceeded`
-- `oversized_request`
-- `malformed_json`
-- `scan_created`
-- `scan_queue_full`
-- `artifact_download`
-- `artifact_traversal_attempt`
-- `internal_error`
-
-Example:
-
-```json
-{"timestamp":"2026-06-22T10:30:00+00:00","event":"auth_failure","request_id":"abc123","user":"anonymous","role":"viewer","authenticated":"false","client_ip":"10.0.0.10","method":"GET","path":"/api/scans","status":401,"detail":"no token provided"}
-```
-
-Audit logs must not contain tokens, CSRF tokens, request bodies, secrets, or full report contents.
-
-## 4. Runtime configuration validation
-
-Run before starting or after changing environment variables:
+Run before starting or after changing environment variables, docs, mappings, GenAI scenarios, or release assets:
 
 ```bash
 python scripts/validate_runtime_production_config.py
+python scripts/validate_owasp_atlas_mappings.py
+python scripts/validate_genai_readiness.py
+python scripts/validate_package_metadata.py
+python scripts/validate_production_testing_readiness.py
 ```
 
-Important checks:
+Important production checks:
 
 - auth enabled
 - admin token set and strong enough
@@ -155,6 +96,15 @@ Important checks:
 - `0.0.0.0` / `::` binding fails unless trusted proxy config is present
 - sane rate limit, request body, and CSRF TTL values
 
+Important GenAI checks:
+
+- `DSGAI01–DSGAI21` source-confirmed categories are covered
+- `DSGAI22–DSGAI25` source discrepancy remains tracked
+- secure, vulnerable, ambiguous, and edge-case fixture coverage is present
+- required GenAI evidence fields are present
+- MITRE ATLAS tactic IDs are valid
+- GenAI readiness docs remain aligned
+
 ## 5. Token rotation
 
 1. Generate a new token:
@@ -165,12 +115,7 @@ Important checks:
 
 2. Update the secret source or runtime env var, for example `VULNORAIQ_ADMIN_TOKEN`.
 3. Restart the service.
-4. Verify old token is rejected and new token works:
-
-   ```bash
-   curl -i -H "X-VulnoraIQ-Token: $NEW_TOKEN" http://127.0.0.1:8787/api/scans
-   ```
-
+4. Verify old token is rejected and new token works.
 5. Review audit logs for failed use of the old token.
 
 ## 6. Backup and restore
@@ -190,36 +135,19 @@ python scripts/backup_sqlite_store.py \
 ### Restore SQLite backup
 
 ```bash
-# 1. Stop service
 sudo systemctl stop vulnoraiq || docker compose down
-
-# 2. Preserve current DB
 cp /data/jobs.db /data/jobs.db.before-restore-$(date +%Y%m%d-%H%M%S)
-
-# 3. Restore
 python scripts/restore_sqlite_store.py \
   /data/backups/jobs-YYYYMMDD-HHMMSS.db.gz \
   /data/jobs.db \
   --compressed \
   --validate
-
-# 4. Start service
 sudo systemctl start vulnoraiq || docker compose up -d
-
-# 5. Verify
 curl -f http://127.0.0.1:8787/healthz
 curl -f http://127.0.0.1:8787/readyz
 ```
 
-### Restore drill
-
-Run once per release candidate:
-
-1. Create a backup from a test DB.
-2. Restore to a temporary DB path.
-3. Start the service against the restored DB.
-4. Confirm scan history and artifacts still work.
-5. Record result in release checklist.
+Run a restore drill once per release candidate and record the result in the release checklist.
 
 ## 7. Clear stuck scans
 
@@ -227,37 +155,19 @@ There is no separate job-management CLI yet. Use this controlled manual procedur
 
 1. Stop the service.
 2. Back up `/data/jobs.db`.
-3. Inspect stuck rows:
-
-   ```bash
-   sqlite3 /data/jobs.db "SELECT id,target,profile,status,started_at FROM jobs WHERE status='running';"
-   ```
-
-4. If a job is confirmed stale, mark failed:
-
-   ```bash
-   sqlite3 /data/jobs.db "UPDATE jobs SET status='failed', error='manually marked failed after stale running state', completed_at=datetime('now') WHERE id='<job_id>';"
-   ```
-
+3. Inspect stuck rows.
+4. If a job is confirmed stale, mark failed.
 5. Restart the service and verify `/api/scans`.
 
 ## 8. Reverse proxy and TLS checks
 
-### nginx
-
 ```bash
 sudo nginx -t
-curl -f -H "Host: vulnoraiq.example.com" https://vulnoraiq.example.com/healthz
-```
-
-### Caddy
-
-```bash
 caddy validate --config /etc/caddy/Caddyfile
 curl -f https://vulnoraiq.example.com/healthz
 ```
 
-### Certificate expiry
+Certificate expiry:
 
 ```bash
 echo | openssl s_client -servername vulnoraiq.example.com \
@@ -279,10 +189,11 @@ echo | openssl s_client -servername vulnoraiq.example.com \
 | Ready check returns 503 | Targets/profiles failed to load | Check `VULNORAIQ_CONFIG_DIR`, `config/targets.yaml`, and `config/attack_profiles.yaml` |
 | SQLite error | DB missing, corrupted, or not writable | Check `/data` permissions; run backup/restore validation |
 | Artifacts return 404 | Report path missing or job incomplete | Confirm job status and `/data/reports` persistence |
+| GenAI readiness validator fails | Scenario manifest, evidence fields, docs, or source discrepancy drifted | Fix `benchmarks/fixtures/genai/scenarios.yaml`, `docs/genai/`, or validator tests |
 
 ## 10. Upgrade procedure
 
-1. Review `CHANGELOG.md` and `docs/MIGRATION.md`.
+1. Review `CHANGELOG.md`, `docs/MIGRATION.md`, `docs/genai/PRODUCTION_READINESS_PLAN.md`, and `docs/AGENTIC_APPLICATIONS_PRODUCTION_READINESS_PLAN.md`.
 2. Back up SQLite DB.
 3. Pull or build the new image.
 4. Run validation commands:
@@ -292,11 +203,13 @@ echo | openssl s_client -servername vulnoraiq.example.com \
    mypy .
    pytest -q
    python scripts/validate_package_metadata.py
+   python scripts/validate_owasp_atlas_mappings.py
+   python scripts/validate_genai_readiness.py
    python scripts/validate_production_testing_readiness.py
    ```
 
 5. Start the release candidate.
-6. Verify `/healthz`, `/readyz`, `/metrics`, Web UI auth, scan creation, artifact download, backup, and restore.
+6. Verify `/healthz`, `/readyz`, `/metrics`, Web UI auth, scan creation, artifact download, backup, restore, and GenAI readiness validation.
 7. Monitor logs and metrics for at least one hour.
 
 ## 11. Rollback procedure
@@ -305,20 +218,10 @@ echo | openssl s_client -servername vulnoraiq.example.com \
 2. Restore the previous image/tag or code revision.
 3. Restore the pre-upgrade SQLite backup if schema/data changed.
 4. Start the previous version.
-5. Verify `/healthz`, `/readyz`, scan history, and artifacts.
+5. Verify `/healthz`, `/readyz`, scan history, artifacts, and release validators.
 6. Document the rollback reason in `CHANGELOG.md` or release notes.
 
 ## 12. Reference
-
-### Default ports
-
-| Component | Port |
-| --- | --- |
-| VulnoraIQ Web UI | `8787` |
-| Reverse proxy HTTPS | `443` |
-| Reverse proxy HTTP redirect | `80` |
-
-### Important paths
 
 | Artifact | Typical path |
 | --- | --- |
@@ -327,8 +230,7 @@ echo | openssl s_client -servername vulnoraiq.example.com \
 | Backups | `/data/backups` |
 | Production env file | `.env.production` or secret-manager injected env |
 | Example env file | `.env.production.example` |
-
-### Core environment variables
+| GenAI scenario manifest | `benchmarks/fixtures/genai/scenarios.yaml` |
 
 | Variable | Purpose |
 | --- | --- |
@@ -344,12 +246,4 @@ echo | openssl s_client -servername vulnoraiq.example.com \
 
 ## 13. Escalation
 
-Use [`INCIDENT_RESPONSE.md`](INCIDENT_RESPONSE.md) for security events. Escalate immediately for:
-
-- suspected token leak
-- auth bypass or trusted-proxy spoofing
-- artifact exposure
-- path traversal attempt with successful access
-- repeated rate-limit spikes or scan queue exhaustion
-- corrupted SQLite store
-- dependency vulnerability affecting runtime security
+Use [`INCIDENT_RESPONSE.md`](INCIDENT_RESPONSE.md) for security events. Escalate immediately for suspected token leak, auth bypass, artifact exposure, repeated rate-limit spikes, scan queue exhaustion, corrupted SQLite store, dependency vulnerability affecting runtime security, or GenAI readiness regression on a release branch.
