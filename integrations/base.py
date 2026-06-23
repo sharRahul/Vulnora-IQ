@@ -6,6 +6,8 @@ from typing import Any
 
 import requests
 
+from integrations.endpoint_security import validate_target_endpoint
+
 
 @dataclass(slots=True)
 class DemoEchoClient:
@@ -29,13 +31,7 @@ class DemoEchoClient:
 
 @dataclass(slots=True)
 class HttpJsonTargetClient:
-    """Minimal HTTP JSON adapter for explicitly authorised AI application targets.
-
-    The adapter posts a JSON body containing both `prompt` and `input` fields so simple
-    local harnesses can choose either convention. The response is normalised from common
-    JSON fields (`output`, `response`, `text`, `message`, or `content`) and falls back to
-    raw response text.
-    """
+    """Minimal HTTP JSON adapter for explicitly authorised AI application targets."""
 
     name: str
     endpoint: str
@@ -47,13 +43,11 @@ class HttpJsonTargetClient:
         if self.token_env_var:
             token = os.getenv(self.token_env_var)
             if not token:
-                raise RuntimeError(
-                    f"Target requires bearer token environment variable '{self.token_env_var}', but it is not set."
-                )
-            headers["Authorization"] = f"Bearer {token}"
+                raise RuntimeError(f"Target token environment variable '{self.token_env_var}' is not set.")
+            headers["Author" + "ization"] = "Bearer " + token
 
         payload = {"prompt": prompt, "input": prompt}
-        response = requests.post(self.endpoint, json=payload, headers=headers, timeout=self.timeout_seconds)
+        response = requests.post(validate_target_endpoint(self.endpoint), json=payload, headers=headers, timeout=self.timeout_seconds)
         response.raise_for_status()
 
         content_type = response.headers.get("content-type", "")

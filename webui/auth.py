@@ -26,9 +26,25 @@ _ENV_PRODUCTION = "VULNORAIQ_ENV"
 _ENV_AUTH_MODE = "VULNORAIQ_AUTH_MODE"
 
 _DEFAULT_PERMISSIONS: dict[str, set[str]] = {
-    "viewer": {"view_scans", "download_artifacts"},
-    "analyst": {"view_scans", "download_artifacts", "start_demo_scan"},
-    "admin": {"view_scans", "download_artifacts", "start_demo_scan", "start_configured_scan", "manage_runtime"},
+    "viewer": {"view_scans", "download_artifacts", "view_own_scans", "download_own_artifacts"},
+    "analyst": {
+        "view_scans",
+        "download_artifacts",
+        "view_own_scans",
+        "download_own_artifacts",
+        "start_demo_scan",
+    },
+    "admin": {
+        "view_scans",
+        "download_artifacts",
+        "view_own_scans",
+        "download_own_artifacts",
+        "view_all_scans",
+        "download_all_artifacts",
+        "start_demo_scan",
+        "start_configured_scan",
+        "manage_runtime",
+    },
 }
 
 _INTERNAL_ADMIN_TOKEN = "vulnoraiq-internal-admin-token"
@@ -162,9 +178,7 @@ class WebAuthManager:
         if env_tokens:
             for candidate, role in env_tokens.items():
                 if hmac.compare_digest(candidate, token):
-                    return AuthPrincipal(
-                        f"env-{role}", role, _DEFAULT_PERMISSIONS[role], authenticated=True
-                    )
+                    return AuthPrincipal(f"env-{role}", role, _DEFAULT_PERMISSIONS[role], authenticated=True)
             return None
 
         if self.is_production():
@@ -176,9 +190,7 @@ class WebAuthManager:
                 continue
             if str(user.get("token_hash")) == digest:
                 role = str(user.get("role", "viewer"))
-                return AuthPrincipal(
-                    str(user.get("username")), role, self.permissions_for_role(role), authenticated=True
-                )
+                return AuthPrincipal(str(user.get("username")), role, self.permissions_for_role(role), authenticated=True)
         return None
 
     def authenticate_proxy_identity(

@@ -30,8 +30,7 @@ jobs:
         run: python -m pip check
 
       - name: Dependency vulnerability audit
-        continue-on-error: true
-        run: python -m pip_audit 2>&1 || true
+        run: python -m pip_audit
 
       - name: Lint with ruff
         run: ruff check .
@@ -53,17 +52,7 @@ jobs:
           path: reports/output/ci-logs/python-ci-pytest-${{ matrix.python-version }}.log
 
       - name: Validate Web UI package wiring
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          from webui.hosted_server import STATIC_DIR, load_config
-          assert (STATIC_DIR / 'index.html').exists()
-          assert (STATIC_DIR / 'styles.css').exists()
-          assert (STATIC_DIR / 'app.js').exists()
-          config = load_config()
-          assert 'demo' in config['targets']
-          assert 'baseline' in config['profiles']
-          PY
+        run: python -c "from webui.hosted_server import STATIC_DIR, load_config; assert (STATIC_DIR / 'index.html').exists(); assert (STATIC_DIR / 'styles.css').exists(); assert (STATIC_DIR / 'app.js').exists(); cfg = load_config(); assert 'demo' in cfg['targets']; assert 'baseline' in cfg['profiles']"
 
       - name: Validate package metadata
         run: python scripts/validate_package_metadata.py
@@ -75,21 +64,10 @@ jobs:
         run: python scripts/validate_genai_readiness.py
 
       - name: Validate target contracts
-        run: |
-          python - <<'PY'
-          from integrations.contract_validation import TargetContractValidator
-          result = TargetContractValidator().validate()
-          assert result.status in {'pass', 'warn'}
-          assert not result.errors
-          PY
+        run: python -c "from integrations.contract_validation import TargetContractValidator; result = TargetContractValidator().validate(); assert result.status in {'pass', 'warn'}; assert not result.errors"
 
       - name: Validate benchmark fixtures
-        run: |
-          python - <<'PY'
-          from benchmarks.fixture_validation import BenchmarkFixtureValidator
-          result = BenchmarkFixtureValidator().validate()
-          assert result.status == 'pass'
-          PY
+        run: python -c "from benchmarks.fixture_validation import BenchmarkFixtureValidator; result = BenchmarkFixtureValidator().validate(); assert result.status == 'pass'"
 
       - name: Run functional acceptance test
         run: |
