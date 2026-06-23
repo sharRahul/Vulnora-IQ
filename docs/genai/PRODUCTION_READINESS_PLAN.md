@@ -1,6 +1,6 @@
 # GenAI Security Production Readiness Plan
 
-**Plan status: Completed** for `0.2.0` controlled internal enterprise deployment.
+**Plan status: Completed** for `0.2.0` self-hosted internal deployment.
 
 **Scenario harness status:** production-grade scenario harness for controlled internal validation.
 
@@ -8,7 +8,7 @@
 
 **Readiness claim:** VulnoraIQ has a **production-grade scenario harness** for controlled internal GenAI Security validation. The harness expands the source-confirmed `DSGAI01–DSGAI21` taxonomy into **84 concrete scenario cases**: secure, vulnerable, ambiguous-review, and edge-case-boundary coverage for every source-confirmed category.
 
-**Assurance boundary:** this is **not independent real-world detection assurance**. It means the scenario matrix, evidence contract, evaluator chain, confidence floors, manual-review routing, source-discrepancy tracking, tests, and CI gates are production-grade for controlled internal validation. Public internet / SaaS readiness, certified VAPT-grade assurance, and independent real-world GenAI detection validation remain outside this claim.
+**Assurance boundary:** this is **not independent real-world detection assurance**. It means the scenario matrix, evidence contract, evaluator chain, confidence floors, manual-review routing, source-discrepancy tracking, tests, and CI gates are production-grade for controlled internal validation. Certified VAPT-grade assurance and independent real-world GenAI detection validation remain outside this claim.
 
 ## Source-confirmed baseline
 
@@ -27,7 +27,7 @@ VulnoraIQ tracks the OWASP GenAI Data Security categories `DSGAI01–DSGAI21` fr
 | GENAI-4 | Reports and dashboard language | Complete | GenAI findings must state the assessed surface, synthetic evidence basis, manual-review requirement, and assurance limitation. |
 | GENAI-5 | COMPASS workflow integration | Complete | Observe, Orient, Decide, Act workflow is mapped to inventory, mapping, prioritisation, and report/retest actions. |
 | GENAI-6 | CI and release gates | Complete | `scripts/validate_genai_readiness.py`, tests, package validation, and both CI workflows validate the harness. |
-| GENAI-7 | Public/SaaS hardening | Deferred | Requires tenant isolation, external assurance, SIEM/SOAR integration, SLOs, public ingress protection, and stronger identity/governance integrations. |
+| GENAI-7 | Independent assurance maturity | Future maturity item | Requires approved-environment validation, independent assurance, SIEM/SOAR integration, and stronger identity/governance integrations. |
 
 ## Production-grade scenario harness
 
@@ -85,4 +85,4 @@ python scripts/validate_package_metadata.py
 
 ## Completion decision
 
-**Completed for `0.2.0` controlled internal enterprise GenAI Security readiness.** The scenario harness is now production-grade for controlled internal validation with 84 concrete scenario cases, strict evidence contract validation, deterministic evaluator checks, and CI/release gates. This remains **not independent real-world detection assurance** and does not support public/SaaS/certified claims without the deferred hardening and independent validation work.
+**Completed for `0.2.0` self-hosted internal GenAI Security readiness.** The scenario harness is now production-grade for controlled internal validation with 84 concrete scenario cases, strict evidence contract validation, deterministic evaluator checks, and CI/release gates. This remains **not independent real-world detection assurance** and does not support certified claims without independent validation work.
