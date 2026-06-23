@@ -290,6 +290,22 @@ button:focus,
     background: rgba(15, 20, 26, 0.88);
   }
 
+  .primary,
+  .topbar-button.accent {
+    background: #DCE6EE;
+    color: #0F141A;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+  }
+
+  .primary:disabled,
+  .topbar-button.accent:disabled {
+    background: #26313D;
+    color: #A8B4BE;
+    border: 1px solid rgba(216, 226, 234, 0.14);
+    opacity: 1;
+    box-shadow: none;
+  }
+
   .brand-mark,
   .section-title span,
   .top-risk-item > span {
