@@ -2,13 +2,13 @@
 
 This folder defines VulnoraIQ's GenAI data-security and governance testing plan beyond the existing OWASP LLM 2025 category files.
 
-> **Status:** Working starter for controlled internal enterprise assessment readiness.  
-> **Scope:** OWASP GenAI Data Security Risks and Mitigations 2026, OWASP GenAI COMPASS operating model, safe synthetic scenario suites, deterministic GenAI evaluators, and VulnoraIQ evidence/reporting guardrails.  
-> **Boundary:** GenAI findings are framework evidence requiring human review. VulnoraIQ does not claim certified VAPT-grade assurance, public internet/SaaS readiness, or production-validated real-world detection coverage for every category.
+> **Status:** Production-grade scenario harness for controlled internal enterprise validation.  
+> **Scope:** OWASP GenAI Data Security Risks and Mitigations 2026, OWASP GenAI COMPASS operating model, safe synthetic scenario matrix, deterministic GenAI evaluators, and VulnoraIQ evidence/reporting guardrails.  
+> **Boundary:** GenAI findings are framework evidence requiring human review. The harness is production-grade for controlled internal validation, but the results are **not certified assurance** and are not independent real-world detection assurance.
 
 ## Source documents reviewed
 
-- `docs/owasp-documents/OWASP-GenAI-COMPASS-RunBook-1.0.pdf` — confirms COMPASS uses an Observe/Orient/Decide/Act workflow and integrates MITRE ATT&CK, ATLAS, NAVIGATOR, D3FEND, CAPEC, STIX, CVE, CWE, and a 5-point scoring method.
+- `docs/owasp-documents/OWASP-GenAI-COMPASS-RunBook-1.0.pdf` — reviewed for COMPASS/OODA workflow and framework alignment.
 - `docs/owasp-documents/OWASP-GenAI-Data-Security-Risks-and-Mitigations-2026-v1.0.pdf` — confirms GenAI data-security categories `DSGAI01` through `DSGAI21` in the visible table of contents.
 - existing VulnoraIQ `docs/owasp/` LLM implementation specs
 - `docs/owasp/OWASP_TO_MITRE_ATLAS_CROSSWALK.md`
@@ -22,79 +22,67 @@ The GenAI Data Security document's narrative text references a `DSGAI01–DSGAI2
 | Asset | Status | Purpose |
 | --- | --- | --- |
 | [`PRODUCTION_READINESS_PLAN.md`](PRODUCTION_READINESS_PLAN.md) | Complete | Phase-by-phase GenAI Security readiness plan and completion decision. |
-| `benchmarks/fixtures/genai/scenarios.yaml` | Working starter | Machine-readable scenario manifest for `DSGAI01–DSGAI21`, with secure, vulnerable, ambiguous, and edge-case fixture coverage. |
-| `core/genai_evaluators.py` | Working starter | Deterministic GenAI evaluator composition for synthetic marker leakage, classification, data surface, evidence fields, context minimisation, and scenario expectations. |
-| `scripts/validate_genai_readiness.py` | Controlled-internal release gate | Validates GenAI manifests, source discrepancy tracking, docs status, evidence fields, fixture coverage, and MITRE ATLAS tactic format. |
-| `tests/test_genai_readiness_validation.py` | CI gate | Regression tests for validator and evaluator behaviour. |
+| `benchmarks/fixtures/genai/scenarios.yaml` | Production-grade scenario harness | v2 matrix generating 84 concrete scenario cases across `DSGAI01–DSGAI21` and secure/vulnerable/ambiguous/edge-case fixtures. |
+| `core/genai_evaluators.py` | Production harness evaluators | Deterministic evaluator primitives, confidence-floor checks, acceptance criteria checks, and aggregate result handling. |
+| `scripts/validate_genai_readiness.py` | Controlled-internal release gate | Validates GenAI source coverage, fixture matrix, evidence contract, confidence floors, source discrepancy tracking, docs status, and MITRE ATLAS tactic format. |
+| `tests/test_genai_readiness_validation.py` | CI gate | Regression tests for the production-grade scenario harness validator and evaluator behaviour. |
+
+## Production-grade scenario harness
+
+The GenAI harness now requires:
+
+- `21` source-confirmed GenAI categories.
+- `4` required fixture types per category: `secure`, `vulnerable`, `ambiguous`, and `edge_case`.
+- `84 concrete scenario cases` generated from the category × fixture matrix.
+- `genai-production-v2` evidence contract.
+- confidence floors for scenario evaluation.
+- high/critical severity requirement for vulnerable production cases.
+- required manual review for every GenAI result.
+- safe synthetic fixture enforcement for CI.
+- explicit real-world validation requirement so the repo cannot overclaim independent assurance.
 
 ## Confirmed GenAI data-security coverage areas
 
-| OWASP ID | GenAI data-security risk | Current status | Related OWASP LLM categories | Primary evidence surfaces |
-| --- | --- | --- | --- | --- |
-| DSGAI01 | Sensitive Data Leakage | Working starter | LLM02, LLM07 | prompt, response, report artifact, logs |
-| DSGAI02 | Agent Identity & Credential Exposure | Working starter | LLM02, LLM06 | tool trace, credential scope, agent identity metadata |
-| DSGAI03 | Shadow AI & Unsanctioned Data Flows | Working starter | LLM02, LLM03, LLM06 | provider inventory, network/service discovery, policy evidence |
-| DSGAI04 | Data, Model & Artifact Poisoning | Working starter | LLM03, LLM04, LLM08 | source manifest, corpus delta, model/artifact hash |
-| DSGAI05 | Data Integrity & Validation Failures | Working starter | LLM04, LLM05, LLM08 | schema validation, freshness, provenance, source approval |
-| DSGAI06 | Tool, Plugin & Agent Data Exchange Risks | Working starter | LLM02, LLM06 | tool trace, connector manifest, data-flow evidence |
-| DSGAI07 | Data Governance, Lifecycle & Classification for AI Systems | Working starter | all LLM categories | classification labels, lineage, retention, approval evidence |
-| DSGAI08 | Non-Compliance & Regulatory Violations | Working starter | LLM02, LLM03, LLM04, LLM06 | policy mapping, data residency, regulatory control evidence |
-| DSGAI09 | Multimodal Capture & Cross-Channel Data Leakage | Working starter | LLM02, LLM05 | multimodal input metadata, output artifact, DLP findings |
-| DSGAI10 | Synthetic Data, Anonymization & Transformation Pitfalls | Working starter | LLM02, LLM04, LLM09 | synthetic-data metadata, transformation record, re-identification risk evidence |
-| DSGAI11 | Cross-Context & Multi-User Conversation Bleed | Working starter | LLM02, LLM08 | session memory, tenant/user boundary, conversation context |
-| DSGAI12 | Unsafe Natural-Language Data Gateways (LLM-to-SQL/Graph) | Working starter | LLM05, LLM06 | generated query, schema allowlist, DB/tool trace |
-| DSGAI13 | Vector Store Platform Data Security | Working starter | LLM02, LLM08 | vector store metadata, ACLs, tenant index, embedding trace |
-| DSGAI14 | Excessive Telemetry & Monitoring Leakage | Working starter | LLM02, LLM07 | logs, traces, audit events, monitoring exports |
-| DSGAI15 | Over-Broad Context Windows & Prompt Over-Sharing | Working starter | LLM01, LLM02, LLM07 | context assembly, trust-domain segments, prompt metadata |
-| DSGAI16 | Endpoint & Browser Assistant Overreach | Working starter | LLM02, LLM06 | browser/endpoint permission, local context, tool trace |
-| DSGAI17 | Data Availability & Resilience Failures in AI Pipelines | Working starter | LLM08, LLM09, LLM10 | vector/index availability, failover state, backup/restore validation |
-| DSGAI18 | Inference & Data Reconstruction | Working starter | LLM02, LLM08 | inference probe, embedding/model output, privacy-risk evidence |
-| DSGAI19 | Human-in-the-Loop & Labeler Overexposure | Working starter | LLM02, LLM06 | reviewer workflow, label queue, masking/approval evidence |
-| DSGAI20 | Model Exfiltration & IP Replication | Working starter | LLM02, LLM03 | model artifact metadata, access logs, extraction probe |
-| DSGAI21 | Disinformation & Integrity Attacks via Data Poisoning | Working starter | LLM04, LLM09 | poisoned-source scenario, trust score, unsupported claim evidence |
-
-## Relationship to existing LLM tests
-
-The existing LLM test plan focuses on model, RAG, agent, output, and resource-risk categories. The GenAI plan adds organisation-level and data-security controls:
-
-- data asset discovery and inventory
-- data classification and policy binding
-- data flow mapping and lineage
-- GenAI/AI data bill of materials concepts
-- access governance and entitlement posture for agents
-- lifecycle, retention, and deletion
-- provider data handling and residency
-- report/log/telemetry artifact hygiene
-- multimodal data capture and leakage
-- vector-store platform security
-- human-review and labeler exposure controls
-
-## COMPASS alignment
-
-VulnoraIQ implements GenAI assessment workflow support around the COMPASS loop:
-
-| COMPASS phase | VulnoraIQ implementation implication |
-| --- | --- |
-| Observe | Inventory AI assets, data stores, providers, prompts, context windows, tools, logs, and RAG/vector stores. |
-| Orient | Map observed assets to OWASP LLM, DSGAI, Agentic ASI, MITRE ATLAS, incidents, and control gaps. |
-| Decide | Prioritise safe GenAI scenario suites, mitigations, compensating controls, and implementation backlog. |
-| Act | Generate reports, roadmap items, tickets, control evidence, and retest scenarios. |
+| OWASP ID | GenAI data-security risk | Current status | Primary evidence surfaces |
+| --- | --- | --- | --- |
+| DSGAI01 | Sensitive Data Leakage | Production harness | prompt |
+| DSGAI02 | Agent Identity & Credential Exposure | Production harness | tool trace |
+| DSGAI03 | Shadow AI & Unsanctioned Data Flows | Production harness | provider metadata |
+| DSGAI04 | Data, Model & Artifact Poisoning | Production harness | retrieval |
+| DSGAI05 | Data Integrity & Validation Failures | Production harness | report |
+| DSGAI06 | Tool, Plugin & Agent Data Exchange Risks | Production harness | tool trace |
+| DSGAI07 | Data Governance, Lifecycle & Classification for AI Systems | Production harness | provider metadata |
+| DSGAI08 | Non-Compliance & Regulatory Violations | Production harness | provider metadata |
+| DSGAI09 | Multimodal Capture & Cross-Channel Data Leakage | Production harness | multimodal input |
+| DSGAI10 | Synthetic Data, Anonymization & Transformation Pitfalls | Production harness | report |
+| DSGAI11 | Cross-Context & Multi-User Conversation Bleed | Production harness | memory |
+| DSGAI12 | Unsafe Natural-Language Data Gateways (LLM-to-SQL/Graph) | Production harness | tool trace |
+| DSGAI13 | Vector Store Platform Data Security | Production harness | vector store |
+| DSGAI14 | Excessive Telemetry & Monitoring Leakage | Production harness | log |
+| DSGAI15 | Over-Broad Context Windows & Prompt Over-Sharing | Production harness | prompt |
+| DSGAI16 | Endpoint & Browser Assistant Overreach | Production harness | tool trace |
+| DSGAI17 | Data Availability & Resilience Failures in AI Pipelines | Production harness | report |
+| DSGAI18 | Inference & Data Reconstruction | Production harness | model artifact |
+| DSGAI19 | Human-in-the-Loop & Labeler Overexposure | Production harness | provider metadata |
+| DSGAI20 | Model Exfiltration & IP Replication | Production harness | model artifact |
+| DSGAI21 | Disinformation & Integrity Attacks via Data Poisoning | Production harness | retrieval |
 
 ## Validation
 
 ```bash
 python scripts/validate_genai_readiness.py
 pytest tests/test_genai_readiness_validation.py -q
+python scripts/validate_package_metadata.py
 ```
 
 ## Files
 
 - [`PRODUCTION_READINESS_PLAN.md`](PRODUCTION_READINESS_PLAN.md) — completed phased implementation plan
-- `benchmarks/fixtures/genai/scenarios.yaml` — source-confirmed GenAI scenario manifest
+- `benchmarks/fixtures/genai/scenarios.yaml` — production-grade controlled-internal scenario harness
 - `core/genai_evaluators.py` — deterministic GenAI evaluator suite
 - `scripts/validate_genai_readiness.py` — CI/release validator
 - [`../owasp/OWASP_TO_MITRE_ATLAS_CROSSWALK.md`](../owasp/OWASP_TO_MITRE_ATLAS_CROSSWALK.md) — OWASP/GenAI/Agentic to MITRE ATLAS mapping
 
 ## Remaining future work
 
-GenAI Security remains a working starter. Future work should deepen real-world fixtures, integrate report/dashboard GenAI widgets, add provider inventory connectors, add SIEM/SOAR mappings, and validate findings against authorised real environments.
+The scenario harness is production-grade for controlled internal validation. Future work should validate it against authorised real environments, integrate report/dashboard GenAI widgets, add provider inventory connectors, add SIEM/SOAR mappings, and obtain independent assurance before external claims.
