@@ -18,6 +18,8 @@ vulnoraiq --target demo --profile baseline
 vulnoraiq-web --host 127.0.0.1 --port 8787
 ```
 
+Stop the local Web UI with `Ctrl+C` in the terminal where `vulnoraiq-web` is running.
+
 Health checks:
 
 ```bash
@@ -42,6 +44,18 @@ export VULNORAIQ_WEB_USERS_PATH=/data/web_users.yaml
 
 python scripts/validate_runtime_production_config.py
 vulnoraiq-web --host 127.0.0.1 --port 8787
+```
+
+Stop the production-mode Web UI with `Ctrl+C` when it is running in the foreground. If it was started in the background, identify and stop the process listening on port `8787`:
+
+```bash
+lsof -ti :8787 | xargs kill
+```
+
+Use a forced kill only if the process does not stop cleanly:
+
+```bash
+lsof -ti :8787 | xargs kill -9
 ```
 
 `VULNORAIQ_WEB_USERS_PATH` points at the persisted web auth user store (YAML). Place it on the
@@ -103,12 +117,25 @@ docker run --rm -p 8787:8787 \
 
 The container runs as a non-root user, uses `/data` for SQLite DB and reports, exposes port `8787`, and includes a `/healthz` healthcheck.
 
+Stop a foreground `docker run` container with `Ctrl+C`. For a detached container, stop it by container ID or name:
+
+```bash
+docker ps
+docker stop <container-id-or-name>
+```
+
 ## Docker Compose
 
 ```bash
 cp .env.production.example .env.production
 # Edit .env.production and replace every placeholder token before starting.
 docker compose up --build
+```
+
+Stop Docker Compose deployments with:
+
+```bash
+docker compose down
 ```
 
 Do not commit real `.env.production` files. Commit only `.env.production.example` with placeholders.
