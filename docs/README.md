@@ -10,10 +10,10 @@ This folder contains the operational, security, production-readiness, assurance,
 
 | Need | Document |
 | --- | --- |
-| Quick start, feature overview, maturity statement | [`../README.md`](../README.md) |
+| Quick start, standalone launcher, feature overview, maturity statement | [`../README.md`](../README.md) |
 | Security policy and vulnerability reporting | [`../SECURITY.md`](../SECURITY.md) |
-| Deployment, env vars, TLS/reverse proxy, metrics, backups | [`DEPLOYMENT.md`](DEPLOYMENT.md) |
-| Day-2 operations and troubleshooting | [`RUNBOOK.md`](RUNBOOK.md) |
+| Deployment, local launcher, env vars, TLS/reverse proxy, metrics, backups | [`DEPLOYMENT.md`](DEPLOYMENT.md) |
+| Day-2 operations, local/server startup, shutdown, and troubleshooting | [`RUNBOOK.md`](RUNBOOK.md) |
 | Incident handling | [`INCIDENT_RESPONSE.md`](INCIDENT_RESPONSE.md) |
 | Release gates and RC/final tagging | [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) |
 | Upgrade from `0.0.1.x` to `0.2.0` | [`MIGRATION.md`](MIGRATION.md) |
@@ -41,7 +41,8 @@ It must **not** be described as:
 
 | Area | Status |
 | --- | --- |
-| Auth | Complete: fail-closed token auth; trusted reverse-proxy identity mode available |
+| Standalone local launcher | Complete: cross-platform launcher files, startup/dependency checks, local browser open, startup panel, and loopback-only stop control |
+| Auth | Complete: fail-closed token auth for hosted/production mode; trusted reverse-proxy identity mode available |
 | Production startup validation | Complete: runtime checks via `webui/production_checks.py` and `scripts/validate_runtime_production_config.py` |
 | Web hardening | Complete: CSRF, request-size limits, rate limiting, security headers, structured errors |
 | Persistence | Complete: SQLite default with WAL, foreign keys, busy timeout, schema versioning |

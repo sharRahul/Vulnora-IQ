@@ -6,18 +6,29 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Quick-start guidance for stopping the Web UI in foreground, background, Docker, and Docker Compose runs.
+- Cross-platform local Web UI launchers for standalone laptop/workstation use:
+  - `launch-vulnoraiq-webui.bat`
+  - `launch-vulnoraiq-webui.command`
+  - `launch-vulnoraiq-webui.sh`
+  - `launch-vulnoraiq-webui.py`
+- Local launcher startup checks for Python runtime, required dependencies, core modules, target/profile config, Web UI assets, output directory, and SQLite job-store readiness.
+- Web UI startup and local-server-controls panel with dependency checks, quick-start actions, runtime options, refresh checks, and loopback launcher-mode **Stop local server** control.
+- Quick-start guidance for stopping the Web UI in foreground, background, launcher, Docker, and Docker Compose runs.
 
 ### Changed
 
+- Project license changed from MIT to Apache License 2.0.
+- Package metadata now declares `Apache-2.0`, and package metadata validation checks the project license file and third-party notice alignment.
 - Documentation now consistently describes VulnoraIQ as a self-hosted laptop/workstation/internal-server application for authorised AI assessment work.
 - Current-scope readiness items are now consistently marked **Complete** for the self-hosted/internal assessment scope.
 - README, docs index, deployment guide, security policy, implementation status, readiness scorecard, backlog, release checklist, assurance, runbook, incident response, GenAI readiness plan, and Agentic Applications readiness plan were aligned to the same product positioning and completion vocabulary.
+- Local standalone launcher mode is documented as a loopback-only convenience path, separate from the hardened hosted/production `vulnoraiq-web` path.
 
 ### Notes
 
 - VulnoraIQ findings remain framework evidence requiring human review.
 - This release does not claim certified VAPT-grade assurance or independently validated real-environment GenAI detection coverage.
+- Launcher mode is intended for local laptop/workstation use only; exposed or shared deployments must use production mode with auth enabled and production configuration validation.
 
 ## [0.2.0] - 2026-06-22
 

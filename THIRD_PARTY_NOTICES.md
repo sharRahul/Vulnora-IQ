@@ -2,6 +2,10 @@
 
 This file records third-party data, documentation, and source material used or referenced by VulnoraIQ.
 
+## VulnoraIQ project license
+
+Unless otherwise stated, VulnoraIQ-specific source code, documentation, configuration, examples, and generated planning material are licensed under the Apache License, Version 2.0. See [`LICENSE`](LICENSE).
+
 ## MITRE ATLAS
 
 VulnoraIQ includes documentation and planning data derived from MITRE ATLAS.
@@ -15,7 +19,7 @@ MITRE ATLAS data is Copyright 2021-2026 MITRE and is licensed under the Apache L
 
 VulnoraIQ's use of MITRE ATLAS data does not imply endorsement by MITRE.
 
-Unless otherwise stated, VulnoraIQ-specific source code, documentation, configuration, examples, and generated planning material are licensed under this repository's own license. MITRE ATLAS-derived data remains subject to the Apache License, Version 2.0.
+MITRE ATLAS-derived data remains subject to the Apache License, Version 2.0 and its upstream attribution requirements.
 
 ## Apache License 2.0 reference
 

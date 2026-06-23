@@ -2,7 +2,7 @@
 
 This document separates current complete capability from future assurance and maturity items so users can understand what is ready today.
 
-> **Current maturity:** VulnoraIQ version `0.2.0` has passed the **controlled internal production-readiness gate** for self-hosted laptop/server use, with security hardening, SQLite persistence, auth, CSRF, rate limiting, audit logging, metrics, backup/restore tooling, container support, production startup validation, completed OWASP LLM readiness coverage for the current safe local/internal scope, completed Agentic Applications readiness gates, and completed GenAI Security scenario-harness readiness for `DSGAI01–DSGAI21`.
+> **Current maturity:** VulnoraIQ version `0.2.0` has passed the **controlled internal production-readiness gate** for self-hosted laptop/server use, with security hardening, SQLite persistence, auth, CSRF, rate limiting, audit logging, metrics, backup/restore tooling, container support, standalone local launchers, production startup validation, completed OWASP LLM readiness coverage for the current safe local/internal scope, completed Agentic Applications readiness gates, and completed GenAI Security scenario-harness readiness for `DSGAI01–DSGAI21`.
 
 > **Important limitation:** OWASP LLM 2025, GenAI Security, Agentic Applications, and MITRE ATLAS mappings are framework evidence and planning/validation controls. They are not the same as independently validated assurance. Treat output as development and internal assessment evidence requiring human review.
 
@@ -38,6 +38,8 @@ This document separates current complete capability from future assurance and ma
 | Area | Status | Notes |
 | --- | --- | --- |
 | Python package scaffold | Complete | VulnoraIQ version `0.2.0` installs as a Python package with CLI entry points. |
+| Standalone local launchers | Complete for laptop/workstation use | `launch-vulnoraiq-webui.bat`, `launch-vulnoraiq-webui.command`, `launch-vulnoraiq-webui.sh`, and `launch-vulnoraiq-webui.py` start the local Web UI, run startup checks, prepare local output/job-store paths, and open the browser. |
+| Launcher startup and shutdown controls | Complete for local loopback launcher mode | `scripts/launch_webui.py`, `webui/static/launcher-controls.js`, and `webui/static/launcher-controls.css` provide dependency checks, quick-start actions, configurable runtime option display, and a loopback-only **Stop local server** action. |
 | Functional acceptance runner | Complete | `scripts/run_functional_test.py` runs a safe demo/baseline assessment, validates outputs, and refreshes the dashboard example PNG. |
 | Production readiness gate | Complete for self-hosted production scope | `scripts/validate_production_testing_readiness.py` validates production controls and documentation guardrails. |
 | Production runtime config validation | Complete for self-hosted production scope | `scripts/validate_runtime_production_config.py` validates runtime environment before startup. |
@@ -73,7 +75,19 @@ This document separates current complete capability from future assurance and ma
 
 ## Current safe usage
 
-Run the Web UI in production mode:
+Run the standalone local Web UI launcher for laptop/workstation use:
+
+```bash
+python launch-vulnoraiq-webui.py
+```
+
+Or double-click the platform launcher from the repository root:
+
+- Windows: `launch-vulnoraiq-webui.bat`
+- macOS: `launch-vulnoraiq-webui.command`
+- Linux: `launch-vulnoraiq-webui.sh`
+
+Run the Web UI in production mode for a self-hosted internal server:
 
 ```bash
 VULNORAIQ_ENV=production \
@@ -106,12 +120,12 @@ For any configured target outside demo mode:
 
 ## Implementation roadmap status
 
-All production hardening blockers PRD-001 through PRD-012 are closed for self-hosted internal deployment. The OWASP LLM 2025 safe local/internal readiness scope is complete for all 10 categories. The Agentic Applications Production Readiness Plan is complete for the intended laptop/server application model. The GenAI Security Production Readiness Plan is complete for `DSGAI01–DSGAI21` controlled internal readiness.
+All production hardening blockers PRD-001 through PRD-012 are closed for self-hosted internal deployment. The OWASP LLM 2025 safe local/internal readiness scope is complete for all 10 categories. The Agentic Applications Production Readiness Plan is complete for the intended laptop/server application model. The GenAI Security Production Readiness Plan is complete for `DSGAI01–DSGAI21` controlled internal readiness. The standalone local launcher path is complete for laptop/workstation use.
 
 The next phases should focus on:
 
 - Scanner/evaluator depth: deeper OWASP and GenAI check logic, evaluator thresholds, fixture realism, and approved environment validation.
-- Packaged laptop/server installation paths and smoother local startup/shutdown guidance.
+- Signed/packaged installer artifacts for laptop/server installation rather than repository-checkout launchers only.
 - Target adapter templates for AI agents, LLM APIs, RAG systems, and local model servers.
 - Report language and assurance validation for stronger claims.
 

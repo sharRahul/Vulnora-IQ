@@ -19,13 +19,15 @@ VulnoraIQ findings are framework evidence for authorised review. They are not ce
 | Deployment model | Status | Notes |
 | --- | --- | --- |
 | Local laptop / workstation demo | Complete | Safe demo target; no external API keys required |
+| Standalone local Web UI launcher | Complete | Loopback-only laptop/workstation convenience path with startup checks and local stop control; not for shared/exposed deployment |
 | Self-hosted internal server deployment | Complete | Requires production configuration validation and real secrets |
 | GenAI Security internal assessment readiness | Complete for current scope | `DSGAI01–DSGAI21` safe synthetic scenarios, deterministic evaluators, and CI validation |
 | Certified VAPT-grade assurance | Not claimed | Findings require human review and deeper validation |
 
 See also:
 
-- [`README.md`](README.md) — maturity and quick start
+- [`README.md`](README.md) — maturity, standalone launcher, and quick start
+- [`ACCEPTABLE_USE.md`](ACCEPTABLE_USE.md) — acceptable-use and misuse disclaimer
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — deployment controls
 - [`docs/RUNBOOK.md`](docs/RUNBOOK.md) — operations procedures
 - [`docs/INCIDENT_RESPONSE.md`](docs/INCIDENT_RESPONSE.md) — incident playbooks
@@ -64,6 +66,25 @@ Allowed use:
 
 Configured non-demo targets require explicit authorisation. Reports and artifacts may contain sensitive evidence and must be handled accordingly.
 
+Users are solely responsible for complying with [`ACCEPTABLE_USE.md`](ACCEPTABLE_USE.md), obtaining required authorisation, and using VulnoraIQ only within the defensive assessment scope. To the fullest extent permitted by law, the maintainer and contributors disclaim responsibility for prohibited, unlawful, unauthorised, or otherwise improper use by any user or third party.
+
+---
+
+## Local standalone launcher security boundary
+
+The standalone launcher files (`launch-vulnoraiq-webui.bat`, `launch-vulnoraiq-webui.command`, `launch-vulnoraiq-webui.sh`, and `launch-vulnoraiq-webui.py`) are intended for local laptop/workstation use.
+
+Launcher mode:
+
+- binds to loopback by default;
+- prepares local runtime output under `reports/output/webui/`;
+- opens the Web UI in the user's browser;
+- exposes startup/dependency checks in the Web UI;
+- enables the **Stop local server** action only for the explicit local launcher runtime;
+- uses local development settings for convenience.
+
+Do **not** expose launcher mode on a shared network interface. For shared, remote, or internal-server deployments, use production mode with auth enabled, strong tokens or trusted reverse-proxy identity, production configuration validation, and the standard `vulnoraiq-web` startup path.
+
 ---
 
 ## Production security controls in `0.2.0`
@@ -72,7 +93,7 @@ The self-hosted internal production path includes:
 
 ### Authentication and authorisation
 
-- auth enabled by default
+- auth enabled by default for the hosted server and required in production
 - fail-closed protected endpoints
 - `VULNORAIQ_ENV=production` runtime validation
 - required `VULNORAIQ_ADMIN_TOKEN` in production
@@ -88,6 +109,7 @@ The self-hosted internal production path includes:
 ### Web hardening
 
 - CSRF protection for `POST /api/scans`
+- launcher-mode CSRF validation for local stop-server requests
 - configurable CSRF TTL and cleanup
 - request body size limit
 - malformed JSON and invalid `Content-Length` handling
@@ -120,7 +142,7 @@ The self-hosted internal production path includes:
 - `/readyz` readiness endpoint
 - Prometheus-format `/metrics` endpoint
 - structured JSON audit logs with request correlation IDs
-- audit events for auth failure, authz failure, CSRF failure, rate limiting, scan creation, scan queue full, artifact download, unsafe artifact paths, malformed JSON, oversized requests, and internal errors
+- audit events for auth failure, authz failure, CSRF failure, rate limiting, scan creation, scan queue full, artifact download, unsafe artifact paths, malformed JSON, oversized requests, server shutdown request, and internal errors
 
 ### GenAI Security readiness controls
 
@@ -187,6 +209,7 @@ The following are accepted for the self-hosted internal deployment model and sho
 
 - no native OIDC/JWT validation yet
 - trusted-proxy identity is the current enterprise identity bridge
+- launcher mode is local-loopback convenience only and must not be exposed as a shared service
 - CSRF token store is in-memory and single-instance
 - rate-limit store is in-memory and single-instance
 - SQLite is single-node and not high availability
@@ -211,7 +234,7 @@ Do **not** publicly disclose an exploitable issue before maintainers have had a 
 Include:
 
 - affected version or commit
-- affected component: Web UI, auth, proxy trust, persistence, reporting, scanner, GenAI readiness, CI, docs, or packaging
+- affected component: Web UI, auth, proxy trust, persistence, reporting, scanner, GenAI readiness, CI, docs, packaging, local launcher, or stop-server control
 - reproduction steps
 - expected and actual behaviour
 - whether the issue affects local-only or self-hosted internal deployment assumptions

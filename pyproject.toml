@@ -8,7 +8,7 @@ version = "0.2.0"
 description = "VulnoraIQ AI security assessment framework for LLM applications, RAG systems, agents, and orchestration layers — production-ready for controlled internal deployment."
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = { text = "Apache-2.0" }
 authors = [{ name = "Rahul Sharma" }]
 dependencies = [
   "PyYAML>=6.0.1",

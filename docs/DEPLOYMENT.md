@@ -4,7 +4,43 @@ This guide describes the supported VulnoraIQ `0.2.0` deployment posture.
 
 > **Scope:** VulnoraIQ `0.2.0` is a self-hosted application for authorised AI-agent and LLM-application testing. It is designed to run on a laptop, workstation, lab machine, or internal server controlled by the assessor or organisation. GenAI Security readiness is complete for the current controlled-internal scenario-harness scope.
 
-## Quick start: local development
+## Quick start: local standalone launcher
+
+For laptop/workstation use, the recommended standalone path is the local launcher from the repository root after a one-time install:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -e .[dev]
+```
+
+Then double-click the launcher for your platform:
+
+| Platform | Launcher |
+| --- | --- |
+| Windows | `launch-vulnoraiq-webui.bat` |
+| macOS | `launch-vulnoraiq-webui.command` |
+| Linux | `launch-vulnoraiq-webui.sh` |
+| Any platform | `launch-vulnoraiq-webui.py` |
+
+The launcher:
+
+1. checks Python, required runtime dependencies, core package modules, target/profile config, Web UI assets, output directory, and SQLite job-store readiness;
+2. prepares `reports/output/webui/` and the local SQLite job store;
+3. binds the Web UI to loopback (`127.0.0.1` by default);
+4. opens the browser automatically when `/healthz` is ready;
+5. exposes the Web UI startup panel and **Stop local server** control for launcher-mode shutdown.
+
+Terminal overrides are available:
+
+```bash
+python launch-vulnoraiq-webui.py --host 127.0.0.1 --port 8888
+python launch-vulnoraiq-webui.py --no-browser
+```
+
+> **Important:** Launcher mode is for local laptop/workstation assessment use on loopback. It intentionally uses local development settings for convenience. For an exposed, shared, or internal-server deployment, use the production-mode startup below with auth enabled and production config validation.
+
+## Quick start: local development CLI/server
 
 ```bash
 python -m venv .venv
@@ -18,7 +54,7 @@ vulnoraiq --target demo --profile baseline
 vulnoraiq-web --host 127.0.0.1 --port 8787
 ```
 
-Stop the local Web UI with `Ctrl+C` in the terminal where `vulnoraiq-web` is running.
+Stop the local Web UI with `Ctrl+C` in the terminal where `vulnoraiq-web` is running. If you used the standalone launcher, use **Stop local server** in the Web UI startup panel.
 
 Health checks:
 
@@ -116,7 +152,9 @@ Do not commit real `.env.production` files. Commit only `.env.production.example
 
 ## Authentication and roles
 
-Auth is enabled by default. Use token mode for direct self-hosted runs and trusted reverse-proxy identity mode only when an approved reverse proxy performs authentication and strips inbound identity headers before setting its own.
+Auth is enabled by default for the hosted server and required for production. The local standalone launcher is the exception: it runs on loopback with development settings for laptop/workstation convenience. Do not expose launcher mode on a shared interface.
+
+Use token mode for direct self-hosted runs and trusted reverse-proxy identity mode only when an approved reverse proxy performs authentication and strips inbound identity headers before setting its own.
 
 ```bash
 export VULNORAIQ_AUTH_MODE=token
