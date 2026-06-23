@@ -44,7 +44,7 @@ All blockers PRD-001 through PRD-011 are **Closed**. See [`PRODUCTION_READINESS_
 
 ### Notes on scoring
 
-The 10/10 gate-compliance score means all PRD-001 through PRD-011 blockers are closed. The actual scorecard average for controlled internal deployment is **8.4/10** (see [`PRODUCTION_READINESS_SCORECARD.md`](PRODUCTION_READINESS_SCORECARD.md)), reflecting remaining non-blocking improvements in runbooks, incident response, and release management.
+The 10/10 gate-compliance score means all PRD-001 through PRD-011 blockers are closed. The actual scorecard average for controlled internal deployment is **8.5/10** (see [`PRODUCTION_READINESS_SCORECARD.md`](PRODUCTION_READINESS_SCORECARD.md)), reflecting remaining non-blocking maturity items such as SIEM integration, OIDC, signed releases, SAST/DAST, public/SaaS architecture, and independent assurance.
 
 ## Production claim rule
 
