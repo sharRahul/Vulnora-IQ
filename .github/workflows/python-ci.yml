@@ -71,6 +71,9 @@ jobs:
       - name: Validate OWASP/MITRE mapping metadata
         run: python scripts/validate_owasp_atlas_mappings.py
 
+      - name: Validate GenAI security readiness
+        run: python scripts/validate_genai_readiness.py
+
       - name: Validate target contracts
         run: |
           python - <<'PY'
