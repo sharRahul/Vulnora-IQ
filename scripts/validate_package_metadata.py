@@ -7,6 +7,8 @@ from pathlib import Path
 
 import yaml
 
+from scripts.validate_owasp_atlas_mappings import validate_default_configs
+
 EXPECTED_OWASP_DOCS = [
     "LLM01_PROMPT_INJECTION.md",
     "LLM02_SENSITIVE_INFORMATION_DISCLOSURE.md",
@@ -105,6 +107,11 @@ class PackageMetadataValidator:
             errors.append(f"Missing production-testing readiness runner: {EXPECTED_PRODUCTION_READINESS_RUNNER}")
         if not EXPECTED_OWASP_ATLAS_MAPPING_RUNNER.exists():
             errors.append(f"Missing OWASP ATLAS mapping validator: {EXPECTED_OWASP_ATLAS_MAPPING_RUNNER}")
+        else:
+            mapping_result = validate_default_configs()
+            if mapping_result["status"] != "pass":
+                for error in mapping_result["errors"]:
+                    errors.append(f"OWASP ATLAS mapping validation failed: {error}")
         if not EXPECTED_DASHBOARD_EXAMPLE.exists():
             errors.append(f"Missing dashboard example image: {EXPECTED_DASHBOARD_EXAMPLE}")
         else:
