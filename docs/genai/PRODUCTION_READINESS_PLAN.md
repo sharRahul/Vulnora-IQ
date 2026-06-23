@@ -2,6 +2,8 @@
 
 **Plan status: Completed** for `0.2.0` self-hosted internal deployment.
 
+This is the controlled internal enterprise deployment gate for the self-hosted laptop/server application model.
+
 **Scenario harness status:** production-grade scenario harness for controlled internal validation.
 
 **Scope:** GenAI data-security and governance assessment readiness for authorised internal LLM, RAG, vector-store, provider, tool, telemetry, multimodal, and model-artifact assessments.
