@@ -8,10 +8,10 @@ This document separates scanner/evaluator assurance from application production 
 
 - **Findings are framework-development and internal assessment evidence**, not independently validated security assurance.
 - **No third-party penetration test has validated the full framework output** against real targets.
-- **OWASP LLM 2025 coverage** has implementation specs, safe starter oracle coverage, and local good/bad fixtures for all 10 categories.
-- **GenAI Security coverage** is working starter coverage for `DSGAI01–DSGAI21`, backed by safe synthetic scenario manifests, deterministic evaluator primitives, required evidence fields, tests, and CI validation.
+- **OWASP LLM 2025 coverage** is complete for the current safe local/internal scope, with implementation specs, safe oracle coverage, and local good/bad fixtures for all 10 categories.
+- **GenAI Security coverage** is complete for the current `DSGAI01–DSGAI21` controlled-internal scenario-harness scope, backed by safe synthetic scenario manifests, deterministic evaluator primitives, required evidence fields, tests, and CI validation.
 - **Agentic Applications readiness** is complete for the self-hosted internal application gates, but not certified assurance.
-- Results should be treated as **experimental indicators** that require human review before any risk conclusion is drawn.
+- Results should be treated as **structured internal evidence** that requires human review before any risk conclusion is drawn.
 
 ---
 
@@ -32,7 +32,7 @@ This document separates scanner/evaluator assurance from application production 
 
 ### OWASP coverage notes
 
-- All 10 categories have **safe starter oracle coverage** in `config/owasp_oracles.yaml`.
+- All 10 categories have **complete safe oracle coverage** in `config/owasp_oracles.yaml` for the current local/internal scope.
 - All 10 categories have **implementation specs** in `docs/owasp/`.
 - All 10 categories have **local good/bad fixture targets** in `examples/local_demo_targets/owasp_fixture_targets.py`.
 - CI validates that oracles, docs, fixtures, and mapping metadata are present, but does not validate detection depth against real-world environments.
@@ -43,7 +43,7 @@ This document separates scanner/evaluator assurance from application production 
 
 | OWASP GenAI ID | Coverage status | Evidence basis | Requires human review |
 | --- | --- | --- | --- |
-| `DSGAI01–DSGAI21` | Working starter | `benchmarks/fixtures/genai/scenarios.yaml`, `core/genai_evaluators.py`, `scripts/validate_genai_readiness.py`, `tests/test_genai_readiness_validation.py` | Yes |
+| `DSGAI01–DSGAI21` | Complete for current scope | `benchmarks/fixtures/genai/scenarios.yaml`, `core/genai_evaluators.py`, `scripts/validate_genai_readiness.py`, `tests/test_genai_readiness_validation.py` | Yes |
 | `DSGAI22–DSGAI25` | Source discrepancy / map later | Preserved in scenario manifest metadata | Yes |
 
 ### GenAI coverage notes
@@ -86,7 +86,7 @@ This document separates scanner/evaluator assurance from application production 
 
 ## 6. False positive / false negative expectations
 
-- Starter-level checks may produce false positives.
+- Current-scope checks may produce false positives.
 - Not all attack or failure paths are covered.
 - False negatives are expected for scenarios that lack oracle rules, evaluator support, real-world fixtures, or organisation-specific telemetry.
 - Human review is required before treating any finding as a confirmed vulnerability or risk.
@@ -124,10 +124,10 @@ Before VulnoraIQ output can be represented as VAPT-grade or independently valida
 
 | Area | Detection vs planning |
 |---|---|
-| OWASP LLM safe local checks | Active starter coverage |
-| OWASP/ATLAS mapping metadata | Active CI governance check |
-| GenAI `DSGAI01–DSGAI21` scenario coverage | Working starter manifest and validator coverage |
+| OWASP LLM safe local checks | Complete for current scope |
+| OWASP/ATLAS mapping metadata | Complete CI governance check |
+| GenAI `DSGAI01–DSGAI21` scenario coverage | Complete current-scope manifest and validator coverage |
 | GenAI `DSGAI22–DSGAI25` | Source discrepancy / map later |
 | Independent assurance | Future maturity item |
 
-> **Note:** Active starter and working-starter coverage has not been independently validated against real-world targets. Use findings as structured evidence for internal review, not as final assurance conclusions.
+> **Note:** Current-scope coverage has not been independently validated against real-world targets. Use findings as structured evidence for internal review, not as final assurance conclusions.
