@@ -1,8 +1,8 @@
 # VulnoraIQ Incident Response Plan
 
-This plan covers VulnoraIQ `0.2.0` controlled internal enterprise deployments.
+This plan covers VulnoraIQ `0.2.0` self-hosted laptop/server deployments.
 
-> **Scope:** VulnoraIQ is not a public SaaS or multi-tenant platform. These procedures assume a single-organisation/internal deployment using token auth or trusted reverse-proxy identity, SQLite persistence, structured audit logs, reverse-proxy/TLS controls, and working-starter GenAI Security readiness validation. Adapt contacts, escalation channels, legal process, and SIEM tooling to your organisation.
+> **Scope:** These procedures assume a local or internal-server deployment using token auth or trusted reverse-proxy identity, SQLite persistence, structured audit logs, reverse-proxy/TLS controls where needed, and working-starter GenAI Security readiness validation. Adapt contacts, escalation channels, legal process, and SIEM tooling to your organisation.
 
 ## Severity definitions
 
@@ -23,7 +23,7 @@ Use the following first:
 - SQLite job store `/data/jobs.db`
 - reports/artifacts under `/data/reports`
 - GenAI readiness assets: `benchmarks/fixtures/genai/scenarios.yaml`, `core/genai_evaluators.py`, `scripts/validate_genai_readiness.py`, and `tests/test_genai_readiness_validation.py`
-- reverse proxy logs and WAF/CDN logs, if deployed
+- reverse proxy logs and network-control logs, if deployed
 - GitHub Actions logs for CI/security pipeline failures
 
 Audit logs should include `timestamp`, `event`, `request_id`, `user`, `role`, `authenticated`, `client_ip`, `method`, `path`, `status`, and `detail`.
@@ -33,7 +33,7 @@ Audit logs should include `timestamp`, `event`, `request_id`, `user`, `role`, `a
 For any high or critical incident:
 
 1. Preserve logs and affected SQLite DB/report artifacts.
-2. Stop broad network access at the reverse proxy if exposure is suspected.
+2. Restrict network access at the reverse proxy if exposure is suspected.
 3. Rotate `VULNORAIQ_ADMIN_TOKEN`, analyst token, viewer token, and any target API tokens if they may be exposed.
 4. Confirm `VULNORAIQ_ENV=production` and `VULNORAIQ_AUTH_ENABLED=true` are active.
 5. Run `python scripts/validate_runtime_production_config.py` after any config change.
@@ -77,7 +77,7 @@ For any high or critical incident:
 
 1. Block offending IP/CIDR at reverse proxy or firewall.
 2. Rotate tokens if a valid token may have been guessed or reused.
-3. Tighten proxy/WAF rate limits.
+3. Tighten proxy rate limits.
 4. Verify trusted-proxy headers are accepted only from configured CIDRs.
 
 **Recovery**
@@ -134,7 +134,7 @@ For any high or critical incident:
 **Containment**
 
 1. Identify source IPs and authenticated users.
-2. Add proxy/WAF limits if traffic is abusive.
+2. Add proxy limits if traffic is abusive.
 3. Tune `VULNORAIQ_RATE_LIMIT_MAX`, `VULNORAIQ_RATE_LIMIT_WINDOW`, `VULNORAIQ_MAX_CONCURRENT_SCANS`, and `VULNORAIQ_SCAN_QUEUE_LIMIT` only after confirming capacity.
 4. Avoid disabling limits to make tests or demos pass.
 
@@ -218,103 +218,3 @@ Restart and verify `/healthz`, `/readyz`, scan history, and artifact download.
 **Detection**
 
 - `pip-audit` reports a vulnerable dependency.
-- GitHub Dependabot or security advisory opens an alert.
-
-**Containment**
-
-1. Assess whether the vulnerable package is runtime, dev-only, or unused.
-2. Patch or pin a fixed version.
-3. Run quality and readiness checks.
-4. Update `CHANGELOG.md` if the fix affects users.
-
-### 10. Web UI security bug
-
-Examples:
-
-- auth bypass
-- CSRF bypass
-- unsafe proxy-header trust
-- token leakage in logs
-- report/artifact unauthorised access
-
-**Response**
-
-1. Reproduce locally with a failing regression test.
-2. Fix the root cause.
-3. Run the full readiness gate.
-4. Update `SECURITY.md`, `CHANGELOG.md`, and docs if operator action is required.
-5. Release a patch or security advisory if exploitable.
-
-### 11. GenAI readiness regression
-
-Examples:
-
-- `scripts/validate_genai_readiness.py` fails on a release branch.
-- `DSGAI01–DSGAI21` scenario coverage is missing or incomplete.
-- `DSGAI22–DSGAI25` source discrepancy tracking is removed.
-- Required GenAI evidence fields drift from docs or reports.
-- Docs overstate GenAI coverage beyond working-starter evidence.
-
-**Response**
-
-1. Treat this as a release-blocking documentation/validation incident.
-2. Preserve the failing GitHub Actions logs.
-3. Fix the scenario manifest, evaluator, tests, or docs.
-4. Run:
-
-   ```bash
-   python scripts/validate_genai_readiness.py
-   pytest tests/test_genai_readiness_validation.py -q
-   python scripts/validate_package_metadata.py
-   ```
-
-5. Update release notes and assurance docs if wording changed.
-
-## Post-incident review
-
-For medium/high/critical incidents, record:
-
-- timeline
-- affected version/commit
-- detection source
-- root cause
-- impact and blast radius
-- containment actions
-- recovery actions
-- tests added
-- docs updated
-- release/advisory decision
-
-## Validation commands after incident remediation
-
-```bash
-ruff check .
-mypy .
-pytest -q
-python -m pip check
-pip-audit
-python scripts/validate_package_metadata.py
-python scripts/validate_owasp_atlas_mappings.py
-python scripts/validate_genai_readiness.py
-python scripts/validate_production_testing_readiness.py
-python scripts/validate_runtime_production_config.py
-python scripts/validate_production_testing_readiness.py \
-  --run-functional \
-  --output-dir reports/output/production-readiness
-```
-
-If Docker is available:
-
-```bash
-docker build -t vulnoraiq:incident-fix .
-python scripts/container_smoke_test.py
-```
-
-## Communication guidance
-
-Do not overclaim assurance in incident communications. Use the project boundary language:
-
-- Controlled internal enterprise deployment: supported when configured and validated.
-- GenAI Security readiness: working starter evidence for controlled internal assessment use.
-- Public internet / SaaS / multi-tenant: not supported in `0.2.0`.
-- Scanner findings: framework evidence requiring human review, not certified VAPT assurance.
