@@ -60,22 +60,23 @@ It must **not** be described as:
 | GenAI production-readiness plan | [`genai/PRODUCTION_READINESS_PLAN.md`](genai/PRODUCTION_READINESS_PLAN.md) |
 | Agentic Applications implementation plan | [`agentic/`](agentic/) |
 | Agentic Applications production-readiness plan | [`agentic/PRODUCTION_READINESS_PLAN.md`](agentic/PRODUCTION_READINESS_PLAN.md) |
+| OWASP source document review index | [`owasp-documents/`](owasp-documents/) |
 | MITRE ATLAS AI planning matrix | [`MITRE_ATLAS_AI_MATRIX.md`](MITRE_ATLAS_AI_MATRIX.md) |
 | MITRE ATLAS mapping notes | [`mitre-atlas-mapping.md`](mitre-atlas-mapping.md) |
 
 The OWASP, GenAI, Agentic, and MITRE documents are planning and implementation references. They should not be interpreted as proof that every mapped technique has production-validated active detection coverage.
 
-## Source document review queue
+## Source document review status
 
-The following PDFs are stored locally for source review and category confirmation:
+The uploaded source PDFs have now been reviewed for category extraction and planning alignment:
 
-- `owasp-documents/OWASP-GenAI-COMPASS-RunBook-1.0.pdf`
-- `owasp-documents/OWASP-GenAI-Data-Security-Risks-and-Mitigations-2026-v1.0.pdf`
-- `owasp-documents/OWASP-Top-10-for-Agentic-Applications-2026-12.6.pdf`
-- `owasp-documents/OWASP-Top10-for-Agentic-Applications_AIUC-1-Crosswalk-May26.pdf`
-- `owasp-documents/State-of-Agentic-AI-Security-and-Governance-v2.01.pdf`
+- `owasp-documents/OWASP-GenAI-COMPASS-RunBook-1.0.pdf` — reviewed for COMPASS/OODA workflow and framework alignment.
+- `owasp-documents/OWASP-GenAI-Data-Security-Risks-and-Mitigations-2026-v1.0.pdf` — `DSGAI01–DSGAI21` extracted and mapped. The document narrative references `DSGAI01–DSGAI25`; discrepancy remains tracked.
+- `owasp-documents/OWASP-Top-10-for-Agentic-Applications-2026-12.6.pdf` — `ASI01–ASI10` extracted and mapped.
+- `owasp-documents/OWASP-Top10-for-Agentic-Applications_AIUC-1-Crosswalk-May26.pdf` — reviewed for Primary/Secondary relevance methodology and strategic gaps.
+- `owasp-documents/State-of-Agentic-AI-Security-and-Governance-v2.01.pdf` — reviewed for governance maturity, adoption-tier prioritisation, identity/NHI, AI SBOM/provenance, and runtime governance themes.
 
-Until the PDF text is extracted and reviewed, GenAI and Agentic category IDs/names in the new planning docs must remain `Planning` or `candidate` mappings.
+Source category names are now confirmed for `DSGAI01–DSGAI21` and `ASI01–ASI10`, but implementation remains `Planning` until fixtures, evaluators, evidence schema, reports, dashboards, and CI gates exist.
 
 ## Documentation maintenance rule
 
@@ -92,6 +93,7 @@ When production posture or assessment coverage changes, update these together:
 9. `docs/owasp/OWASP_TO_MITRE_ATLAS_CROSSWALK.md`
 10. `docs/genai/`
 11. `docs/agentic/`
-12. `CHANGELOG.md`
+12. `docs/owasp-documents/`
+13. `CHANGELOG.md`
 
-If a capability is starter-level, partial, experimental, accepted risk, source-review pending, or roadmap-only, mark it clearly in every document that mentions it.
+If a capability is starter-level, partial, experimental, accepted risk, source discrepancy, or roadmap-only, mark it clearly in every document that mentions it.
