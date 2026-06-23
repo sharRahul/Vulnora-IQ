@@ -17,6 +17,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Project license changed from MIT to Apache License 2.0.
+- Package metadata now declares `Apache-2.0`, and package metadata validation checks the project license file and third-party notice alignment.
 - Documentation now consistently describes VulnoraIQ as a self-hosted laptop/workstation/internal-server application for authorised AI assessment work.
 - Current-scope readiness items are now consistently marked **Complete** for the self-hosted/internal assessment scope.
 - README, docs index, deployment guide, security policy, implementation status, readiness scorecard, backlog, release checklist, assurance, runbook, incident response, GenAI readiness plan, and Agentic Applications readiness plan were aligned to the same product positioning and completion vocabulary.
