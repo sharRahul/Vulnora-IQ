@@ -1,8 +1,8 @@
 # VulnoraIQ Incident Response Plan
 
-This plan covers VulnoraIQ `0.2.0` controlled internal enterprise deployments.
+This plan covers VulnoraIQ `0.2.0` self-hosted laptop/server deployments.
 
-> **Scope:** VulnoraIQ is not a public SaaS or multi-tenant platform. These procedures assume a single-organisation/internal deployment using token auth or trusted reverse-proxy identity, SQLite persistence, structured audit logs, reverse-proxy/TLS controls, and working-starter GenAI Security readiness validation. Adapt contacts, escalation channels, legal process, and SIEM tooling to your organisation.
+> **Scope:** These procedures assume a local or internal-server deployment using token auth or trusted reverse-proxy identity, SQLite persistence, structured audit logs, reverse-proxy/TLS controls where needed, and working-starter GenAI Security readiness validation. Adapt contacts, escalation channels, legal process, and SIEM tooling to your organisation.
 
 ## Severity definitions
 
@@ -23,7 +23,7 @@ Use the following first:
 - SQLite job store `/data/jobs.db`
 - reports/artifacts under `/data/reports`
 - GenAI readiness assets: `benchmarks/fixtures/genai/scenarios.yaml`, `core/genai_evaluators.py`, `scripts/validate_genai_readiness.py`, and `tests/test_genai_readiness_validation.py`
-- reverse proxy logs and WAF/CDN logs, if deployed
+- reverse proxy logs and network-control logs, if deployed
 - GitHub Actions logs for CI/security pipeline failures
 
 Audit logs should include `timestamp`, `event`, `request_id`, `user`, `role`, `authenticated`, `client_ip`, `method`, `path`, `status`, and `detail`.
@@ -33,7 +33,7 @@ Audit logs should include `timestamp`, `event`, `request_id`, `user`, `role`, `a
 For any high or critical incident:
 
 1. Preserve logs and affected SQLite DB/report artifacts.
-2. Stop broad network access at the reverse proxy if exposure is suspected.
+2. Restrict network access at the reverse proxy if exposure is suspected.
 3. Rotate `VULNORAIQ_ADMIN_TOKEN`, analyst token, viewer token, and any target API tokens if they may be exposed.
 4. Confirm `VULNORAIQ_ENV=production` and `VULNORAIQ_AUTH_ENABLED=true` are active.
 5. Run `python scripts/validate_runtime_production_config.py` after any config change.
@@ -77,7 +77,7 @@ For any high or critical incident:
 
 1. Block offending IP/CIDR at reverse proxy or firewall.
 2. Rotate tokens if a valid token may have been guessed or reused.
-3. Tighten proxy/WAF rate limits.
+3. Tighten proxy rate limits.
 4. Verify trusted-proxy headers are accepted only from configured CIDRs.
 
 **Recovery**
@@ -134,7 +134,7 @@ For any high or critical incident:
 **Containment**
 
 1. Identify source IPs and authenticated users.
-2. Add proxy/WAF limits if traffic is abusive.
+2. Add proxy limits if traffic is abusive.
 3. Tune `VULNORAIQ_RATE_LIMIT_MAX`, `VULNORAIQ_RATE_LIMIT_WINDOW`, `VULNORAIQ_MAX_CONCURRENT_SCANS`, and `VULNORAIQ_SCAN_QUEUE_LIMIT` only after confirming capacity.
 4. Avoid disabling limits to make tests or demos pass.
 
@@ -314,7 +314,6 @@ python scripts/container_smoke_test.py
 
 Do not overclaim assurance in incident communications. Use the project boundary language:
 
-- Controlled internal enterprise deployment: supported when configured and validated.
+- Self-hosted laptop/server deployment: supported when configured and validated.
 - GenAI Security readiness: working starter evidence for controlled internal assessment use.
-- Public internet / SaaS / multi-tenant: not supported in `0.2.0`.
 - Scanner findings: framework evidence requiring human review, not certified VAPT assurance.

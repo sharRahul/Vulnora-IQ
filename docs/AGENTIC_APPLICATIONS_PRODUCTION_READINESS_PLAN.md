@@ -1,28 +1,26 @@
 # Agentic Applications Production Readiness Plan
 
-**Plan status:** Completed for `0.2.0` controlled internal enterprise deployment. Public internet / SaaS hardening remains deferred and out of scope for this completion decision.
+**Plan status:** Completed for `0.2.0` self-hosted internal deployment.
 
-**Scope:** VulnoraIQ controlled internal enterprise deployment for authorised LLM, RAG, tool-using, and agentic application assessments.
+**Scope:** VulnoraIQ self-hosted laptop/server deployment for authorised LLM, RAG, tool-using, and agentic application assessments.
 
 **Version target:** `0.2.0`
 
-**Production boundary:** This plan finishes the controlled-internal production-readiness tranche. It does **not** claim public internet, multi-tenant SaaS, certified VAPT-grade assurance, or unsupervised third-party scanning readiness.
+**Production boundary:** This plan finishes the self-hosted production-readiness tranche. It does **not** claim certified VAPT-grade assurance, independent assurance, or permission to assess systems without written authorisation.
 
 ## Readiness definition
 
-VulnoraIQ is production-ready for controlled internal assessment use when all phase gates below are implemented, documented, and enforced by tests or CI.
+VulnoraIQ is production-ready for self-hosted internal assessment use when all phase gates below are implemented, documented, and enforced by tests or CI.
 
 Required release language:
 
-> Controlled internal enterprise production-readiness gate passed.
+> Self-hosted laptop/server AI security testing application with controlled internal production-readiness gate passed.
 
 Disallowed release language:
 
-- public SaaS ready
-- multi-tenant ready
-- unsupervised internet-facing ready
 - certified VAPT-grade assurance
-- authorised to test third-party systems without written permission
+- independently validated assurance for every category
+- authorised to test systems without written permission
 
 ## Phase status
 
@@ -37,7 +35,6 @@ Disallowed release language:
 | 6 | Deployment and containerisation | Complete | Dockerfile, Compose, production env example, healthcheck, non-root user, `/data` volume, and reverse-proxy guidance exist. |
 | 7 | Operations and incident response | Complete | Runbook, incident response plan, backup/restore, rollback, and migration guidance exist. |
 | 8 | Release and CI quality gates | Complete | CI runs lint, typing, tests, package validation, OWASP/ATLAS mapping validation, production-readiness validation, and functional acceptance. |
-| 9 | Public internet / SaaS hardening | Deferred | Requires OIDC/SSO, tenant isolation, shared persistence, shared rate/CSRF stores, stronger abuse controls, and independent assurance. |
 
 ## Phase 0: Scope and responsible-use boundary
 
@@ -45,7 +42,7 @@ Disallowed release language:
 
 Implemented controls:
 
-- README maturity banner limits `0.2.0` to controlled internal enterprise deployment.
+- README maturity banner limits `0.2.0` to self-hosted laptop/server deployment.
 - SECURITY policy requires authorised use only.
 - Assessment assurance documentation states that findings are framework evidence requiring human review, not certified VAPT assurance.
 
@@ -104,7 +101,7 @@ python scripts/validate_runtime_production_config.py
 
 ## Phase 3: Request and browser hardening
 
-**Objective:** harden web request handling for controlled internal deployment.
+**Objective:** harden web request handling for self-hosted internal deployment.
 
 Implemented controls:
 
@@ -159,7 +156,7 @@ pytest tests/test_metrics.py tests/test_webui_audit_logging.py -q
 
 ## Phase 6: Deployment and containerisation
 
-**Objective:** provide a repeatable controlled-internal deployment path.
+**Objective:** provide a repeatable self-hosted deployment path.
 
 Implemented controls:
 
@@ -234,23 +231,6 @@ python scripts/validate_production_testing_readiness.py \
   --output-dir reports/output/production-readiness
 ```
 
-## Deferred Phase 9: Public internet and SaaS hardening
-
-This is intentionally deferred and must not block `0.2.0` controlled-internal readiness.
-
-Required future capabilities before public/SaaS claims:
-
-- OIDC/SSO or equivalent enterprise identity integration.
-- Tenant isolation and per-tenant configuration/data boundaries.
-- PostgreSQL or equivalent multi-instance database backend.
-- Shared CSRF/session/rate-limit state such as Redis.
-- Per-user and global abuse controls.
-- Centralised SIEM/alerting integration.
-- WAF/CDN/DDoS guidance or reference architecture.
-- Independent security assessment or penetration test.
-- Performance/load testing and SLOs.
-- Release artifact signing and container security scanning.
-
 ## Completion decision
 
-**Completed for `0.2.0` controlled internal enterprise deployment.** Phases 0-8 are complete, documented, and backed by repository checks or CI gates. Phase 9 is explicitly out of scope and remains the future public internet / SaaS hardening backlog.
+**Completed for `0.2.0` self-hosted internal deployment.** Phases 0-8 are complete, documented, and backed by repository checks or CI gates for the intended laptop/server application model.

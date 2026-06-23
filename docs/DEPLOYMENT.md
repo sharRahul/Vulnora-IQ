@@ -2,7 +2,7 @@
 
 This guide describes the supported VulnoraIQ `0.2.0` deployment posture.
 
-> **Scope:** VulnoraIQ `0.2.0` has passed the controlled internal enterprise production-readiness gate. It is suitable for single-organisation/internal deployment when configured with the controls below. GenAI Security readiness is working starter coverage for controlled internal assessment use. VulnoraIQ is **not** public internet-facing SaaS or multi-tenant ready without additional controls such as OIDC/SSO, tenant isolation, HA persistence, distributed rate limiting, WAF/CDN/DDoS protection, and external testing.
+> **Scope:** VulnoraIQ `0.2.0` is a self-hosted application for authorised AI-agent and LLM-application testing. It is designed to run on a laptop, workstation, lab machine, or internal server controlled by the assessor or organisation. It is suitable for single-organisation/internal deployment when configured with the controls below. GenAI Security readiness is working starter coverage for controlled internal assessment use.
 
 ## Quick start: local development
 
@@ -18,6 +18,8 @@ vulnoraiq --target demo --profile baseline
 vulnoraiq-web --host 127.0.0.1 --port 8787
 ```
 
+Stop the local Web UI with `Ctrl+C` in the terminal where `vulnoraiq-web` is running.
+
 Health checks:
 
 ```bash
@@ -27,7 +29,7 @@ curl http://127.0.0.1:8787/readyz
 
 The demo target is safe and local. Configured non-demo targets require explicit authorisation.
 
-## Quick start: production-mode validation
+## Quick start: self-hosted production-mode validation
 
 Production mode fails closed when unsafe runtime configuration is detected.
 
@@ -42,6 +44,18 @@ export VULNORAIQ_WEB_USERS_PATH=/data/web_users.yaml
 
 python scripts/validate_runtime_production_config.py
 vulnoraiq-web --host 127.0.0.1 --port 8787
+```
+
+Stop the production-mode Web UI with `Ctrl+C` when it is running in the foreground. If it was started in the background, identify and stop the process listening on port `8787`:
+
+```bash
+lsof -ti :8787 | xargs kill
+```
+
+Use a forced kill only if the process does not stop cleanly:
+
+```bash
+lsof -ti :8787 | xargs kill -9
 ```
 
 `VULNORAIQ_WEB_USERS_PATH` points at the persisted web auth user store (YAML). Place it on the
@@ -103,12 +117,25 @@ docker run --rm -p 8787:8787 \
 
 The container runs as a non-root user, uses `/data` for SQLite DB and reports, exposes port `8787`, and includes a `/healthz` healthcheck.
 
+Stop a foreground `docker run` container with `Ctrl+C`. For a detached container, stop it by container ID or name:
+
+```bash
+docker ps
+docker stop <container-id-or-name>
+```
+
 ## Docker Compose
 
 ```bash
 cp .env.production.example .env.production
 # Edit .env.production and replace every placeholder token before starting.
 docker compose up --build
+```
+
+Stop Docker Compose deployments with:
+
+```bash
+docker compose down
 ```
 
 Do not commit real `.env.production` files. Commit only `.env.production.example` with placeholders.
@@ -208,7 +235,7 @@ export VULNORAIQ_MAX_CONCURRENT_SCANS=5
 export VULNORAIQ_SCAN_QUEUE_LIMIT=20
 ```
 
-The application rate limiter is in-memory and per-process. For public exposure or multi-instance deployment, enforce rate limiting at the reverse proxy/WAF layer and use a shared rate-limit backend in a future architecture.
+The application rate limiter is in-memory and per-process. For self-hosted internal server deployments, place the app behind your organisation's reverse proxy if centralised network controls, TLS, or additional request filtering are required.
 
 ## Persistence
 
@@ -241,7 +268,7 @@ Recommended operations:
 
 ## Reverse proxy and TLS
 
-The built-in HTTP server should run behind a reverse proxy for controlled enterprise deployment. See the runbook for nginx/Caddy validation commands and certificate checks.
+For internal server deployments, the built-in HTTP server can run behind a reverse proxy such as nginx or Caddy for TLS termination and enterprise network controls. Local laptop/workstation demos can remain bound to `127.0.0.1`.
 
 ## Backup and restore
 
@@ -263,12 +290,12 @@ Run the GenAI validator before release and after modifying GenAI docs, scenario 
 
 ## Production Checklist
 
-Confirm each item before a controlled internal enterprise deployment:
+Confirm each item before a self-hosted internal deployment:
 
 - [ ] `python scripts/validate_runtime_production_config.py` passes with `VULNORAIQ_ENV=production`.
 - [ ] `VULNORAIQ_AUTH_ENABLED=true` and a strong `VULNORAIQ_ADMIN_TOKEN` (no demo/default tokens) are set.
 - [ ] Persistent state — `VULNORAIQ_JOB_STORE_PATH`, `VULNORAIQ_WEB_OUTPUT_ROOT`, and `VULNORAIQ_WEB_USERS_PATH` — lives on the mounted `/data` volume.
-- [ ] The service runs behind a reverse proxy (nginx/Caddy) terminating TLS, with trusted proxy CIDRs configured.
+- [ ] For internal server deployments, the service runs behind an approved reverse proxy terminating TLS when remote access is required.
 - [ ] Scheduled backup of the SQLite store is in place and a restore has been validated.
 - [ ] Audit logging is enabled and audit logs are shipped and retained per internal policy.
 - [ ] `python scripts/validate_genai_readiness.py` passes after any GenAI docs or scenario changes.

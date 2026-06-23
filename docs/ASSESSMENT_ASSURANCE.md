@@ -1,6 +1,6 @@
 # Assessment Assurance
 
-This document separates scanner/evaluator assurance from platform production readiness. It clarifies what VulnoraIQ findings represent today, what evidence is collected, what limitations apply, and what is required before external VAPT-grade claims can be made.
+This document separates scanner/evaluator assurance from application production readiness. It clarifies what VulnoraIQ findings represent today, what evidence is collected, what limitations apply, and what is required before external VAPT-grade claims can be made.
 
 ---
 
@@ -10,7 +10,7 @@ This document separates scanner/evaluator assurance from platform production rea
 - **No third-party penetration test has validated the full framework output** against real targets.
 - **OWASP LLM 2025 coverage** has implementation specs, safe starter oracle coverage, and local good/bad fixtures for all 10 categories.
 - **GenAI Security coverage** is working starter coverage for `DSGAI01–DSGAI21`, backed by safe synthetic scenario manifests, deterministic evaluator primitives, required evidence fields, tests, and CI validation.
-- **Agentic Applications readiness** is complete for controlled internal phase gates, but not public/SaaS or certified assurance.
+- **Agentic Applications readiness** is complete for the self-hosted internal application gates, but not certified assurance.
 - Results should be treated as **experimental indicators** that require human review before any risk conclusion is drawn.
 
 ---
@@ -97,10 +97,10 @@ This document separates scanner/evaluator assurance from platform production rea
 
 Before VulnoraIQ output can be represented as VAPT-grade or independently validated assurance, the following must be addressed:
 
-1. **Deeper check logic per OWASP and GenAI category** — multi-signal detection, ambiguous/edge-case handling, and real-world scenario coverage.
+1. **Deeper check logic per OWASP and GenAI category** — multi-signal detection, ambiguous/edge-case handling, and realistic scenario coverage.
 2. **Third-party testing** — independent review of the framework, evaluator thresholds, and report language.
 3. **Calibrated evaluator thresholds** — confidence, severity, and risk-score thresholds benchmarked against known-good and known-vulnerable targets.
-4. **Real-world validation** — authorised production-like targets, provider configurations, RAG/vector stores, logs, and data-governance workflows.
+4. **Approved environment validation** — authorised targets, provider configurations, RAG/vector stores, logs, and data-governance workflows.
 5. **Report language maturity review** — finding descriptions, remediation guidance, and limitation statements must not overstate assurance.
 6. **GenAI governance validation** — provider inventory, data classification, retention, privacy/legal review, and human-review workflows must be organisation-specific.
 
@@ -128,6 +128,6 @@ Before VulnoraIQ output can be represented as VAPT-grade or independently valida
 | OWASP/ATLAS mapping metadata | Active CI governance check |
 | GenAI `DSGAI01–DSGAI21` scenario coverage | Working starter manifest and validator coverage |
 | GenAI `DSGAI22–DSGAI25` | Source discrepancy / map later |
-| Public/SaaS and independent assurance | Deferred |
+| Independent assurance | Future maturity item |
 
 > **Note:** Active starter and working-starter coverage has not been independently validated against real-world targets. Use findings as structured evidence for internal review, not as final assurance conclusions.

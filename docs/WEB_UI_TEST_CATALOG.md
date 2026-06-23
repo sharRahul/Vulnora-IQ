@@ -1,6 +1,6 @@
 # Web UI Categorized Test Catalog
 
-The hosted VulnoraIQ Web UI exposes runnable assessment options as a categorized catalog.
+The self-hosted VulnoraIQ Web UI exposes runnable assessment options as a categorized catalog.
 
 ## User workflow
 

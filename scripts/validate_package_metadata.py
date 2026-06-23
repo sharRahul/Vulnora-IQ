@@ -82,8 +82,11 @@ class PackageMetadataValidator:
             if command not in pyproject:
                 errors.append(f"Missing CLI entry point: {command}")
         readme = Path("README.md").read_text(encoding="utf-8")
-        if "not recommended for unsupervised public internet exposure" not in readme and "not ready for real-world VAPT" not in readme:
-            warnings.append("README maturity warning was not found")
+        readme_lower = readme.lower()
+        if "self-hosted" not in readme_lower or "laptop/server" not in readme_lower:
+            warnings.append("README self-hosted laptop/server maturity wording was not found")
+        if "certified VAPT-grade assurance" not in readme:
+            warnings.append("README assurance limitation wording was not found")
         if "docs/assets/vulnoraiq-dashboard-example.png" not in readme:
             errors.append("README must include the dashboard example image")
         owasp_dir = Path("docs/owasp")
