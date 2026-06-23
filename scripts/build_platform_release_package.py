@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
+import subprocess
+import tarfile
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -57,6 +60,11 @@ EXCLUDED_SUFFIXES = {".pyc", ".pyo", ".db", ".key", ".pem"}
 EXCLUDED_NAME_FRAGMENTS = (".secret", "_secret")
 PLATFORMS = {"windows", "linux", "macos"}
 EXECUTABLE_LAUNCHERS = {"launch-vulnoraiq-webui.command", "launch-vulnoraiq-webui.sh"}
+PACKAGE_EXTENSIONS = {
+    "windows": "zip",
+    "linux": "tar.gz",
+    "macos": "dmg",
+}
 
 
 @dataclass(frozen=True)
@@ -65,6 +73,13 @@ class ReleasePackage:
     version: str
     output: Path
     file_count: int
+
+
+def package_extension(platform: str) -> str:
+    if platform not in PACKAGE_EXTENSIONS:
+        supported = ", ".join(sorted(PACKAGE_EXTENSIONS))
+        raise ValueError(f"Unsupported platform {platform!r}; expected one of: {supported}")
+    return PACKAGE_EXTENSIONS[platform]
 
 
 def _is_generated_output(path: Path) -> bool:
@@ -143,12 +158,62 @@ Use vulnoraiq-web with production environment validation and auth enabled.
 """
 
 
-def _write_file(archive: zipfile.ZipFile, archive_path: str, data: bytes, executable: bool = False) -> None:
+def _write_zip_file(archive: zipfile.ZipFile, archive_path: str, data: bytes, executable: bool = False) -> None:
     info = zipfile.ZipInfo(archive_path)
     info.compress_type = zipfile.ZIP_DEFLATED
     mode = 0o755 if executable else 0o644
     info.external_attr = (mode & 0xFFFF) << 16
     archive.writestr(info, data)
+
+
+def _prepare_stage_dir(stage_dir: Path, release_files: list[Path], platform: str, version: str) -> None:
+    if stage_dir.exists():
+        shutil.rmtree(stage_dir)
+    stage_dir.mkdir(parents=True)
+    (stage_dir / "START_HERE.txt").write_text(_readme_for(platform, version), encoding="utf-8")
+    for file_path in release_files:
+        destination = stage_dir / file_path
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(file_path, destination)
+        if file_path.name in EXECUTABLE_LAUNCHERS:
+            destination.chmod(0o755)
+
+
+def _build_zip(output: Path, prefix: str, release_files: list[Path], platform: str, version: str) -> None:
+    with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        _write_zip_file(archive, f"{prefix}/START_HERE.txt", _readme_for(platform, version).encode("utf-8"))
+        for file_path in release_files:
+            archive_name = f"{prefix}/{file_path.as_posix()}"
+            executable = file_path.name in EXECUTABLE_LAUNCHERS
+            _write_zip_file(archive, archive_name, file_path.read_bytes(), executable=executable)
+
+
+def _build_tar_gz(output: Path, stage_dir: Path, prefix: str) -> None:
+    with tarfile.open(output, "w:gz") as archive:
+        archive.add(stage_dir, arcname=prefix)
+
+
+def _build_dmg(output: Path, stage_dir: Path, prefix: str) -> None:
+    hdiutil = shutil.which("hdiutil")
+    if hdiutil is None:
+        raise RuntimeError("macOS .dmg creation requires hdiutil and must run on macOS")
+    subprocess.run(
+        [
+            hdiutil,
+            "create",
+            "-volname",
+            "VulnoraIQ",
+            "-srcfolder",
+            str(stage_dir),
+            "-ov",
+            "-format",
+            "UDZO",
+            str(output),
+        ],
+        check=True,
+    )
+    if not output.exists():
+        raise RuntimeError(f"hdiutil did not create expected image: {output}")
 
 
 def build_platform_package(
@@ -161,17 +226,23 @@ def build_platform_package(
         raise ValueError(f"Unsupported platform {platform!r}; expected one of: {supported}")
     output_root = Path(output_dir)
     output_root.mkdir(parents=True, exist_ok=True)
-    output = output_root / f"vulnoraiq-{version}-{platform}.zip"
+    extension = package_extension(platform)
+    output = output_root / f"vulnoraiq-{version}-{platform}.{extension}"
     prefix = f"vulnoraiq-{version}-{platform}"
     release_files = _iter_release_files()
     if not release_files:
         raise RuntimeError("No release files selected")
-    with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-        _write_file(archive, f"{prefix}/START_HERE.txt", _readme_for(platform, version).encode("utf-8"))
-        for file_path in release_files:
-            archive_name = f"{prefix}/{file_path.as_posix()}"
-            executable = file_path.name in EXECUTABLE_LAUNCHERS
-            _write_file(archive, archive_name, file_path.read_bytes(), executable=executable)
+    if output.exists():
+        output.unlink()
+    if platform == "windows":
+        _build_zip(output, prefix, release_files, platform, version)
+    else:
+        stage_dir = output_root / "staging" / prefix
+        _prepare_stage_dir(stage_dir, release_files, platform, version)
+        if platform == "linux":
+            _build_tar_gz(output, stage_dir, prefix)
+        elif platform == "macos":
+            _build_dmg(output, stage_dir, prefix)
     return ReleasePackage(platform=platform, version=version, output=output, file_count=len(release_files) + 1)
 
 
