@@ -1,5 +1,7 @@
 # Agentic Applications Production Readiness Plan
 
+**Plan status:** Completed for `0.2.0` controlled internal enterprise deployment. Public internet / SaaS hardening remains deferred and out of scope for this completion decision.
+
 **Scope:** VulnoraIQ controlled internal enterprise deployment for authorised LLM, RAG, tool-using, and agentic application assessments.
 
 **Version target:** `0.2.0`
@@ -252,4 +254,4 @@ Required future capabilities before public/SaaS claims:
 
 ## Completion decision
 
-For `0.2.0`, Phases 0-8 are complete for controlled internal enterprise deployment. Phase 9 is explicitly out of scope and remains the future public internet / SaaS hardening backlog.
+**Completed for `0.2.0` controlled internal enterprise deployment.** Phases 0-8 are complete, documented, and backed by repository checks or CI gates. Phase 9 is explicitly out of scope and remains the future public internet / SaaS hardening backlog.
