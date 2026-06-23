@@ -48,6 +48,19 @@ profiles:
       - owasp_llm09_misinformation
       - owasp_llm10_unbounded_consumption
 
+  ai_testing_guide_foundation:
+    category: AI testing guide suites
+    display_name: OWASP AI Testing Guide foundation
+    description: Structured AI testing methodology coverage across GenAI red teaming, agentic red teaming, AI Exchange, privacy, Top 10, AI VSS, and NIST adversarial ML taxonomy alignment.
+    modules:
+      - owasp_ai_testing_methodology
+      - owasp_genai_red_teaming_methodology
+      - csa_agentic_ai_red_teaming
+      - owasp_ai_exchange_controls
+      - owasp_ai_security_privacy_design
+      - owasp_aivss_scoring_review
+      - nist_ai_100_2_adversarial_ml
+
   test_owasp_llm01_prompt_injection:
     category: OWASP LLM Top 10 single tests
     display_name: LLM01 prompt injection
@@ -117,6 +130,55 @@ profiles:
     description: Run only the token, cost, quota, timeout, and rate-limit review.
     modules:
       - owasp_llm10_unbounded_consumption
+
+  test_owasp_ai_testing_methodology:
+    category: AI testing guide single tests
+    display_name: OWASP AI Testing Guide methodology
+    description: Run only the OWASP AI Testing Guide methodology alignment review.
+    modules:
+      - owasp_ai_testing_methodology
+
+  test_owasp_genai_red_teaming_methodology:
+    category: AI testing guide single tests
+    display_name: OWASP GenAI red teaming methodology
+    description: Run only the GenAI red teaming methodology review.
+    modules:
+      - owasp_genai_red_teaming_methodology
+
+  test_csa_agentic_ai_red_teaming:
+    category: AI testing guide single tests
+    display_name: CSA agentic AI red teaming
+    description: Run only the agentic AI red teaming methodology review.
+    modules:
+      - csa_agentic_ai_red_teaming
+
+  test_owasp_ai_exchange_controls:
+    category: AI testing guide single tests
+    display_name: OWASP AI Exchange controls
+    description: Run only the AI Exchange control-mapping review.
+    modules:
+      - owasp_ai_exchange_controls
+
+  test_owasp_ai_security_privacy_design:
+    category: AI testing guide single tests
+    display_name: OWASP AI security and privacy design
+    description: Run only the AI Security and Privacy Guide design/procurement review.
+    modules:
+      - owasp_ai_security_privacy_design
+
+  test_owasp_aivss_scoring_review:
+    category: AI testing guide single tests
+    display_name: OWASP AI VSS scoring review
+    description: Run only the AI vulnerability scoring and triage review.
+    modules:
+      - owasp_aivss_scoring_review
+
+  test_nist_ai_100_2_adversarial_ml:
+    category: AI testing guide single tests
+    display_name: NIST AI 100-2 adversarial ML taxonomy
+    description: Run only the adversarial ML taxonomy and terminology alignment review.
+    modules:
+      - nist_ai_100_2_adversarial_ml
 
   test_rag_poisoning:
     category: RAG and vector store tests
