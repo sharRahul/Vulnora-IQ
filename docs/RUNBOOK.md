@@ -2,9 +2,27 @@
 
 This runbook is for VulnoraIQ `0.2.0` self-hosted laptop/server deployments.
 
-> **Scope:** adapt paths, hostnames, secret-management steps, reverse proxy, and backup destinations to your environment. VulnoraIQ `0.2.0` is intended to run as a local or self-hosted internal application for authorised assessment work. GenAI Security coverage is working starter evidence for controlled internal assessment use, not certified assurance.
+> **Scope:** adapt paths, hostnames, secret-management steps, reverse proxy, and backup destinations to your environment. VulnoraIQ `0.2.0` is intended to run as a local or self-hosted internal application for authorised assessment work. GenAI Security coverage is complete for the current controlled-internal scenario-harness scope, not certified assurance.
 
 ## 1. Service management
+
+### Start local standalone launcher
+
+For laptop/workstation use, launch from the repository root after installation:
+
+```bash
+python launch-vulnoraiq-webui.py
+```
+
+Or double-click the platform launcher:
+
+| Platform | Launcher |
+| --- | --- |
+| Windows | `launch-vulnoraiq-webui.bat` |
+| macOS | `launch-vulnoraiq-webui.command` |
+| Linux | `launch-vulnoraiq-webui.sh` |
+
+The launcher binds to loopback by default, prepares `reports/output/webui/`, opens the browser, and exposes the Web UI startup panel. Use **Stop local server** in the startup panel to stop this launcher-mode server cleanly.
 
 ### Start service: Docker Compose
 
@@ -31,6 +49,9 @@ vulnoraiq-web --host 127.0.0.1 --port 8787
 ### Stop / restart service
 
 ```bash
+# Local launcher run
+# Click Stop local server in the Web UI startup panel.
+
 # Foreground terminal run
 # Press Ctrl+C in the terminal where vulnoraiq-web is running.
 
@@ -54,6 +75,8 @@ curl -f http://127.0.0.1:8787/healthz
 curl -f http://127.0.0.1:8787/readyz
 curl -H "X-VulnoraIQ-Token: $VULNORAIQ_ADMIN_TOKEN" http://127.0.0.1:8787/metrics
 ```
+
+For launcher-mode runs, the Web UI startup panel also shows dependency checks, quick-start actions, runtime options, and local stop availability.
 
 Key metrics to monitor:
 
@@ -101,6 +124,16 @@ Important production checks:
 - trusted proxy CIDRs valid when enabled
 - `0.0.0.0` / `::` binding fails unless trusted proxy config is present
 - sane rate limit, request body, and CSRF TTL values
+
+Important local launcher checks:
+
+- Python 3.10+
+- `PyYAML`, `requests`, and `rich` available after install
+- core package modules present
+- `config/targets.yaml` and `config/attack_profiles.yaml` present
+- Web UI assets present
+- output directory and SQLite job-store path writable
+- launcher bound to loopback when stop control is enabled
 
 Important GenAI checks:
 
@@ -187,6 +220,9 @@ echo | openssl s_client -servername vulnoraiq.example.com \
 
 | Symptom | Check | Likely resolution |
 | --- | --- | --- |
+| Local launcher does not open browser | Console output and `/healthz` | Run `python launch-vulnoraiq-webui.py --no-browser`, check Python install and port availability |
+| Startup panel shows failed dependency | Startup dependency check detail | Re-run `pip install -e .[dev]` and confirm config files exist |
+| Stop local server button disabled | Launcher mode and host binding | Use `launch-vulnoraiq-webui.py` on `127.0.0.1`; stop hosted/production runs with terminal/service manager |
 | Service exits on startup | `docker compose logs` or `journalctl -u vulnoraiq` | Run `scripts/validate_runtime_production_config.py`; fix failed production check |
 | `401 authentication required` | Token header missing or wrong | Send `X-VulnoraIQ-Token`; rotate/regenerate token if needed |
 | `403 forbidden` | Role lacks permission or CSRF missing | Use admin/analyst token as appropriate; fetch `/api/csrf-token` before POST |
@@ -217,7 +253,7 @@ echo | openssl s_client -servername vulnoraiq.example.com \
    ```
 
 5. Start the release candidate.
-6. Verify `/healthz`, `/readyz`, `/metrics`, Web UI auth, scan creation, artifact download, backup, restore, and GenAI readiness validation.
+6. Verify `/healthz`, `/readyz`, `/metrics`, Web UI auth, scan creation, artifact download, backup, restore, launcher startup checks where applicable, and GenAI readiness validation.
 7. Monitor logs and metrics for at least one hour.
 
 ## 11. Rollback procedure
@@ -233,8 +269,8 @@ echo | openssl s_client -servername vulnoraiq.example.com \
 
 | Artifact | Typical path |
 | --- | --- |
-| SQLite job store | `/data/jobs.db` |
-| Reports/artifacts | `/data/reports` |
+| SQLite job store | `/data/jobs.db` or `reports/output/webui/jobs.db` for local launcher mode |
+| Reports/artifacts | `/data/reports` or `reports/output/webui/` for local launcher mode |
 | Backups | `/data/backups` |
 | Production env file | `.env.production` or secret-manager injected env |
 | Example env file | `.env.production.example` |
@@ -245,6 +281,8 @@ echo | openssl s_client -servername vulnoraiq.example.com \
 | `VULNORAIQ_ENV=production` | Enable production validation |
 | `VULNORAIQ_ADMIN_TOKEN` | Required admin token |
 | `VULNORAIQ_AUTH_MODE` | `token` or `trusted_proxy` |
+| `VULNORAIQ_AUTH_ENABLED=false` | Local launcher convenience only; do not use for shared production deployment |
+| `VULNORAIQ_ENABLE_WEB_SHUTDOWN` | Enables launcher-mode local stop-server endpoint when bound to loopback |
 | `VULNORAIQ_JOB_STORE_BACKEND=sqlite` | Production persistence backend |
 | `VULNORAIQ_JOB_STORE_PATH` | SQLite path |
 | `VULNORAIQ_WEB_OUTPUT_ROOT` | Report/artifact output path |
@@ -254,4 +292,4 @@ echo | openssl s_client -servername vulnoraiq.example.com \
 
 ## 13. Escalation
 
-Use [`INCIDENT_RESPONSE.md`](INCIDENT_RESPONSE.md) for security events. Escalate immediately for suspected token leak, access-control failure, report exposure, repeated rate-limit spikes, scan queue exhaustion, corrupted SQLite store, dependency issue affecting runtime security, or GenAI readiness regression on a release branch.
+Use [`INCIDENT_RESPONSE.md`](INCIDENT_RESPONSE.md) for security events. Escalate immediately for suspected token leak, access-control failure, report exposure, repeated rate-limit spikes, scan queue exhaustion, corrupted SQLite store, dependency issue affecting runtime security, broken local launcher path on a release branch, or GenAI readiness regression on a release branch.
