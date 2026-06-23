@@ -54,7 +54,7 @@ EXCLUDED_PARTS = {
     "venv",
 }
 EXCLUDED_SUFFIXES = {".pyc", ".pyo", ".db", ".key", ".pem"}
-EXCLUDED_NAME_FRAGMENTS = (".secret", "_secret", "local")
+EXCLUDED_NAME_FRAGMENTS = (".secret", "_secret")
 PLATFORMS = {"windows", "linux", "macos"}
 EXECUTABLE_LAUNCHERS = {"launch-vulnoraiq-webui.command", "launch-vulnoraiq-webui.sh"}
 
@@ -74,7 +74,12 @@ def _is_excluded(path: Path) -> bool:
     if path.suffix in EXCLUDED_SUFFIXES:
         return True
     lowered = str(path).lower()
-    return any(fragment in lowered for fragment in EXCLUDED_NAME_FRAGMENTS)
+    if any(fragment in lowered for fragment in EXCLUDED_NAME_FRAGMENTS):
+        return True
+    if path.parts and path.parts[0] == "config":
+        name = path.name.lower()
+        return name.startswith("local") or ".local" in name
+    return False
 
 
 def _iter_release_files() -> list[Path]:
