@@ -57,8 +57,8 @@
     badge.href = 'https://www.apache.org/licenses/LICENSE-2.0';
     badge.target = '_blank';
     badge.rel = 'noopener noreferrer';
-    badge.setAttribute('aria-label', 'VulnoraIQ license: Apache License 2.0');
-    badge.textContent = 'Apache-2.0';
+    badge.setAttribute('aria-label', 'VulnoraIQ license: Licensed under the Apache License, Version 2.0');
+    badge.textContent = 'Licensed under the Apache License, Version 2.0';
     Object.assign(badge.style, {
       position: 'fixed',
       left: '14px',
@@ -77,10 +77,10 @@
       backdropFilter: 'blur(12px)',
       fontSize: '0.72rem',
       fontWeight: '900',
-      letterSpacing: '0.04em',
+      letterSpacing: '0.01em',
       lineHeight: '1',
       textDecoration: 'none',
-      textTransform: 'uppercase',
+      textTransform: 'none',
     });
     badge.addEventListener('mouseenter', () => {
       badge.style.color = 'var(--navy)';
