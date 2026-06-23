@@ -22,6 +22,9 @@ All notable changes to this project will be documented in this file.
 - GenAI security implementation planning docs (`docs/genai/`)
 - Agentic Applications security implementation planning docs (`docs/agentic/`)
 - OWASP source document review index (`docs/owasp-documents/README.md`)
+- Source-confirmed GenAI Data Security category extraction for `DSGAI01–DSGAI21`
+- Source-confirmed OWASP Top 10 for Agentic Applications category extraction for `ASI01–ASI10`
+- Updated OWASP/GenAI/Agentic-to-MITRE ATLAS crosswalk mappings for LLM, DSGAI, and ASI categories
 
 ### Changed
 
@@ -43,7 +46,10 @@ All notable changes to this project will be documented in this file.
 - RUNBOOK.md: added disclaimer that it is a template requiring adaptation
 - RELEASE_CHECKLIST.md: version/date updated
 - README.md and SECURITY.md fully rewritten for the `0.2.0` controlled-internal production posture
-- `docs/README.md` updated to link OWASP, GenAI, Agentic, and MITRE planning docs
+- `docs/README.md` updated to link OWASP, GenAI, Agentic, MITRE planning docs, and source-review status
+- `docs/owasp-documents/README.md` updated from pending source-review queue to category extraction status
+- `docs/genai/` updated from placeholder planning IDs to source-confirmed `DSGAI01–DSGAI21`
+- `docs/agentic/` updated from placeholder planning IDs to source-confirmed `ASI01–ASI10`
 - **`_ALL_CHECKS` in `production_checks.py`**: `listen_address_safe` entry added so the check is actually reachable
 
 ### Fixed
