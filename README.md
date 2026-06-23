@@ -20,6 +20,8 @@ VulnoraIQ helps teams collect evidence, score findings, generate reports, and tr
 | Self-hosted internal server deployment | Complete with production configuration validation |
 | OWASP LLM coverage | Complete for current safe local/internal assessment scope |
 | OWASP AI Testing Guide integration | Complete for current safe methodology-harness scope with local AI agent target templates |
+| OWASP AI Testing Guide full implementation roadmap | Planned: 32-test AITG manifest, runtime/evidence modules, pillar suites, WebUI/reporting, and CI validation |
+| OWASP LLM framework/control mapping roadmap | Planned: normalized framework mapping registry with source provenance, confidence labels, report enrichment, and CI validation |
 | GenAI Security readiness | Complete for `DSGAI01–DSGAI21` controlled internal scenario-harness scope |
 | Agentic Applications readiness | Complete for controlled internal phase gates |
 | Certified VAPT-grade security assurance | Not claimed |
@@ -36,6 +38,8 @@ For details, see:
 
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — deployment and production configuration
 - [`docs/AI_TESTING_GUIDE_INTEGRATION.md`](docs/AI_TESTING_GUIDE_INTEGRATION.md) — OWASP AI Testing Guide integration and local AI agent targets
+- [`docs/AI_TESTING_GUIDE_IMPLEMENTATION_PLAN.md`](docs/AI_TESTING_GUIDE_IMPLEMENTATION_PLAN.md) — full OWASP AI Testing Guide implementation roadmap
+- [`docs/OWASP_LLM_TOP10_MAPPING_IMPLEMENTATION_PLAN.md`](docs/OWASP_LLM_TOP10_MAPPING_IMPLEMENTATION_PLAN.md) — OWASP LLM framework/control mapping roadmap
 - [`docs/PRODUCTION_READINESS_SCORECARD.md`](docs/PRODUCTION_READINESS_SCORECARD.md) — scored readiness
 - [`docs/PRODUCTION_HARDENING_BACKLOG.md`](docs/PRODUCTION_HARDENING_BACKLOG.md) — remaining gaps and accepted risks
 - [`docs/genai/PRODUCTION_READINESS_PLAN.md`](docs/genai/PRODUCTION_READINESS_PLAN.md) — GenAI Security readiness plan
@@ -78,6 +82,8 @@ The screenshot below is the VulnoraIQ Web UI home screen, captured from the runn
 - Complete OWASP LLM Top 10 2025 implementation specs for all 10 categories in [`docs/owasp/`](docs/owasp/).
 - Complete safe oracle coverage for all 10 OWASP LLM 2025 categories in the current local/internal assessment scope.
 - OWASP AI Testing Guide foundation suite in [`config/attack_profiles.yaml`](config/attack_profiles.yaml), safe payloads in [`payloads/ai_testing_guide.yaml`](payloads/ai_testing_guide.yaml), and usage guidance in [`docs/AI_TESTING_GUIDE_INTEGRATION.md`](docs/AI_TESTING_GUIDE_INTEGRATION.md).
+- OWASP AI Testing Guide full implementation roadmap in [`docs/AI_TESTING_GUIDE_IMPLEMENTATION_PLAN.md`](docs/AI_TESTING_GUIDE_IMPLEMENTATION_PLAN.md), covering the planned 32-test AITG manifest, runtime/evidence modules, WebUI suites, reporting, and CI validation.
+- OWASP LLM framework/control mapping roadmap in [`docs/OWASP_LLM_TOP10_MAPPING_IMPLEMENTATION_PLAN.md`](docs/OWASP_LLM_TOP10_MAPPING_IMPLEMENTATION_PLAN.md), covering normalized framework mappings, provenance, confidence labels, and report enrichment.
 - Complete GenAI Security scenario-harness coverage for `DSGAI01–DSGAI21` in [`benchmarks/fixtures/genai/scenarios.yaml`](benchmarks/fixtures/genai/scenarios.yaml).
 - GenAI deterministic evaluator primitives in [`core/genai_evaluators.py`](core/genai_evaluators.py).
 - GenAI readiness gate in [`scripts/validate_genai_readiness.py`](scripts/validate_genai_readiness.py).
@@ -301,6 +307,8 @@ python scripts/container_smoke_test.py
 | Hardening backlog | [`docs/PRODUCTION_HARDENING_BACKLOG.md`](docs/PRODUCTION_HARDENING_BACKLOG.md) |
 | Assessment assurance limits | [`docs/ASSESSMENT_ASSURANCE.md`](docs/ASSESSMENT_ASSURANCE.md) |
 | OWASP AI Testing Guide integration and local agent testing | [`docs/AI_TESTING_GUIDE_INTEGRATION.md`](docs/AI_TESTING_GUIDE_INTEGRATION.md) |
+| OWASP AI Testing Guide implementation roadmap | [`docs/AI_TESTING_GUIDE_IMPLEMENTATION_PLAN.md`](docs/AI_TESTING_GUIDE_IMPLEMENTATION_PLAN.md) |
+| OWASP LLM framework/control mapping roadmap | [`docs/OWASP_LLM_TOP10_MAPPING_IMPLEMENTATION_PLAN.md`](docs/OWASP_LLM_TOP10_MAPPING_IMPLEMENTATION_PLAN.md) |
 | GenAI Security readiness | [`docs/genai/PRODUCTION_READINESS_PLAN.md`](docs/genai/PRODUCTION_READINESS_PLAN.md) |
 | Agentic Applications readiness | [`docs/AGENTIC_APPLICATIONS_PRODUCTION_READINESS_PLAN.md`](docs/AGENTIC_APPLICATIONS_PRODUCTION_READINESS_PLAN.md) |
 | Implementation status | [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md) |
