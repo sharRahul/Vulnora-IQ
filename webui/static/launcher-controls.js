@@ -59,6 +59,37 @@
     badge.rel = 'noopener noreferrer';
     badge.setAttribute('aria-label', 'VulnoraIQ license: Apache License 2.0');
     badge.textContent = 'Apache-2.0';
+    Object.assign(badge.style, {
+      position: 'fixed',
+      left: '14px',
+      bottom: '12px',
+      zIndex: '50',
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '6px',
+      maxWidth: 'calc(100vw - 28px)',
+      padding: '7px 10px',
+      border: '1px solid color-mix(in srgb, var(--border-strong) 75%, transparent)',
+      borderRadius: '999px',
+      color: 'var(--muted)',
+      background: 'color-mix(in srgb, var(--panel-strong) 88%, transparent)',
+      boxShadow: '0 10px 28px rgba(0, 0, 0, 0.14)',
+      backdropFilter: 'blur(12px)',
+      fontSize: '0.72rem',
+      fontWeight: '900',
+      letterSpacing: '0.04em',
+      lineHeight: '1',
+      textDecoration: 'none',
+      textTransform: 'uppercase',
+    });
+    badge.addEventListener('mouseenter', () => {
+      badge.style.color = 'var(--navy)';
+      badge.style.borderColor = 'var(--accent)';
+    });
+    badge.addEventListener('mouseleave', () => {
+      badge.style.color = 'var(--muted)';
+      badge.style.borderColor = 'color-mix(in srgb, var(--border-strong) 75%, transparent)';
+    });
     document.body.appendChild(badge);
   }
 
