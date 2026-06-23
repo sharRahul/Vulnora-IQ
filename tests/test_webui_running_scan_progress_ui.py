@@ -4,6 +4,7 @@ from pathlib import Path
 
 INDEX = Path("webui/static/index.html")
 APP = Path("webui/static/app.js")
+BASE_CSS = Path("webui/static/styles.css")
 SCAN_PROGRESS_CSS = Path("webui/static/scan-progress.css")
 UI_POLISH_CSS = Path("webui/static/ui-polish.css")
 
@@ -94,6 +95,23 @@ def test_full_webui_javascript_filters_and_dashboard_actions_exist() -> None:
         "findingPolicy",
     ):
         assert expected in script
+
+
+def test_sophisticated_muted_light_theme_palette_is_present() -> None:
+    css = BASE_CSS.read_text(encoding="utf-8")
+
+    for expected in (
+        "#F8F9FA",
+        "#E8DFE0",
+        "#8A9EA7",
+        "#8D9B6A",
+        "#DAB692",
+        "#2A2F35",
+        "#1E2229",
+        "--critical: #6E1F25",
+        "color-scheme: light",
+    ):
+        assert expected in css
 
 
 def test_running_scan_progress_css_is_responsive_and_accessible() -> None:
