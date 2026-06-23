@@ -223,3 +223,118 @@ If you started the Web UI with a double-click launcher, use the **Stop local ser
 If the Web UI is running in the foreground, stop it with `Ctrl+C` in the terminal where `vulnoraiq-web` is running.
 
 If it was started in the background, find the process that is listening on port `8787` and terminate it:
+
+```bash
+lsof -ti :8787 | xargs kill
+```
+
+Use a forced kill only if the process does not stop cleanly:
+
+```bash
+lsof -ti :8787 | xargs kill -9
+```
+
+For Docker Compose deployments, stop the service with:
+
+```bash
+docker compose down
+```
+
+---
+
+## Running authorised scans
+
+```bash
+vulnoraiq \
+  --target demo \
+  --profile baseline \
+  --output reports/output/demo-report.md \
+  --json-output reports/output/demo-report.json \
+  --sarif-output reports/output/demo-report.sarif \
+  --dashboard-output reports/output/demo-dashboard.md \
+  --html-dashboard-output reports/output/demo-dashboard.html
+```
+
+Only use configured targets against systems you own or are explicitly authorised to assess:
+
+```bash
+vulnoraiq \
+  --target owasp_lab_agent_http \
+  --profile ai_testing_guide_foundation \
+  --authorised
+```
+
+---
+
+## Functional acceptance and release gates
+
+```bash
+ruff check .
+mypy .
+pytest -q
+python -m pip check
+pip-audit
+python scripts/validate_package_metadata.py
+python scripts/validate_owasp_atlas_mappings.py
+python scripts/validate_genai_readiness.py
+python scripts/validate_production_testing_readiness.py
+python scripts/validate_runtime_production_config.py
+python scripts/validate_production_testing_readiness.py \
+  --run-functional \
+  --output-dir reports/output/production-readiness
+```
+
+If Docker is available:
+
+```bash
+docker build -t vulnoraiq:0.2.0-rc .
+python scripts/container_smoke_test.py
+```
+
+---
+
+## Documentation map
+
+| Need | Document |
+| --- | --- |
+| Documentation index | [`docs/README.md`](docs/README.md) |
+| Deployment and environment variables | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) |
+| Operations runbook | [`docs/RUNBOOK.md`](docs/RUNBOOK.md) |
+| Incident response | [`docs/INCIDENT_RESPONSE.md`](docs/INCIDENT_RESPONSE.md) |
+| Release process | [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) |
+| Migration from `0.0.1.x` to `0.2.0` | [`docs/MIGRATION.md`](docs/MIGRATION.md) |
+| Readiness scorecard | [`docs/PRODUCTION_READINESS_SCORECARD.md`](docs/PRODUCTION_READINESS_SCORECARD.md) |
+| Hardening backlog | [`docs/PRODUCTION_HARDENING_BACKLOG.md`](docs/PRODUCTION_HARDENING_BACKLOG.md) |
+| Assessment assurance limits | [`docs/ASSESSMENT_ASSURANCE.md`](docs/ASSESSMENT_ASSURANCE.md) |
+| OWASP AI Testing Guide integration and local agent testing | [`docs/AI_TESTING_GUIDE_INTEGRATION.md`](docs/AI_TESTING_GUIDE_INTEGRATION.md) |
+| OWASP AI Testing Guide implementation roadmap | [`docs/AI_TESTING_GUIDE_IMPLEMENTATION_PLAN.md`](docs/AI_TESTING_GUIDE_IMPLEMENTATION_PLAN.md) |
+| OWASP LLM framework/control mapping roadmap | [`docs/OWASP_LLM_TOP10_MAPPING_IMPLEMENTATION_PLAN.md`](docs/OWASP_LLM_TOP10_MAPPING_IMPLEMENTATION_PLAN.md) |
+| GenAI Security readiness | [`docs/genai/PRODUCTION_READINESS_PLAN.md`](docs/genai/PRODUCTION_READINESS_PLAN.md) |
+| Agentic Applications readiness | [`docs/AGENTIC_APPLICATIONS_PRODUCTION_READINESS_PLAN.md`](docs/AGENTIC_APPLICATIONS_PRODUCTION_READINESS_PLAN.md) |
+| Implementation status | [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md) |
+| OWASP LLM 2025 specs | [`docs/owasp/`](docs/owasp/) |
+| MITRE ATLAS AI matrix | [`docs/MITRE_ATLAS_AI_MATRIX.md`](docs/MITRE_ATLAS_AI_MATRIX.md) |
+
+---
+
+## Roadmap
+
+Post-completion hardening priorities:
+
+- deeper OWASP/GenAI category logic and evaluator thresholds
+- richer local and self-hosted benchmark targets
+- provider/data inventory connectors for authorised GenAI assessments
+- clearer target adapter templates for AI agents, LLM APIs, RAG systems, and local model servers
+- packaged laptop/server installation paths
+- optional OIDC/JWT validation for enterprise self-hosted deployments
+- stronger single-server operations guidance for reverse proxy, TLS, backups, and audit logs
+- independent penetration test of the Web UI and assessment engine
+- report language maturity review for external assurance use
+
+---
+
+## License and third-party notices
+
+VulnoraIQ-specific source code and documentation are licensed under this repository's license. See [`LICENSE`](LICENSE).
+
+Some documentation and planning data is derived from MITRE ATLAS. MITRE ATLAS data is copyright 2021-2026 MITRE and licensed under the Apache License, Version 2.0. See [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
