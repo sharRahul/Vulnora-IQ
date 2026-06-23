@@ -14,7 +14,7 @@ This checklist must be completed before tagging a production-readiness release c
 
 GenAI-specific wording may say:
 
-> GenAI Security working-starter readiness gate completed for controlled internal assessment use with safe synthetic `DSGAI01–DSGAI21` scenario coverage.
+> GenAI Security readiness gate completed for controlled internal assessment use with safe synthetic `DSGAI01–DSGAI21` scenario coverage.
 
 Do **not** describe `0.2.0` as certified VAPT-grade ready or independently production-validated for every GenAI category.
 
@@ -55,7 +55,7 @@ Recommended flow for this release:
   - JSON backend is dev/legacy only
   - file auth disabled in production
   - `VULNORAIQ_ADMIN_TOKEN` required in production
-- [ ] Confirm release notes include known limitations, including GenAI working-starter limitations.
+- [ ] Confirm release notes include known limitations, including GenAI current-scope completion limitations.
 
 ## Stage 2: local quality gates
 
@@ -128,7 +128,7 @@ Review:
 - [ ] Required evidence fields include `genai_id`, `genai_risk_area`, `data_classification`, `data_surface`, `redaction_status`, `manual_review_reason`, and `mitre_atlas_tactics`.
 - [ ] `core/genai_evaluators.py` exposes deterministic safe-fixture evaluators.
 - [ ] `tests/test_genai_readiness_validation.py` passes.
-- [ ] Docs state that GenAI coverage is working starter, not certified assurance.
+- [ ] Docs state that GenAI coverage is complete for the current controlled-internal scenario-harness scope, not certified assurance.
 
 ## Stage 6: Docker and container smoke
 
@@ -187,7 +187,7 @@ Acceptance:
 - [ ] `ASSESSMENT_ASSURANCE.md` warns that findings are framework evidence, not certified VAPT assurance.
 - [ ] `docs/genai/PRODUCTION_READINESS_PLAN.md` shows the current GenAI Security phase-by-phase gate status.
 - [ ] `AGENTIC_APPLICATIONS_PRODUCTION_READINESS_PLAN.md` shows the current Agentic Applications phase-by-phase gate status.
-- [ ] `PRODUCTION_HARDENING_BACKLOG.md` documents self-hosted maturity items.
+- [ ] `PRODUCTION_HARDENING_BACKLOG.md` documents complete current-scope readiness and post-completion maturity items.
 
 ## Stage 9: security review
 

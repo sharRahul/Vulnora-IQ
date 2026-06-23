@@ -41,15 +41,15 @@ It must **not** be described as:
 
 | Area | Status |
 | --- | --- |
-| Auth | Fail-closed token auth; trusted reverse-proxy identity mode available |
-| Production startup validation | Runtime checks via `webui/production_checks.py` and `scripts/validate_runtime_production_config.py` |
-| Web hardening | CSRF, request-size limits, rate limiting, security headers, structured errors |
-| Persistence | SQLite default with WAL, foreign keys, busy timeout, schema versioning |
-| Observability | `/healthz`, `/readyz`, auth-protected `/metrics`, structured JSON audit logs |
-| Backup/restore | SQLite online backup and restore scripts with validation |
-| Container | Non-root Dockerfile, `/data` volume, healthcheck, Docker Compose example |
-| CI gates | Ruff, mypy, pytest, pip check, pip-audit, metadata validation, OWASP/ATLAS mapping validation, GenAI readiness validation, readiness validation, functional acceptance |
-| Web UI test catalog | Categorized suites and single-test runnable profiles are visible from the dashboard |
+| Auth | Complete: fail-closed token auth; trusted reverse-proxy identity mode available |
+| Production startup validation | Complete: runtime checks via `webui/production_checks.py` and `scripts/validate_runtime_production_config.py` |
+| Web hardening | Complete: CSRF, request-size limits, rate limiting, security headers, structured errors |
+| Persistence | Complete: SQLite default with WAL, foreign keys, busy timeout, schema versioning |
+| Observability | Complete: `/healthz`, `/readyz`, auth-protected `/metrics`, structured JSON audit logs |
+| Backup/restore | Complete: SQLite online backup and restore scripts with validation |
+| Container | Complete: non-root Dockerfile, `/data` volume, healthcheck, Docker Compose example |
+| CI gates | Complete: Ruff, mypy, pytest, pip check, pip-audit, metadata validation, OWASP/ATLAS mapping validation, GenAI readiness validation, readiness validation, functional acceptance |
+| Web UI test catalog | Complete: categorized suites and single-test runnable profiles are visible from the dashboard |
 
 ## OWASP, GenAI, Agentic, and MITRE documentation
 
@@ -69,7 +69,7 @@ It must **not** be described as:
 | MITRE ATLAS AI planning matrix | [`MITRE_ATLAS_AI_MATRIX.md`](MITRE_ATLAS_AI_MATRIX.md) |
 | MITRE ATLAS mapping notes | [`mitre-atlas-mapping.md`](mitre-atlas-mapping.md) |
 
-The OWASP, GenAI, Agentic, and MITRE documents are implementation references and planning records. They should not be interpreted as proof that every mapped technique has production-validated active detection coverage.
+The OWASP, GenAI, Agentic, and MITRE documents are complete for the current self-hosted/internal readiness and planning scope. They should not be interpreted as proof that every mapped technique has independently validated real-environment detection coverage.
 
 ## Source document review status
 
@@ -81,7 +81,7 @@ The uploaded source PDFs have been reviewed for category extraction and planning
 - `owasp-documents/OWASP-Top10-for-Agentic-Applications_AIUC-1-Crosswalk-May26.pdf` — reviewed for Primary/Secondary relevance methodology and strategic gaps.
 - `owasp-documents/State-of-Agentic-AI-Security-and-Governance-v2.01.pdf` — reviewed for governance maturity, adoption-tier prioritisation, identity/NHI, AI SBOM/provenance, and runtime governance themes.
 
-Source category names are confirmed for `DSGAI01–DSGAI21` and `ASI01–ASI10`. GenAI Security coverage is now a working starter backed by safe synthetic scenario manifests, deterministic evaluators, and CI validation; it is still not certified assurance.
+Source category names are confirmed for `DSGAI01–DSGAI21` and `ASI01–ASI10`. GenAI Security coverage is now complete for the current controlled-internal scenario-harness scope, backed by safe synthetic scenario manifests, deterministic evaluators, and CI validation; it is still not certified assurance.
 
 ## Documentation maintenance rule
 
@@ -103,4 +103,4 @@ When production posture or assessment coverage changes, update these together:
 14. `docs/owasp-documents/`
 15. `CHANGELOG.md`
 
-If a capability is starter-level, partial, experimental, accepted risk, source discrepancy, or roadmap-only, mark it clearly in every document that mentions it.
+If a capability is complete only for the current self-hosted/internal scope, source discrepancy, accepted risk, future maturity item, or assurance limitation, mark it clearly in every document that mentions it.

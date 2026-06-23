@@ -2,7 +2,7 @@
 
 This guide describes the supported VulnoraIQ `0.2.0` deployment posture.
 
-> **Scope:** VulnoraIQ `0.2.0` is a self-hosted application for authorised AI-agent and LLM-application testing. It is designed to run on a laptop, workstation, lab machine, or internal server controlled by the assessor or organisation. It is suitable for single-organisation/internal deployment when configured with the controls below. GenAI Security readiness is working starter coverage for controlled internal assessment use.
+> **Scope:** VulnoraIQ `0.2.0` is a self-hosted application for authorised AI-agent and LLM-application testing. It is designed to run on a laptop, workstation, lab machine, or internal server controlled by the assessor or organisation. GenAI Security readiness is complete for the current controlled-internal scenario-harness scope.
 
 ## Quick start: local development
 
@@ -31,7 +31,7 @@ The demo target is safe and local. Configured non-demo targets require explicit 
 
 ## Quick start: self-hosted production-mode validation
 
-Production mode fails closed when unsafe runtime configuration is detected.
+Production mode fails closed when required runtime settings are missing or unsafe.
 
 ```bash
 export VULNORAIQ_ENV=production
@@ -52,34 +52,15 @@ Stop the production-mode Web UI with `Ctrl+C` when it is running in the foregrou
 lsof -ti :8787 | xargs kill
 ```
 
-Use a forced kill only if the process does not stop cleanly:
+Use a forced stop only if the process does not stop cleanly:
 
 ```bash
 lsof -ti :8787 | xargs kill -9
 ```
 
-`VULNORAIQ_WEB_USERS_PATH` points at the persisted web auth user store (YAML). Place it on the
-mounted `/data` volume so credentials survive container restarts; it defaults to a path under the
-config root when unset.
+## Release and readiness validation
 
-Production-mode validation checks:
-
-- auth is enabled
-- admin token is set and at least 20 characters
-- known demo/default tokens are rejected
-- internal development admin token is disabled
-- JSON job store is rejected in production
-- SQLite path is not obviously ephemeral or unsafe
-- output directory is writable
-- config directory is readable
-- trusted proxy CIDRs are valid when proxy headers are enabled
-- binding to `0.0.0.0` or `::` without trusted proxy configuration fails
-- rate-limit, request-body, and CSRF TTL values are sane
-- audit logging level is valid
-
-## Release and assessment readiness validation
-
-Run these after checkout, before a release candidate, and after changing docs, mappings, or GenAI scenario assets:
+Run these after checkout, before a release candidate, and after changing docs, mappings, GenAI scenarios, or runtime settings:
 
 ```bash
 python scripts/validate_package_metadata.py
@@ -89,14 +70,7 @@ python scripts/validate_production_testing_readiness.py
 python scripts/validate_runtime_production_config.py
 ```
 
-The GenAI readiness validator checks:
-
-- `DSGAI01–DSGAI21` source-confirmed scenario coverage
-- `DSGAI22–DSGAI25` source-discrepancy preservation
-- secure, vulnerable, ambiguous, and edge-case fixture coverage
-- required GenAI evidence fields
-- MITRE ATLAS tactic ID format
-- GenAI readiness documentation alignment
+The GenAI readiness validator checks `DSGAI01–DSGAI21` coverage, `DSGAI22–DSGAI25` discrepancy tracking, fixture coverage, evidence fields, MITRE ATLAS tactic format, and documentation alignment.
 
 ## Container deployment
 
@@ -140,11 +114,9 @@ docker compose down
 
 Do not commit real `.env.production` files. Commit only `.env.production.example` with placeholders.
 
-## Authentication
+## Authentication and roles
 
-Auth is **enabled by default** and fail-closed. Anonymous requests to protected routes receive HTTP `401`.
-
-### Token auth, default mode
+Auth is enabled by default. Use token mode for direct self-hosted runs and trusted reverse-proxy identity mode only when an approved reverse proxy performs authentication and strips inbound identity headers before setting its own.
 
 ```bash
 export VULNORAIQ_AUTH_MODE=token
@@ -154,90 +126,22 @@ export VULNORAIQ_ANALYST_TOKEN="$(openssl rand -hex 32)"
 export VULNORAIQ_VIEWER_TOKEN="$(openssl rand -hex 32)"
 ```
 
-Clients pass the token via the `X-VulnoraIQ-Token` header. Tokens are compared using constant-time comparison.
-
 | Role | Permissions |
 | --- | --- |
 | `viewer` | view scans, download artifacts |
 | `analyst` | viewer + start demo scans |
 | `admin` | analyst + start configured-target scans, manage runtime |
 
-### Trusted reverse-proxy identity mode
+## Reverse proxy and TLS
 
-Use this only when an upstream proxy performs authentication and strips spoofed identity headers from untrusted clients.
+For internal server deployments, the built-in HTTP server can run behind a reverse proxy such as nginx or Caddy for TLS termination and enterprise network controls. Local laptop/workstation demos can remain bound to `127.0.0.1`.
 
 ```bash
-export VULNORAIQ_AUTH_MODE=trusted_proxy
 export VULNORAIQ_TRUST_PROXY_HEADERS=true
 export VULNORAIQ_TRUSTED_PROXY_CIDRS="127.0.0.1/32,::1/128"
 ```
 
-Supported identity headers:
-
-| Header | Purpose |
-| --- | --- |
-| `X-Authenticated-User` | required username |
-| `X-Authenticated-Email` | informational email |
-| `X-Authenticated-Groups` | informational group list |
-| `X-VulnoraIQ-Role` | `viewer`, `analyst`, or `admin`; unknown roles default to viewer |
-
-Spoofed identity headers from untrusted client IPs are ignored.
-
-## Proxy IP trust
-
-By default, VulnoraIQ does **not** trust `X-Forwarded-For`. This prevents client-IP spoofing.
-
-```bash
-export VULNORAIQ_TRUST_PROXY_HEADERS=true
-export VULNORAIQ_TRUSTED_PROXY_CIDRS="10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
-```
-
-The server trusts forwarded client IPs only when the direct connection source is within a trusted CIDR.
-
-## Web UI endpoints
-
-| Endpoint | Auth | Purpose |
-| --- | --- | --- |
-| `/` | required | static Web UI |
-| `/healthz` | public | liveness |
-| `/readyz` | public | readiness based on target/profile config |
-| `/metrics` | required by default | Prometheus metrics |
-| `/api/csrf-token` | required | CSRF token for state-changing requests |
-| `/api/config` | required | role-aware safe configuration view |
-| `/api/scans` | required | list or create scans |
-| `/api/scans/<id>` | required | scan details |
-| `/api/scans/<id>/events` | required | Server-Sent Events stream |
-| `/api/scans/<id>/artifact/<name>` | required | artifact download |
-
-`POST /api/scans` requires `X-CSRF-Token`.
-
-## Security features
-
-### Request size and parsing
-
-- `VULNORAIQ_MAX_REQUEST_BODY` defaults to `10485760` bytes / 10 MB.
-- Oversized requests return HTTP `413`.
-- Invalid `Content-Length` and malformed JSON return HTTP `400`.
-- API errors are JSON responses with security headers.
-
-### CSRF
-
-- Tokens are scoped to the authenticated principal, or client IP for anonymous development flows.
-- `VULNORAIQ_CSRF_TOKEN_TTL` defaults to `300` seconds.
-- Expired tokens are cleaned periodically.
-
-### Rate limiting and scan concurrency
-
-```bash
-export VULNORAIQ_RATE_LIMIT_WINDOW=60
-export VULNORAIQ_RATE_LIMIT_MAX=60
-export VULNORAIQ_MAX_CONCURRENT_SCANS=5
-export VULNORAIQ_SCAN_QUEUE_LIMIT=20
-```
-
-The application rate limiter is in-memory and per-process. For self-hosted internal server deployments, place the app behind your organisation's reverse proxy if centralised network controls, TLS, or additional request filtering are required.
-
-## Persistence
+## Persistence, backup, and audit
 
 SQLite is the default and production-supported backend for controlled internal deployment.
 
@@ -246,31 +150,9 @@ export VULNORAIQ_JOB_STORE_BACKEND=sqlite
 export VULNORAIQ_JOB_STORE_PATH=/data/jobs.db
 ```
 
-SQLite settings applied by the job store:
-
-- WAL mode
-- foreign keys enabled
-- busy timeout
-- schema version table
-- `jobs` and `events` tables
-
-JSON persistence is legacy/development only, and production validation rejects it.
-
-## Audit logging
-
 Audit events are emitted as JSON lines on the `vulnoraiq.audit` logger. Audit logs must not include auth tokens, CSRF tokens, request bodies, secrets, or full report contents.
 
-Recommended operations:
-
-- ship logs to SIEM using your standard log shipper
-- retain audit logs according to internal policy
-- alert on repeated auth failures, CSRF failures, rate-limit spikes, unsafe artifact access attempts, and scan queue saturation
-
-## Reverse proxy and TLS
-
-For internal server deployments, the built-in HTTP server can run behind a reverse proxy such as nginx or Caddy for TLS termination and enterprise network controls. Local laptop/workstation demos can remain bound to `127.0.0.1`.
-
-## Backup and restore
+Backup and restore commands:
 
 ```bash
 python scripts/backup_sqlite_store.py /data/jobs.db /data/backups/jobs-$(date +%Y%m%d-%H%M%S).db --compress --validate --retention 90
@@ -286,14 +168,14 @@ GenAI readiness assets are repository assets, not runtime secrets:
 - readiness validator: `scripts/validate_genai_readiness.py`
 - tests: `tests/test_genai_readiness_validation.py`
 
-Run the GenAI validator before release and after modifying GenAI docs, scenario coverage, evidence fields, or source discrepancy tracking. The validator passing means the working-starter gate is consistent; it does not prove production-validated real-world GenAI detection assurance.
+Run the GenAI validator before release and after modifying GenAI docs, scenario coverage, evidence fields, or source discrepancy tracking. The validator passing means the current-scope GenAI readiness gate is consistent; it does not prove production-validated real-world GenAI detection assurance.
 
 ## Production Checklist
 
 Confirm each item before a self-hosted internal deployment:
 
 - [ ] `python scripts/validate_runtime_production_config.py` passes with `VULNORAIQ_ENV=production`.
-- [ ] `VULNORAIQ_AUTH_ENABLED=true` and a strong `VULNORAIQ_ADMIN_TOKEN` (no demo/default tokens) are set.
+- [ ] `VULNORAIQ_AUTH_ENABLED=true` and a strong `VULNORAIQ_ADMIN_TOKEN` are set.
 - [ ] Persistent state — `VULNORAIQ_JOB_STORE_PATH`, `VULNORAIQ_WEB_OUTPUT_ROOT`, and `VULNORAIQ_WEB_USERS_PATH` — lives on the mounted `/data` volume.
 - [ ] For internal server deployments, the service runs behind an approved reverse proxy terminating TLS when remote access is required.
 - [ ] Scheduled backup of the SQLite store is in place and a restore has been validated.

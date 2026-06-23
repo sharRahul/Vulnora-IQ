@@ -11,7 +11,8 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Documentation now consistently describes VulnoraIQ as a self-hosted laptop/workstation/internal-server application for authorised AI assessment work.
-- README, docs index, deployment guide, security policy, implementation status, readiness scorecard, backlog, release checklist, assurance, runbook, incident response, GenAI readiness plan, and Agentic Applications readiness plan were aligned to the same product positioning.
+- Current-scope readiness items are now consistently marked **Complete** for the self-hosted/internal assessment scope.
+- README, docs index, deployment guide, security policy, implementation status, readiness scorecard, backlog, release checklist, assurance, runbook, incident response, GenAI readiness plan, and Agentic Applications readiness plan were aligned to the same product positioning and completion vocabulary.
 
 ### Notes
 

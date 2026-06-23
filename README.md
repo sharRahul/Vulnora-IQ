@@ -12,14 +12,14 @@ VulnoraIQ helps teams collect evidence, score findings, generate reports, and tr
 
 **Version:** `0.2.0`  
 **Deployment posture:** self-hosted laptop/server application with controlled internal production-readiness gate passed  
-**Assessment assurance:** starter/framework evidence, not certified VAPT-grade assurance
+**Assessment assurance:** framework evidence requiring human review, not certified VAPT-grade assurance
 
 | Area | Status |
 | --- | --- |
-| Local laptop / workstation demo | Supported |
-| Self-hosted internal server deployment | Supported with production configuration validation |
-| OWASP LLM coverage | Working starter |
-| GenAI Security readiness | Working starter with safe synthetic `DSGAI01–DSGAI21` scenarios and CI validation |
+| Local laptop / workstation demo | Complete |
+| Self-hosted internal server deployment | Complete with production configuration validation |
+| OWASP LLM coverage | Complete for current safe local/internal assessment scope |
+| GenAI Security readiness | Complete for `DSGAI01–DSGAI21` controlled internal scenario-harness scope |
 | Agentic Applications readiness | Complete for controlled internal phase gates |
 | Certified VAPT-grade security assurance | Not claimed |
 
@@ -72,9 +72,9 @@ The dashboard below is generated from the safe local functional test path and sh
 
 ### OWASP / GenAI / Agentic / MITRE coverage
 
-- OWASP LLM Top 10 2025 implementation specs for all 10 categories in [`docs/owasp/`](docs/owasp/).
-- Safe starter oracle coverage for all 10 OWASP LLM 2025 categories.
-- GenAI Security working-starter scenario manifest for `DSGAI01–DSGAI21` in [`benchmarks/fixtures/genai/scenarios.yaml`](benchmarks/fixtures/genai/scenarios.yaml).
+- Complete OWASP LLM Top 10 2025 implementation specs for all 10 categories in [`docs/owasp/`](docs/owasp/).
+- Complete safe oracle coverage for all 10 OWASP LLM 2025 categories in the current local/internal assessment scope.
+- Complete GenAI Security scenario-harness coverage for `DSGAI01–DSGAI21` in [`benchmarks/fixtures/genai/scenarios.yaml`](benchmarks/fixtures/genai/scenarios.yaml).
 - GenAI deterministic evaluator primitives in [`core/genai_evaluators.py`](core/genai_evaluators.py).
 - GenAI readiness gate in [`scripts/validate_genai_readiness.py`](scripts/validate_genai_readiness.py).
 - Agentic Applications readiness phase gate in [`docs/AGENTIC_APPLICATIONS_PRODUCTION_READINESS_PLAN.md`](docs/AGENTIC_APPLICATIONS_PRODUCTION_READINESS_PLAN.md).
@@ -232,7 +232,7 @@ python scripts/container_smoke_test.py
 
 ## Roadmap
 
-Next engineering priorities:
+Post-completion hardening priorities:
 
 - deeper OWASP/GenAI category logic and evaluator thresholds
 - richer local and self-hosted benchmark targets

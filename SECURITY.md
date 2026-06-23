@@ -8,7 +8,7 @@ This document defines VulnoraIQ's security boundary, supported versions, respons
 
 VulnoraIQ is a self-hosted defensive AI security assessment application for authorised testing of LLM applications, RAG pipelines, AI agents, tool-using systems, GenAI data-security surfaces, and orchestration layers.
 
-`0.2.0` has passed the **controlled internal production-readiness gate** for a laptop, workstation, lab-machine, or internal-server deployment model. GenAI Security readiness is **working starter complete** for controlled internal assessment use with safe synthetic `DSGAI01–DSGAI21` scenario coverage.
+`0.2.0` has passed the **controlled internal production-readiness gate** for a laptop, workstation, lab-machine, or internal-server deployment model. GenAI Security readiness is **complete for the current controlled-internal scenario-harness scope** with safe synthetic `DSGAI01–DSGAI21` scenario coverage.
 
 VulnoraIQ findings are framework evidence for authorised review. They are not certified VAPT-grade assurance, a substitute for independent testing, or independently validated real-world GenAI detection coverage for every category.
 
@@ -18,9 +18,9 @@ VulnoraIQ findings are framework evidence for authorised review. They are not ce
 
 | Deployment model | Status | Notes |
 | --- | --- | --- |
-| Local laptop / workstation demo | Supported | Safe demo target; no external API keys required |
-| Self-hosted internal server deployment | Supported | Requires production configuration validation and real secrets |
-| GenAI Security internal assessment readiness | Working starter | `DSGAI01–DSGAI21` safe synthetic scenarios, deterministic evaluators, and CI validation |
+| Local laptop / workstation demo | Complete | Safe demo target; no external API keys required |
+| Self-hosted internal server deployment | Complete | Requires production configuration validation and real secrets |
+| GenAI Security internal assessment readiness | Complete for current scope | `DSGAI01–DSGAI21` safe synthetic scenarios, deterministic evaluators, and CI validation |
 | Certified VAPT-grade assurance | Not claimed | Findings require human review and deeper validation |
 
 See also:
@@ -40,7 +40,7 @@ See also:
 
 | Version | Security support | Status |
 | --- | --- | --- |
-| `0.2.0` / `0.2.0-rc1` | Active | Self-hosted internal deployment candidate with GenAI working-starter readiness |
+| `0.2.0` / `0.2.0-rc1` | Active | Self-hosted internal deployment candidate with complete current-scope GenAI readiness |
 | `0.0.1.x` | Deprecated | Local/demo use only; upgrade before production-like use |
 | Earlier versions | Unsupported | No production-readiness claim |
 
@@ -124,7 +124,7 @@ The self-hosted internal production path includes:
 
 ### GenAI Security readiness controls
 
-- source-confirmed `DSGAI01–DSGAI21` scenario coverage in `benchmarks/fixtures/genai/scenarios.yaml`
+- complete source-confirmed `DSGAI01–DSGAI21` scenario coverage in `benchmarks/fixtures/genai/scenarios.yaml` for the current controlled-internal scope
 - `DSGAI22–DSGAI25` preserved as source discrepancy / map-later items
 - deterministic evaluator primitives in `core/genai_evaluators.py`
 - GenAI readiness validator in `scripts/validate_genai_readiness.py`
@@ -192,8 +192,8 @@ The following are accepted for the self-hosted internal deployment model and sho
 - SQLite is single-node and not high availability
 - no distributed worker or shared queue architecture
 - no certified third-party testing report for the Web UI or assessment engine
-- scanner/evaluator results are starter/framework evidence requiring human review
-- GenAI Security coverage is working starter and based on safe synthetic scenarios until validated in authorised real environments
+- scanner/evaluator results are framework evidence requiring human review
+- GenAI Security coverage is complete for the current safe synthetic `DSGAI01–DSGAI21` scenario-harness scope; authorised real-environment validation remains a future maturity item
 
 ---
 
