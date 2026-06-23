@@ -19,6 +19,9 @@ All notable changes to this project will be documented in this file.
 - Regression tests for trusted proxy identity mode (spoofed headers, CIDR enforcement, role mapping, permissions)
 - Validator checks: listen_address_safe reachability, no SaaS overclaim in README, SQLite/WAL persistence claim, public/SaaS limitations documented, assessment assurance doc discoverable
 - OWASP-to-MITRE ATLAS planning crosswalk (`docs/owasp/OWASP_TO_MITRE_ATLAS_CROSSWALK.md`)
+- OWASP-to-MITRE ATLAS metadata validator (`scripts/validate_owasp_atlas_mappings.py`)
+- CLI entry `vulnoraiq-validate-owasp-atlas-mappings`
+- Regression tests that fail CI if active OWASP oracles/checks lack OWASP family, OWASP ID, MITRE ATLAS tactics, mapping status, evidence surface, or manual-review flag
 - GenAI security implementation planning docs (`docs/genai/`)
 - Agentic Applications security implementation planning docs (`docs/agentic/`)
 - OWASP source document review index (`docs/owasp-documents/README.md`)
@@ -50,6 +53,8 @@ All notable changes to this project will be documented in this file.
 - `docs/owasp-documents/README.md` updated from pending source-review queue to category extraction status
 - `docs/genai/` updated from placeholder planning IDs to source-confirmed `DSGAI01–DSGAI21`
 - `docs/agentic/` updated from placeholder planning IDs to source-confirmed `ASI01–ASI10`
+- `config/owasp_oracles.yaml` and `config/production_owasp_detection.yaml` now include OWASP-to-ATLAS mapping metadata for every active LLM oracle/check
+- `scripts/validate_package_metadata.py` now fails when the OWASP-to-ATLAS mapping validator fails
 - **`_ALL_CHECKS` in `production_checks.py`**: `listen_address_safe` entry added so the check is actually reachable
 
 ### Fixed
