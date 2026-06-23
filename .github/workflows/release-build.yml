@@ -28,10 +28,13 @@ jobs:
         include:
           - platform: windows
             os: windows-latest
+            extension: zip
           - platform: linux
             os: ubuntu-latest
+            extension: tar.gz
           - platform: macos
             os: macos-latest
+            extension: dmg
 
     steps:
       - name: Checkout repository
@@ -77,7 +80,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: vulnoraiq-${{ env.VULNORAIQ_RELEASE_VERSION }}-${{ matrix.platform }}
-          path: dist/release/vulnoraiq-${{ env.VULNORAIQ_RELEASE_VERSION }}-${{ matrix.platform }}.zip
+          path: dist/release/vulnoraiq-${{ env.VULNORAIQ_RELEASE_VERSION }}-${{ matrix.platform }}.${{ matrix.extension }}
           if-no-files-found: error
 
       - name: Upload artifact to GitHub Release
@@ -87,7 +90,7 @@ jobs:
         shell: bash
         run: |
           gh release upload "${{ github.event.release.tag_name }}" \
-            "dist/release/vulnoraiq-${VULNORAIQ_RELEASE_VERSION}-${{ matrix.platform }}.zip" \
+            "dist/release/vulnoraiq-${VULNORAIQ_RELEASE_VERSION}-${{ matrix.platform }}.${{ matrix.extension }}" \
             --clobber
 
       - name: Upload artifact to existing GitHub Release
@@ -97,5 +100,5 @@ jobs:
         shell: bash
         run: |
           gh release upload "${VULNORAIQ_RELEASE_VERSION}" \
-            "dist/release/vulnoraiq-${VULNORAIQ_RELEASE_VERSION}-${{ matrix.platform }}.zip" \
+            "dist/release/vulnoraiq-${VULNORAIQ_RELEASE_VERSION}-${{ matrix.platform }}.${{ matrix.extension }}" \
             --clobber
