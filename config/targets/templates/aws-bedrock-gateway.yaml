@@ -1,0 +1,28 @@
+target:
+  name: PLACEHOLDER_AWS_BEDROCK_GATEWAY
+  type: http_json
+  base_url: https://bedrock-runtime-gateway.internal
+  endpoint_path: /invoke
+  method: POST
+  auth_token_env: BEDROCK_GATEWAY_TOKEN
+  auth_header: X-API-Key
+  auth_prefix: ""
+  explicit_authorisation: true
+  dry_run: true
+  allow_live_requests: false
+  allow_external: false
+  allowed_host_pattern: "*.internal|bedrock-runtime-gateway.internal"
+  model: approved-bedrock-model
+  request_body_template:
+    model_id: "{{model}}"
+    input: "{{prompt}}"
+  response_extraction_path: output_text
+  rate_limit:
+    requests_per_second: 0.5
+  timeout: 45
+  safety_profile: local_lab_safe
+  data_handling_notes: "Approved Bedrock gateway validation only; use test accounts and redacted evidence."
+  evidence_redaction:
+    redact_headers: [X-API-Key, cookie]
+    redact_body_patterns: ["redact-me"]
+  example_test_profile: baseline
