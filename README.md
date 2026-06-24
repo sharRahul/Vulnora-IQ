@@ -1,8 +1,8 @@
 # VulnoraIQ
 
-**VulnoraIQ** is a Docker-first, self-hosted AI security assessment lab for authorised testing of LLM applications, RAG systems, tool-using agents, AI-agent workflows, GenAI data-security controls, target adapters, reports, evidence, and operational guardrails.
+**VulnoraIQ** is a Docker-first, self-hosted AI testing lab for authorised local or internal use. It supports LLM, RAG, AI-agent, target-adapter, evidence, reporting, WebUI, and CI validation workflows.
 
-VulnoraIQ is a **self-hosted internal application** for controlled authorised assessment work. The current release claim is scoped: **self-hosted laptop/server AI security testing application with controlled internal production-readiness gate passed**. VulnoraIQ findings are framework evidence for human review; the project does not claim certified VAPT-grade assurance, permission to test third-party systems, or independently validated real-world detection coverage for every category.
+VulnoraIQ is a **self-hosted internal application**. The same scope covers an **internal server** deployment when production auth, reverse proxy, TLS, audit, and backup controls are configured. The current release claim is scoped: **self-hosted laptop/server AI security testing application with controlled internal production-readiness gate passed**. Findings are framework evidence for human review, not certified VAPT-grade assurance.
 
 ## Current status
 
@@ -12,9 +12,10 @@ VulnoraIQ is a **self-hosted internal application** for controlled authorised as
 | Default posture | Local laptop/workstation Docker Compose lab with loopback-only WebUI publishing |
 | WebUI | React 18 + TypeScript + Vite SecOps console served by `webui/hosted_server.py` |
 | Local targets | Deterministic mock AI-agent target for chat-completions, Ollama-generate, RAG, webhook, and dry-run tool-loop contracts |
-| Real target support | Authorised local/internal adapters, target validation, dry-run defaults, allow-lists, rate limits, redaction, and evidence capture |
+| Target support | Authorised local/internal adapters, target validation, dry-run defaults, allow-lists, rate limits, and evidence capture |
+| Persistence | SQLite job store with WAL mode, foreign keys, busy timeout, and schema versioning |
 | Security controls | Token auth, trusted reverse-proxy identity, CSRF, rate limits, request limits, security headers, metrics, audit logs, production startup checks |
-| CI/release | Python matrix, lint/type/tests, security/dependency checks, WebUI browser flow, functional acceptance, release packaging, SBOMs, Trivy reports, and Cosign image-signing path |
+| CI/release | Python matrix, lint/type/tests, dependency checks, WebUI browser flow, functional acceptance, release packaging, SBOMs, Trivy reports, and Cosign image-signing path |
 | Future identity | Direct OIDC/JWT is intentionally deferred; see `docs/future-plans/OIDC_JWT_AUTH_PLAN.md` |
 
 ## Quick start
@@ -33,7 +34,7 @@ The Compose lab starts:
 - `local-mock-agent` — deterministic local target reachable only inside the Docker lab network.
 - `test-runner` — optional test-profile container.
 
-The WebUI is published on host loopback only: `127.0.0.1:8787:8787`. This keeps the default Docker lab suitable for local single-user laptop/workstation use. Do not change this to `8787:8787` for normal local use.
+The WebUI is published on host loopback only: `127.0.0.1:8787:8787`. Keep this binding for normal local use.
 
 ```bash
 docker compose exec vulnoraiq-web vulnoraiq targets list
@@ -43,22 +44,11 @@ docker compose exec vulnoraiq-web vulnoraiq reports list
 docker compose exec vulnoraiq-web vulnoraiq jobs list
 ```
 
-Reports are written under `/data/reports`, evidence under `/data/evidence`, audit logs under `/data/audit`, and persisted jobs in `/data/jobs.db`.
-
 ## WebUI and CLI
 
 The supported WebUI is the built React console under `webui/static/console/`; the source app lives in `webui/console/`.
 
-Current WebUI capabilities include:
-
-- target inventory, search, filtering, readiness metrics, and health/status indicators;
-- runtime target save/delete;
-- target connectivity validation;
-- authorisation checklist and scan launch;
-- authenticated live SSE scan progress;
-- persisted finding status/remediation actions and audit history;
-- assistant backend API with model controls;
-- dashboard, findings, intelligence, and workflow panels.
+Current WebUI capabilities include target inventory, runtime target save/delete, target validation, scan launch, SSE scan progress, finding status/remediation actions, assistant backend model controls, dashboards, findings, and workflow panels.
 
 For host-native demo/development outside Docker:
 
@@ -128,7 +118,7 @@ Docker and supply-chain checks are covered by Docker smoke tests and the securit
 | Readiness and assurance | [`docs/PRODUCTION_READINESS_SCORECARD.md`](docs/PRODUCTION_READINESS_SCORECARD.md), [`docs/PRODUCTION_HARDENING_BACKLOG.md`](docs/PRODUCTION_HARDENING_BACKLOG.md), [`docs/ASSESSMENT_ASSURANCE.md`](docs/ASSESSMENT_ASSURANCE.md) |
 | Future identity plan | [`docs/future-plans/OIDC_JWT_AUTH_PLAN.md`](docs/future-plans/OIDC_JWT_AUTH_PLAN.md) |
 
-Current future maturity priorities are direct OIDC/JWT support for enterprise deployments, native OS certificate-signed installers, SIEM rule packs, multi-instance shared state, deeper approved-environment validation, and external independent review.
+Current future maturity priorities are direct OIDC/JWT support for enterprise deployments, native OS certificate-signed installers, SIEM rule packs, multi-instance shared state, approved-environment validation, and external independent review.
 
 ## License and notices
 
