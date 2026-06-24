@@ -11,8 +11,8 @@ def test_double_click_launchers_use_bootstrap() -> None:
     assert "scripts/bootstrap_launch.py" in Path("launch-vulnoraiq-webui.command").read_text(encoding="utf-8")
     assert "scripts/bootstrap_launch.py" in Path("launch-vulnoraiq-webui.sh").read_text(encoding="utf-8")
     bootstrap = Path("scripts/bootstrap_launch.py").read_text(encoding="utf-8")
-    assert "python -m venv" not in bootstrap
-    assert "-m", "venv"
+    assert '"-m"' in bootstrap
+    assert '"venv"' in bootstrap
     assert "pip" in bootstrap
     assert "scripts/launch_webui.py" in bootstrap
 
