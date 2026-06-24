@@ -23,6 +23,7 @@ import yaml
 from core.scanner import Scanner
 from dashboards.generate_dashboard import DashboardGenerator
 from dashboards.html_dashboard import HtmlDashboardGenerator
+from integrations.target_adapters import connectivity_check
 from reports.json_report_generator import JsonReportGenerator
 from reports.report_generator import MarkdownReportGenerator
 from reports.sarif_report_generator import SarifReportGenerator
@@ -217,6 +218,43 @@ def _can_download_job_artifact(principal: AuthPrincipal, job: PersistedScanJob) 
     return AUTH_MANAGER.can(principal, "download_artifacts") and job.created_by == principal.username
 
 
+
+def _runtime_targets_path() -> Path:
+    return Path(os.getenv("VULNORAIQ_RUNTIME_TARGETS_PATH", str(OUTPUT_ROOT / "runtime_targets.yaml")))
+
+
+def _load_runtime_targets() -> dict[str, Any]:
+    path = _runtime_targets_path()
+    if not path.exists():
+        return {"targets": {}}
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    return data if isinstance(data, dict) else {"targets": {}}
+
+
+def _save_runtime_target(target_id: str, target: dict[str, Any]) -> dict[str, Any]:
+    safe_id = target_id.strip().replace(" ", "_")
+    if not safe_id or not safe_id.replace("_", "").replace("-", "").isalnum():
+        raise ValueError("target id must contain only letters, numbers, hyphens, or underscores")
+    runtime = _load_runtime_targets()
+    targets = runtime.setdefault("targets", {})
+    targets[safe_id] = target
+    path = _runtime_targets_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(yaml.safe_dump(runtime, sort_keys=True), encoding="utf-8")
+    return {"target_id": safe_id, "target": target}
+
+
+def _delete_runtime_target(target_id: str) -> bool:
+    runtime = _load_runtime_targets()
+    targets = runtime.setdefault("targets", {})
+    if target_id not in targets:
+        return False
+    del targets[target_id]
+    path = _runtime_targets_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(yaml.safe_dump(runtime, sort_keys=True), encoding="utf-8")
+    return True
+
 def load_config() -> dict[str, Any]:
     def read_yaml(name: str) -> dict[str, Any]:
         path = CONFIG_ROOT / name
@@ -224,8 +262,12 @@ def load_config() -> dict[str, Any]:
             return {}
         return yaml.safe_load(path.read_text(encoding="utf-8")) or {}
 
+    targets = read_yaml("targets.yaml").get("targets", {})
+    runtime_targets = _load_runtime_targets().get("targets", {})
+    if isinstance(runtime_targets, dict):
+        targets = {**targets, **runtime_targets}
     return {
-        "targets": read_yaml("targets.yaml").get("targets", {}),
+        "targets": targets,
         "profiles": read_yaml("attack_profiles.yaml").get("profiles", {}),
         "web_auth_enabled": AUTH_MANAGER.enabled(),
     }
@@ -445,6 +487,10 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
         if clean_path == "/api/csrf-token":
             self._send_json({"csrf_token": _csrf_token_for(self._session_key(principal))})
             return
+        if clean_path == "/api/targets":
+            cfg = load_config()
+            self._send_json({"targets": cfg.get("targets", {})})
+            return
         if clean_path == "/api/config":
             cfg = load_config()
             if not AUTH_MANAGER.can(principal, "manage_runtime"):
@@ -466,6 +512,44 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
         clean_path = urlparse(path).path
         principal = self._require_principal(client_ip, "POST", clean_path, request_id)
         if not principal or not self._check_rate_limit(principal, client_ip):
+            return
+        if clean_path == "/api/targets/save":
+            if not _validate_csrf(self._session_key(principal), self.headers.get("X-CSRF-Token")):
+                self._send_error_response(HTTPStatus.FORBIDDEN, "invalid or missing CSRF token")
+                return
+            if not AUTH_MANAGER.can(principal, "manage_runtime"):
+                self._forbidden()
+                return
+            payload = self._read_json()
+            target_id = str(payload.get("id") or payload.get("target_id") or "").strip()
+            target = payload.get("target")
+            if not isinstance(target, dict):
+                raise ValueError("target must be a JSON object")
+            saved = _save_runtime_target(target_id, target)
+            self._send_json({"saved": True, **saved})
+            return
+        if clean_path == "/api/targets/delete":
+            if not _validate_csrf(self._session_key(principal), self.headers.get("X-CSRF-Token")):
+                self._send_error_response(HTTPStatus.FORBIDDEN, "invalid or missing CSRF token")
+                return
+            if not AUTH_MANAGER.can(principal, "manage_runtime"):
+                self._forbidden()
+                return
+            payload = self._read_json()
+            target_id = str(payload.get("id") or payload.get("target_id") or "").strip()
+            self._send_json({"deleted": _delete_runtime_target(target_id), "target_id": target_id})
+            return
+        if clean_path.startswith("/api/targets/") and clean_path.endswith("/validate"):
+            if not _validate_csrf(self._session_key(principal), self.headers.get("X-CSRF-Token")):
+                self._send_error_response(HTTPStatus.FORBIDDEN, "invalid or missing CSRF token")
+                return
+            parts = [unquote(item) for item in clean_path.split("/") if item]
+            target_id = parts[2]
+            cfg = load_config().get("targets", {})
+            if target_id not in cfg:
+                self._send_error_response(HTTPStatus.NOT_FOUND, "target not found")
+                return
+            self._send_json(connectivity_check(target_id, cfg[target_id]))
             return
         if clean_path != "/api/scans":
             self.send_error(HTTPStatus.NOT_FOUND, "Not found")

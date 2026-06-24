@@ -3,6 +3,7 @@ import {
   Loader2,
   Moon,
   PanelsTopLeft,
+  Server,
   Play,
   ShieldHalf,
   Sun,
@@ -10,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export type ConsoleView = "overview" | "workspace";
+export type ConsoleView = "overview" | "workspace" | "targets";
 
 interface HeaderBarProps {
   view: ConsoleView;
@@ -57,6 +58,12 @@ export function HeaderBar({
           onClick={() => onChangeView("workspace")}
           icon={<PanelsTopLeft className="size-4" />}
           label="Workspace"
+        />
+        <ViewTab
+          active={view === "targets"}
+          onClick={() => onChangeView("targets")}
+          icon={<Server className="size-4" />}
+          label="Targets"
         />
       </nav>
 

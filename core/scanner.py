@@ -10,10 +10,11 @@ import yaml
 from core.evidence_model import OwaspOracleRegistry
 from core.policy_engine import PolicyEngine
 from core.production_detection import ProductionOwaspDetector
+from core.real_scan import run_real_target_modules
 from core.test_runner import TestRunner
 from core.types import ScanContext, ScanResult, TargetClient
-from integrations.adapters import ChatCompletionsTargetClient, OllamaGenerateTargetClient, WebhookJsonTargetClient
-from integrations.base import DemoEchoClient, HttpJsonTargetClient
+from integrations.base import DemoEchoClient
+from integrations.target_adapters import RealTargetClient
 
 
 class Scanner:
@@ -46,7 +47,10 @@ class Scanner:
             target=target_client,
             config=config,
         )
-        findings = self.runner.run_modules(profile["modules"], context)
+        if isinstance(target_client, RealTargetClient):
+            findings = run_real_target_modules(context, profile, self.runner.payload_library)
+        else:
+            findings = self.runner.run_modules(profile["modules"], context)
         result = ScanResult(
             target_name=target_name,
             profile_name=profile_name,
@@ -91,45 +95,8 @@ class Scanner:
             return DemoEchoClient()
         if not target_config:
             raise ValueError(f"Unknown target: {target_name}")
-
-        target_type = target_config.get("type")
-        endpoint = target_config.get("endpoint")
-        if target_type in {"custom_agent", "custom_http_agent", "http", "http_json"}:
-            self._reject_placeholder(target_name, endpoint)
-            timeout = int(config.get("default", {}).get("execution", {}).get("request_timeout_seconds", 30))
-            return HttpJsonTargetClient(
-                name=target_name,
-                endpoint=str(endpoint),
-                token_env_var=target_config.get("token_env_var"),
-                timeout_seconds=timeout,
-            )
-        if target_type in {"chat_completions", "chat_completions_compatible"}:
-            self._reject_placeholder(target_name, endpoint)
-            return ChatCompletionsTargetClient(
-                name=target_name,
-                endpoint=str(endpoint),
-                model=str(target_config.get("model", "local-model")),
-                token_env_var=target_config.get("token_env_var"),
-                timeout_seconds=int(config.get("default", {}).get("execution", {}).get("request_timeout_seconds", 30)),
-            )
-        if target_type == "ollama_generate":
-            self._reject_placeholder(target_name, endpoint)
-            return OllamaGenerateTargetClient(
-                name=target_name,
-                endpoint=str(endpoint),
-                model=str(target_config.get("model", "llama3")),
-                timeout_seconds=int(config.get("default", {}).get("execution", {}).get("request_timeout_seconds", 30)),
-            )
-        if target_type == "webhook_json":
-            self._reject_placeholder(target_name, endpoint)
-            return WebhookJsonTargetClient(
-                name=target_name,
-                endpoint=str(endpoint),
-                token_env_var=target_config.get("token_env_var"),
-                timeout_seconds=int(config.get("default", {}).get("execution", {}).get("request_timeout_seconds", 30)),
-            )
-
-        raise ValueError(f"Unsupported target type for '{target_name}': {target_type}")
+        self._reject_placeholder(target_name, target_config.get("endpoint") or target_config.get("base_url"))
+        return RealTargetClient(target_name, target_config)
 
     @staticmethod
     def _reject_placeholder(target_name: str, endpoint: Any) -> None:
