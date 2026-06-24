@@ -20,6 +20,8 @@ VulnoraIQ is a **self-hosted internal application**. The same scope covers an **
 
 ## Quick start
 
+Run the Docker-first local lab:
+
 ```bash
 docker compose build
 docker compose up -d
@@ -36,12 +38,32 @@ The Compose lab starts:
 
 The WebUI is published on host loopback only: `127.0.0.1:8787:8787`. Keep this binding for normal local use.
 
+Useful Docker commands:
+
 ```bash
 docker compose exec vulnoraiq-web vulnoraiq targets list
 docker compose exec vulnoraiq-web vulnoraiq targets validate --target local_mock_agent
 docker compose exec vulnoraiq-web vulnoraiq scan --target local_mock_agent --profile ai_agent_foundation --authorised
 docker compose exec vulnoraiq-web vulnoraiq reports list
 docker compose exec vulnoraiq-web vulnoraiq jobs list
+```
+
+Cleanly close the Docker lab when finished:
+
+```bash
+docker compose down
+```
+
+Use this only when you intentionally want to delete local jobs, reports, evidence, audit data, and Docker volumes:
+
+```bash
+docker compose down -v
+```
+
+Restart later with:
+
+```bash
+docker compose up -d
 ```
 
 ## WebUI and CLI
@@ -59,7 +81,7 @@ pip install -e .[dev]
 python launch-vulnoraiq-webui.py
 ```
 
-Launcher mode is loopback-only and intended for local laptop/workstation use. For shared or internal-server deployments, use production mode and follow `docs/DEPLOYMENT.md`.
+Cleanly close host-native launcher mode by using the WebUI **Stop local server** control when available, or press `Ctrl+C` in the terminal that started `python launch-vulnoraiq-webui.py`. Launcher mode is loopback-only and intended for local laptop/workstation use. For shared or internal-server deployments, use production mode and follow `docs/DEPLOYMENT.md`.
 
 ## Deployment and security boundary
 
