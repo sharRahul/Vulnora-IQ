@@ -262,7 +262,7 @@ def load_config() -> dict[str, Any]:
             return {}
         return yaml.safe_load(path.read_text(encoding="utf-8")) or {}
 
-    targets = read_yaml("targets.yaml").get("targets", {})
+    targets = read_yaml(os.getenv("VULNORAIQ_TARGET_CONFIG", "targets.yaml")).get("targets", {})
     runtime_targets = _load_runtime_targets().get("targets", {})
     if isinstance(runtime_targets, dict):
         targets = {**targets, **runtime_targets}
@@ -313,7 +313,7 @@ def run_scan_job(job_id: str) -> None:
         job = JOB_STORE.get(job_id)
         if not job:
             return
-        result = Scanner().scan(target_name=job.target, profile_name=job.profile, authorised=job.authorised)
+        result = Scanner(config_dir=CONFIG_ROOT).scan(target_name=job.target, profile_name=job.profile, authorised=job.authorised)
         output_dir = OUTPUT_ROOT / job.id
         output_dir.mkdir(parents=True, exist_ok=True)
         markdown_path = MarkdownReportGenerator().generate(result, output_dir / "scan-report.md")

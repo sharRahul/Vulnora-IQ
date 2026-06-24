@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import argparse
 import re
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
 import yaml
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts.validate_genai_readiness import validate_default as validate_genai_readiness
 from scripts.validate_owasp_atlas_mappings import validate_default_configs
@@ -45,7 +48,7 @@ EXPECTED_LICENSE = "Apache-2.0"
 EXPECTED_LICENSE_FILE = Path("LICENSE")
 EXPECTED_MITRE_ATLAS_DOC = Path("docs/MITRE_ATLAS_AI_MATRIX.md")
 EXPECTED_THIRD_PARTY_NOTICES = Path("THIRD_PARTY_NOTICES.md")
-EXPECTED_DASHBOARD_EXAMPLE = Path("docs/assets/vulnoraiq-webui-home.png")
+EXPECTED_DASHBOARD_EXAMPLE = None  # Docker-first docs intentionally avoid stale screenshot artifacts.
 EXPECTED_FUNCTIONAL_RUNNER = Path("scripts/run_functional_test.py")
 EXPECTED_PRODUCTION_READINESS_RUNNER = Path("scripts/validate_production_testing_readiness.py")
 EXPECTED_OWASP_ATLAS_MAPPING_RUNNER = Path("scripts/validate_owasp_atlas_mappings.py")
@@ -121,8 +124,8 @@ class PackageMetadataValidator:
             warnings.append("README self-hosted laptop/server maturity wording was not found")
         if "certified VAPT-grade assurance" not in readme:
             warnings.append("README assurance limitation wording was not found")
-        if "docs/assets/vulnoraiq-webui-home.png" not in readme:
-            errors.append("README must include the Web UI home screen image")
+        if "docs/assets/vulnoraiq-webui-home.png" in readme:
+            errors.append("README must not reference removed stale Web UI screenshot artifacts")
         owasp_dir = Path("docs/owasp")
         for expected_doc in EXPECTED_OWASP_DOCS:
             if not (owasp_dir / expected_doc).exists():
@@ -167,12 +170,7 @@ class PackageMetadataValidator:
             if genai_result["status"] != "pass":
                 for error in genai_result["errors"]:
                     errors.append(f"GenAI readiness validation failed: {error}")
-        if not EXPECTED_DASHBOARD_EXAMPLE.exists():
-            errors.append(f"Missing dashboard example image: {EXPECTED_DASHBOARD_EXAMPLE}")
-        else:
-            image_bytes = EXPECTED_DASHBOARD_EXAMPLE.read_bytes()
-            if not image_bytes.startswith(b"\x89PNG\r\n\x1a\n"):
-                errors.append("Dashboard example image must be a PNG file")
+        # Stale WebUI screenshots are intentionally not part of the Docker-first release metadata.
         if not Path("examples/local_demo_targets/owasp_fixture_targets.py").exists():
             errors.append("Missing OWASP fixture target file")
         if not Path("core/evaluators.py").exists():

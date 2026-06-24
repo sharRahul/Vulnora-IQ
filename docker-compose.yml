@@ -1,29 +1,96 @@
-version: "3.8"
-
 services:
-  vulnoraiq:
+  vulnoraiq-web:
     build: .
-    image: vulnoraiq:production-candidate
+    image: vulnoraiq:docker-lab
     container_name: vulnoraiq-web
     restart: unless-stopped
+    init: true
+    read_only: false
     ports:
       - "8787:8787"
+    env_file:
+      - .env.docker.example
+    environment:
+      VULNORAIQ_HOST: 0.0.0.0
+      VULNORAIQ_PORT: "8787"
+      VULNORAIQ_CONFIG_DIR: /app/config
+      VULNORAIQ_TARGET_CONFIG: targets.docker.yaml
+      VULNORAIQ_JOB_STORE_PATH: /data/jobs.db
+      VULNORAIQ_WEB_OUTPUT_ROOT: /data/reports
+      VULNORAIQ_EVIDENCE_DIR: /data/evidence
+      VULNORAIQ_AUDIT_DIR: /data/audit
+      VULNORAIQ_AUTH_ENABLED: "false"
     volumes:
       - vulnoraiq_data:/data
       - ./config:/app/config:ro
-    env_file:
-      - .env.production
+    depends_on:
+      local-mock-agent:
+        condition: service_healthy
+    networks:
+      - vulnoraiq-lab
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8787/healthz', timeout=3).read()"]
       interval: 30s
       timeout: 5s
       start_period: 10s
       retries: 3
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  local-mock-agent:
+    build: docker/mock-agent
+    image: vulnoraiq/local-mock-agent:docker-lab
+    container_name: vulnoraiq-local-mock-agent
+    restart: unless-stopped
+    init: true
+    expose:
+      - "9090"
+    networks:
+      - vulnoraiq-lab
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9090/healthz', timeout=3).read()"]
+      interval: 15s
+      timeout: 5s
+      start_period: 5s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  test-runner:
+    build: .
+    image: vulnoraiq:docker-lab
+    profiles: ["test"]
+    env_file:
+      - .env.docker.example
     environment:
-      - VULNORAIQ_HOST=0.0.0.0
-      - VULNORAIQ_PORT=8787
-      - VULNORAIQ_JOB_STORE_PATH=/data/jobs.db
-      - VULNORAIQ_WEB_OUTPUT_ROOT=/data/reports
+      VULNORAIQ_CONFIG_DIR: /app/config
+      VULNORAIQ_TARGET_CONFIG: targets.docker.yaml
+      VULNORAIQ_JOB_STORE_PATH: /data/jobs.db
+      VULNORAIQ_WEB_OUTPUT_ROOT: /data/reports
+      VULNORAIQ_EVIDENCE_DIR: /data/evidence
+    volumes:
+      - vulnoraiq_data:/data
+      - .:/app
+    depends_on:
+      local-mock-agent:
+        condition: service_healthy
+      vulnoraiq-web:
+        condition: service_healthy
+    networks:
+      - vulnoraiq-lab
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+networks:
+  vulnoraiq-lab:
+    driver: bridge
+    internal: true
 
 volumes:
   vulnoraiq_data:

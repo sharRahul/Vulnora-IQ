@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
@@ -81,7 +82,7 @@ def run_real_target_modules(context: ScanContext, profile: dict[str, Any], paylo
         return []
     registry = ModuleRegistry()
     job = job_id or uuid.uuid4().hex[:12]
-    artifact_dir = artifact_dir or Path("reports/output/evidence") / job
+    artifact_dir = artifact_dir or Path(os.getenv("VULNORAIQ_EVIDENCE_DIR", "reports/output/evidence")) / job
     artifact_dir.mkdir(parents=True, exist_ok=True)
     findings: list[Finding] = []
     library_names = context.config.get("default", {}).get("payload_libraries")

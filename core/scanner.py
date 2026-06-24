@@ -109,13 +109,14 @@ class Scanner:
             with path.open("r", encoding="utf-8") as handle:
                 return yaml.safe_load(handle) or {}
 
-        targets = load_yaml("targets.yaml")
+        targets = load_yaml(os.getenv("VULNORAIQ_TARGET_CONFIG", "targets.yaml"))
         self._merge_runtime_targets(targets)
         return {
             "default": load_yaml("default.yaml"),
             "targets": targets,
             "attack_profiles": load_yaml("attack_profiles.yaml"),
             "policies": load_yaml("policies.yaml"),
+            "safety_profiles": load_yaml("safety_profiles.yaml"),
         }
 
     @staticmethod

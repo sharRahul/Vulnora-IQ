@@ -119,3 +119,7 @@ When production posture or assessment coverage changes, update these together:
 15. `CHANGELOG.md`
 
 If a capability is complete only for the current self-hosted/internal scope, source discrepancy, accepted risk, future maturity item, or assurance limitation, mark it clearly in every document that mentions it.
+
+## Current Docker-first status
+
+The working safe path is Docker Compose. Use `docs/DOCKER_TESTING.md` for startup, smoke testing, CLI usage, target validation, authorised scans, reports, and troubleshooting. Legacy host-native examples are development-only and are not the safe default for real AI-agent assessment.

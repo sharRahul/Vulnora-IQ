@@ -22,3 +22,21 @@ safety_profiles:
     max_concurrency: 1
     require_authorisation: true
     destructive_tests: false
+
+  docker_lab:
+    allow_external_network: false
+    allowed_hosts:
+      - local-mock-agent
+      - local-rag-app
+      - ollama-mock
+    allowed_schemes:
+      - http
+    max_requests_per_scan: 100
+    max_concurrency: 2
+    request_timeout_seconds: 10
+    max_request_body_bytes: 65536
+    max_response_body_bytes: 262144
+    require_authorisation: true
+    redact_secrets: true
+    persist_raw_evidence: true
+    destructive_tests: false

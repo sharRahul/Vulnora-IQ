@@ -1,3 +1,25 @@
+
+## Docker-first safe lab status
+
+VulnoraIQ is now configured as a Docker-first, self-hosted AI-agent security testing lab. Real target validation, scan execution, mock-agent traffic, evidence capture, report generation, and automated checks are expected to run inside Docker Compose by default. The host should only run Docker commands, open the WebUI at `http://localhost:8787`, and read explicitly exported reports.
+
+Quick start:
+
+```bash
+docker compose build
+docker compose up -d
+docker compose ps
+```
+
+CLI examples must be run inside the container:
+
+```bash
+docker compose exec vulnoraiq-web vulnoraiq targets validate --target local_mock_agent
+docker compose exec vulnoraiq-web vulnoraiq scan --target local_mock_agent --profile ai_agent_foundation --authorised
+```
+
+See `docs/DOCKER_TESTING.md`, `docs/SAFETY_MODEL.md`, `docs/TARGET_CONFIGURATION.md`, `docs/AI_AGENT_TESTING.md`, `docs/WEBUI_GUIDE.md`, and `docs/CLI_GUIDE.md`.
+
 # Security Policy
 
 This document defines VulnoraIQ's security boundary, supported versions, responsible-use rules, vulnerability reporting process, production controls, and validation expectations.

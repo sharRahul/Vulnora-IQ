@@ -1,3 +1,25 @@
+
+## Docker-first safe lab status
+
+VulnoraIQ is now configured as a Docker-first, self-hosted AI-agent security testing lab. Real target validation, scan execution, mock-agent traffic, evidence capture, report generation, and automated checks are expected to run inside Docker Compose by default. The host should only run Docker commands, open the WebUI at `http://localhost:8787`, and read explicitly exported reports.
+
+Quick start:
+
+```bash
+docker compose build
+docker compose up -d
+docker compose ps
+```
+
+CLI examples must be run inside the container:
+
+```bash
+docker compose exec vulnoraiq-web vulnoraiq targets validate --target local_mock_agent
+docker compose exec vulnoraiq-web vulnoraiq scan --target local_mock_agent --profile ai_agent_foundation --authorised
+```
+
+See `docs/DOCKER_TESTING.md`, `docs/SAFETY_MODEL.md`, `docs/TARGET_CONFIGURATION.md`, `docs/AI_AGENT_TESTING.md`, `docs/WEBUI_GUIDE.md`, and `docs/CLI_GUIDE.md`.
+
 # VulnoraIQ
 
 **VulnoraIQ** is a self-hosted AI security assessment application for authorised testing of **LLM applications, RAG pipelines, AI agents, tool-using systems, GenAI data flows, vector stores, providers, telemetry, reports, and orchestration layers**.
@@ -61,7 +83,6 @@ The default `demo` target is safe and local. Configured non-demo targets require
 
 The screenshot below is the VulnoraIQ Web UI home screen, captured from the running console. It shows the startup and local-server-controls panel, the test selection and run-readiness form, realtime progress, the completed-assessment dashboard area, and recent scan history on a single page.
 
-![VulnoraIQ Web UI home screen](docs/assets/vulnoraiq-webui-home.png)
 
 ---
 
@@ -157,7 +178,6 @@ The startup panel inside the Web UI shows the live results of those checks, the 
 each one, plus a **Stop local server** button so you can shut the server down cleanly from
 the browser without returning to the terminal.
 
-![VulnoraIQ Web UI startup and local server controls](docs/assets/vulnoraiq-webui-startup.png)
 
 You can override the defaults when launching from a terminal:
 

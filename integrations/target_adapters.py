@@ -10,6 +10,7 @@ from typing import Any
 from urllib.parse import urljoin, urlparse
 
 import requests
+import yaml
 
 SECRET_PATTERNS = [re.compile(r"Bearer\s+[A-Za-z0-9._~+/-]+=*", re.I), re.compile(r"(?i)(api[_-]?key|token|secret|password)['\"]?\s*[:=]\s*['\"]?([^,'\"\s}]+)")]
 
@@ -49,7 +50,7 @@ def render_template(obj: Any, prompt: str, target: dict[str, Any]) -> Any:
     if isinstance(obj, list):
         return [render_template(v, prompt, target) for v in obj]
     if isinstance(obj, str):
-        return obj.replace("{{prompt}}", prompt).replace("{{input}}", prompt).replace("{{model}}", str(target.get("model", "local-model")))
+        return obj.replace("{{prompt}}", prompt).replace("{{input}}", prompt).replace("{{payload}}", prompt).replace("{{ payload }}", prompt).replace("{{model}}", str(target.get("model", "local-model")))
     return obj
 
 
@@ -110,21 +111,37 @@ def normalize_target_config(name: str, raw: dict[str, Any]) -> dict[str, Any]:
     return cfg
 
 
+def _load_safety_profile(name: str) -> dict[str, Any]:
+    path = os.getenv("VULNORAIQ_SAFETY_PROFILE_PATH") or str(os.getenv("VULNORAIQ_CONFIG_DIR", "config") + "/safety_profiles.yaml")
+    try:
+        data = yaml.safe_load(open(path, encoding="utf-8")) or {}
+    except FileNotFoundError:
+        return {}
+    return (data.get("safety_profiles") or {}).get(name, {})
+
+
 def validate_url(cfg: dict[str, Any]) -> str:
     url = urljoin(str(cfg.get("base_url", "")).rstrip("/") + "/", str(cfg.get("endpoint_path", "/")).lstrip("/"))
     parsed = urlparse(url)
     if parsed.scheme not in {"http", "https"} or not parsed.hostname:
         raise ValueError("invalid URL: only http(s) targets with host are supported")
+    profile = _load_safety_profile(str(cfg.get("safety_profile", "")))
+    allowed_schemes = set(profile.get("allowed_schemes") or [])
+    if allowed_schemes and parsed.scheme not in allowed_schemes:
+        raise ValueError(f"scheme '{parsed.scheme}' is blocked by safety profile")
     host = parsed.hostname
-    allow_external = bool(cfg.get("allow_external", False))
-    if not allow_external:
+    allowed_hosts = set(profile.get("allowed_hosts") or [])
+    if allowed_hosts and host not in allowed_hosts:
+        raise ValueError(f"host '{host}' is blocked by safety profile allowlist")
+    allow_external = bool(cfg.get("allow_external", False) or profile.get("allow_external_network", False))
+    if not allow_external and not allowed_hosts:
         try:
             ip = ipaddress.ip_address(host)
             allowed = ip.is_loopback or ip.is_private or ip.is_link_local
         except ValueError:
             allowed = host in {"localhost"} or host.endswith(".local") or host.endswith(".internal")
         if not allowed:
-            raise ValueError("target host is not loopback/internal; set allow_external only for explicitly authorised scopes")
+            raise ValueError("target host is not loopback/internal; external targets are blocked by default")
     return url
 
 
@@ -143,6 +160,8 @@ def _headers(cfg: dict[str, Any]) -> dict[str, str]:
 
 
 def _body(cfg: dict[str, Any], prompt: str) -> Any:
+    if cfg.get("request_template") is not None:
+        return render_template(cfg["request_template"], prompt, cfg)
     if cfg.get("request_body_template") is not None:
         return render_template(cfg["request_body_template"], prompt, cfg)
     typ = cfg.get("type")
@@ -175,20 +194,20 @@ def invoke_target(name: str, cfg: dict[str, Any], prompt: str) -> AdapterResult:
         response = None
         for attempt in range(max(1, attempts)):
             try:
-                response = requests.request(method, url, json=body if method != "GET" else None, params=body if method == "GET" else None, headers=headers, timeout=float(cfg.get("timeout", 30)))
+                response = requests.request(method, url, json=body if method != "GET" else None, params=body if method == "GET" else None, headers=headers, timeout=float(cfg.get("timeout", cfg.get("timeout_seconds", _load_safety_profile(str(cfg.get("safety_profile", ""))).get("request_timeout_seconds", 30)))))
                 break
             except requests.RequestException:
                 if attempt >= attempts - 1:
                     raise
                 time.sleep(float((cfg.get("retry") or {}).get("backoff_seconds", 0.2)))
         assert response is not None
-        text = response.text[: int(cfg.get("max_response_bytes", 200000))]
+        text = response.text[: int(cfg.get("max_response_bytes", _load_safety_profile(str(cfg.get("safety_profile", ""))).get("max_response_body_bytes", 200000)))]
         data: Any
         try:
             data = response.json()
         except ValueError:
             data = text
-        answer_value = get_path(data, cfg.get("response_extraction_path") or _default_response_path(str(cfg.get("type"))))
+        answer_value = get_path(data, (cfg.get("response_extraction_path") or (cfg.get("response_extraction") or {}).get("path")) or _default_response_path(str(cfg.get("type"))))
         answer = answer_value if isinstance(answer_value, str) else json.dumps(answer_value, default=str)
         return AdapterResult(
             ok=200 <= response.status_code < 300,
