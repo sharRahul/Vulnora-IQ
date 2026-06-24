@@ -1,73 +1,87 @@
-# Python Package Publishing
+# Python package publishing
 
-VulnoraIQ can be distributed as a Python package in addition to Windows/Linux/macOS release zip artifacts.
+VulnoraIQ can be distributed as a Python package in addition to platform release artifacts.
+
+## Current package metadata
+
+| Field | Current value |
+| --- | --- |
+| Package | `vulnoraiq` |
+| Version | `0.2.0` |
+| Python | `>=3.10` |
+| License | Apache-2.0 |
+| Runtime dependencies | `PyYAML`, `requests`, `rich` |
+| Dev dependencies | `pytest`, `ruff`, `mypy`, `pip-audit`, type stubs |
+| Release dependencies | `build`, `twine` |
+
+The package includes the built React WebUI assets from `webui/static/console/` as package data. Node is not required to serve the packaged WebUI at runtime.
+
+## Console entry points
+
+Current entry points include:
+
+- `vulnoraiq`
+- `vulnoraiq-web`
+- `vulnoraiq-dashboard`
+- `vulnoraiq-diff`
+- `vulnoraiq-package`
+- `vulnoraiq-platform-package`
+- `vulnoraiq-benchmark`
+- `vulnoraiq-functional-test`
+- `vulnoraiq-production-readiness`
+- `vulnoraiq-policy-trend`
+- `vulnoraiq-diff-trend`
+- `vulnoraiq-refresh-atlas`
+- `vulnoraiq-generate-atlas-matrix`
+- `vulnoraiq-html-export`
+- `vulnoraiq-validate-package`
+- `vulnoraiq-validate-owasp-atlas-mappings`
+- `vulnoraiq-validate-genai-readiness`
 
 ## What gets built
 
-The `Build Python Package` workflow builds:
+The Python package workflow builds:
 
 - source distribution: `vulnoraiq-<version>.tar.gz`
 - wheel distribution: `vulnoraiq-<version>-py3-none-any.whl`
 
-The Python Packaging User Guide recommends building distribution archives with `python -m build`, which creates a source distribution and a wheel under `dist/`.
-
 ## Trigger policy
 
-The Python package workflow must not run on every commit, push, or pull request.
-
-The workflow in `.github/workflows/python-package-publish.yml` runs only when:
+The package workflow must not run on every commit, push, or pull request. It should run only when:
 
 1. a GitHub Release is published; or
 2. a maintainer manually starts the workflow with `workflow_dispatch`.
 
-For a published GitHub Release, the workflow builds and uploads package artifacts, but it does **not** publish to PyPI automatically.
+Publishing to TestPyPI/PyPI should require explicit manual input.
 
-## Publishing control
-
-Manual workflow input controls publishing:
-
-| Input | Behaviour |
-| --- | --- |
-| `none` | Build package artifacts only |
-| `testpypi` | Build and publish to TestPyPI |
-| `pypi` | Build and publish to PyPI |
-
-Publishing uses PyPI Trusted Publishing through `pypa/gh-action-pypi-publish`, so maintainers should configure PyPI/TestPyPI trusted publishers instead of storing long-lived API tokens in GitHub secrets.
-
-## Required PyPI setup
-
-Before first publish:
-
-1. Create/claim the `vulnoraiq` project on TestPyPI and PyPI, or confirm the project name is available.
-2. Configure a trusted publisher for this repository and workflow:
-   - repository: `sharRahul/vulnoraiq`
-   - workflow: `python-package-publish.yml`
-   - environment: `testpypi` for TestPyPI and `pypi` for PyPI
-3. Add GitHub Environment protection rules for `testpypi` and `pypi` so package publication requires maintainer approval.
-4. Run TestPyPI first.
-5. Install and smoke-test from TestPyPI before publishing to PyPI.
-
-## Local dry run
+## Local build
 
 ```bash
-python -m pip install -e .[release]
+python -m pip install --upgrade pip
+pip install -e .[dev,release]
 python scripts/validate_package_metadata.py
 python -m build
 python -m twine check dist/*
 ```
 
-## Install commands after publish
+## Required package validation
 
-After PyPI publication:
+Before publishing, run:
 
 ```bash
-python -m pip install vulnoraiq
-vulnoraiq --target demo --profile baseline
-vulnoraiq-web --host 127.0.0.1 --port 8787
+ruff check .
+mypy .
+pytest -q
+python -m pip check
+pip-audit
+python scripts/validate_package_metadata.py
+python scripts/validate_owasp_atlas_mappings.py
+python scripts/validate_genai_readiness.py
+python scripts/validate_production_testing_readiness.py --output-dir reports/output/production-readiness
 ```
 
-## Important limitation
+If WebUI assets changed, also run the React build and browser flow before packaging.
 
-The Python package is useful for CLI/script installation and package distribution, but the repository zip artifacts remain the recommended standalone-app release for users who want the launcher files, docs, safe configuration, and local output layout together in one extracted folder.
+## Current limitations
 
-Before treating the PyPI package as the primary installation path, validate a clean `pip install vulnoraiq` flow in a fresh virtual environment, including config discovery, launcher documentation, Web UI startup, and demo scan output.
+The package is suitable for self-hosted/internal use and local lab operation. It is not a managed SaaS product, certified VAPT product, signed installer, or independently validated assurance tool.

@@ -1,133 +1,82 @@
-# Assessment Assurance
+# Assessment assurance
 
-This document separates scanner/evaluator assurance from application production readiness. It clarifies what VulnoraIQ findings represent today, what evidence is collected, what limitations apply, and what is required before external VAPT-grade claims can be made.
+This document separates VulnoraIQ application readiness from scanner/evaluator assurance.
 
----
+VulnoraIQ `0.2.0` is a self-hosted AI security testing lab with Docker-first local target testing, a React WebUI, CLI, target adapters, reports, and readiness gates. Its findings are still **framework evidence requiring human review**, not certified VAPT-grade assurance.
 
-## 1. What VulnoraIQ findings mean today
+## What findings mean today
 
-- **Findings are framework-development and internal assessment evidence**, not independently validated security assurance.
-- **No third-party penetration test has validated the full framework output** against real targets.
-- **OWASP LLM 2025 coverage** is complete for the current safe local/internal scope, with implementation specs, safe oracle coverage, and local good/bad fixtures for all 10 categories.
-- **GenAI Security coverage** is complete for the current `DSGAI01–DSGAI21` controlled-internal scenario-harness scope, backed by safe synthetic scenario manifests, deterministic evaluator primitives, required evidence fields, tests, and CI validation.
-- **Agentic Applications readiness** is complete for the self-hosted internal application gates, but not certified assurance.
-- Results should be treated as **structured internal evidence** that requires human review before any risk conclusion is drawn.
+- Findings show that a configured profile, payload, target adapter, evaluator, oracle, and policy path observed a condition worth review.
+- Docker mock-agent scans prove wiring and deterministic scenario behaviour, not real-world assurance.
+- GenAI scenario-harness results prove scenario/evidence/evaluator consistency for safe synthetic data, not independent real-environment detection assurance.
+- OWASP/MITRE/Agentic mappings support coverage planning and reporting context, not a guarantee that every mapped technique is detectable.
+- A human tester must review target scope, evidence, logs, environmental context, and remediation before treating a finding as confirmed.
 
----
+## Current coverage summary
 
-## 2. OWASP LLM categories and current coverage
+| Area | Current status | Assurance boundary |
+| --- | --- | --- |
+| OWASP LLM 2025 | Complete for current safe local/internal scope across all 10 categories. | Safe oracle/fixture coverage, not independent VAPT certification. |
+| OWASP AI Testing Guide | Foundation profile and safe methodology harness implemented. Full 32-test implementation remains planned. | Methodology/evidence harness, not full AITG assurance. |
+| Agentic Applications | Repo-level self-hosted readiness gates complete. | Operational readiness, not independent agentic security assurance. |
+| GenAI Security | `DSGAI01–DSGAI21` scenario harness complete with 84 safe scenario cases. | Synthetic scenario validation, not real sensitive-data detection assurance. |
+| MITRE ATLAS | Planning matrix and mapping governance complete for current scope. | Mapping support, not technique-level detection certification. |
+| Docker lab | Deterministic mock-agent/RAG/tool-loop targets complete. | Lab target proof, not production target assurance. |
 
-| OWASP ID | Risk | Check type | Heuristic vs deterministic | Requires human review |
-|---|---|---|---|---|
-| LLM01:2025 | Prompt Injection | Oracle + evaluator | Deterministic local fixtures, heuristic production oracle | Yes |
-| LLM02:2025 | Sensitive Information Disclosure | Pattern matching + oracle | Deterministic known patterns, heuristic context leakage | Yes |
-| LLM03:2025 | Supply Chain | Inventory scan + oracle | Deterministic dependency lists, heuristic provenance | Yes |
-| LLM04:2025 | Data and Model Poisoning | Integrity check + oracle | Heuristic | Yes |
-| LLM05:2025 | Improper Output Handling | Output schema check + oracle | Deterministic schema violations, heuristic downstream risk | Yes |
-| LLM06:2025 | Excessive Agency | Tool permission analysis + oracle | Deterministic allowlist violations, heuristic autonomy risk | Yes |
-| LLM07:2025 | System Prompt Leakage | Prompt segment scan + oracle | Deterministic known markers, heuristic inferred leakage | Yes |
-| LLM08:2025 | Vector and Embedding Weaknesses | Retrieval analysis + oracle | Heuristic | Yes |
-| LLM09:2025 | Misinformation | Citation check + oracle | Heuristic | Yes |
-| LLM10:2025 | Unbounded Consumption | Resource limit check + oracle | Deterministic threshold violations, heuristic resource risk | Yes |
+## Evidence collected
 
-### OWASP coverage notes
+VulnoraIQ may collect:
 
-- All 10 categories have **complete safe oracle coverage** in `config/owasp_oracles.yaml` for the current local/internal scope.
-- All 10 categories have **implementation specs** in `docs/owasp/`.
-- All 10 categories have **local good/bad fixture targets** in `examples/local_demo_targets/owasp_fixture_targets.py`.
-- CI validates that oracles, docs, fixtures, and mapping metadata are present, but does not validate detection depth against real-world environments.
+- target/profile/module metadata;
+- request/response observations needed for scanner evidence;
+- oracle/evaluator outputs;
+- policy decisions and finding scores;
+- GenAI scenario evidence fields;
+- job metadata;
+- Markdown, JSON, SARIF, dashboard, and HTML reports;
+- audit logs and metrics for application operations.
 
----
+Evidence must be reviewed before sharing. Reports can contain sensitive target responses if a real authorised system returns them.
 
-## 3. GenAI Security categories and current coverage
+## Evidence not guaranteed
 
-| OWASP GenAI ID | Coverage status | Evidence basis | Requires human review |
-| --- | --- | --- | --- |
-| `DSGAI01–DSGAI21` | Complete for current scope | `benchmarks/fixtures/genai/scenarios.yaml`, `core/genai_evaluators.py`, `scripts/validate_genai_readiness.py`, `tests/test_genai_readiness_validation.py` | Yes |
-| `DSGAI22–DSGAI25` | Source discrepancy / map later | Preserved in scenario manifest metadata | Yes |
+VulnoraIQ does not automatically guarantee collection of:
 
-### GenAI coverage notes
+- full provider logs;
+- enterprise SIEM/SOAR telemetry;
+- host/network telemetry;
+- cloud account configuration;
+- source code, prompts, policy bundles, or model-management settings unless provided through approved integrations;
+- organisation-specific legal/privacy risk decisions.
 
-- GenAI coverage uses **safe synthetic scenario manifests**, not real sensitive data.
-- The GenAI readiness validator checks scenario metadata, source-confirmed ID coverage, fixture coverage, required evidence fields, MITRE ATLAS tactic format, and documentation alignment.
-- The evaluator suite detects synthetic restricted markers and validates evidence structure; it does not replace organisation-specific data discovery, DLP, legal review, privacy assessment, or independent testing.
-- GenAI findings must state the assessed data surface and whether the result is based on synthetic markers or real evidence.
+## False positives and false negatives
 
----
+False positives are expected where heuristic checks or synthetic scenario assumptions do not match the environment.
 
-## 4. Evidence collected
+False negatives are expected where:
 
-### Collected
+- a profile lacks a relevant payload or oracle;
+- target behaviour is non-deterministic;
+- evidence is unavailable;
+- a real system needs grey-box/white-box context;
+- a framework mapping is broader than current implemented checks;
+- the risk depends on organisation-specific data-governance or provider configuration.
 
-- **InteractionEvidence** records — per-request/response observations from target interactions.
-- **OracleResult** evaluations — output of oracle checks applied to interaction evidence.
-- **Policy engine decisions** — policy evaluation results that produce findings and scores.
-- **Scan metadata** — profile, module, detector, and confidence data attached to each finding.
-- **GenAI evidence metadata** — expected fields such as `genai_id`, `genai_risk_area`, `data_classification`, `data_surface`, `redaction_status`, `manual_review_reason`, and `mitre_atlas_tactics`.
-- **Dashboard and report artifacts** — Markdown, JSON, SARIF, and HTML export bundles.
+## Requirements before stronger claims
 
-### NOT collected or not guaranteed
+Before external VAPT-grade or independent assurance claims can be made, VulnoraIQ needs:
 
-- Full request/response bodies are not intended to be persisted beyond controlled evidence fields.
-- Secrets, tokens, API keys, or credentials must not be written to evidence or report output.
-- Personally identifiable information present in target responses is not automatically safe to share; human review is required before sharing reports.
-- System-level access logs, network captures, host telemetry, provider logs, and enterprise data-catalogue records are outside the default framework scope unless explicitly integrated.
+1. independently reviewed scanner/evaluator logic;
+2. calibrated thresholds against known-good and known-vulnerable approved targets;
+3. approved-environment validation for AI agents, RAG systems, vector stores, providers, telemetry, and data-governance workflows;
+4. report-language review to prevent overclaiming;
+5. SIEM/operational evidence integration where relevant;
+6. independent security assessment of the WebUI, API, target adapters, Docker lab, and release artifacts.
 
----
+## Allowed report language
 
-## 5. Limitations of local and synthetic fixtures
+Use wording such as:
 
-- **Synthetic targets and manifests** exercise evaluator and validator logic; they are not real AI applications.
-- **Safe GenAI fixtures** demonstrate expected evidence shape and control-gap signalling but may miss environment-specific provider, vector-store, telemetry, and governance failures.
-- Passing local fixture tests does **not** imply production-grade detection.
-- Passing GenAI readiness validation means the coverage manifest and docs are consistent; it does **not** prove every real GenAI data-security risk is detectable.
+> Finding requires human review. Evidence was produced by a VulnoraIQ controlled assessment profile and should be validated against target scope, logs, architecture, and business context.
 
----
-
-## 6. False positive / false negative expectations
-
-- Current-scope checks may produce false positives.
-- Not all attack or failure paths are covered.
-- False negatives are expected for scenarios that lack oracle rules, evaluator support, real-world fixtures, or organisation-specific telemetry.
-- Human review is required before treating any finding as a confirmed vulnerability or risk.
-
----
-
-## 7. Requirements before external VAPT-grade claims
-
-Before VulnoraIQ output can be represented as VAPT-grade or independently validated assurance, the following must be addressed:
-
-1. **Deeper check logic per OWASP and GenAI category** — multi-signal detection, ambiguous/edge-case handling, and realistic scenario coverage.
-2. **Third-party testing** — independent review of the framework, evaluator thresholds, and report language.
-3. **Calibrated evaluator thresholds** — confidence, severity, and risk-score thresholds benchmarked against known-good and known-vulnerable targets.
-4. **Approved environment validation** — authorised targets, provider configurations, RAG/vector stores, logs, and data-governance workflows.
-5. **Report language maturity review** — finding descriptions, remediation guidance, and limitation statements must not overstate assurance.
-6. **GenAI governance validation** — provider inventory, data classification, retention, privacy/legal review, and human-review workflows must be organisation-specific.
-
----
-
-## 8. Mapping between OWASP/MITRE and implemented checks
-
-### OWASP and GenAI references
-
-- Full OWASP LLM 2025 implementation specs are in [`docs/owasp/`](owasp/README.md).
-- GenAI Security readiness docs are in [`docs/genai/`](genai/README.md).
-- Oracle definitions reside in `config/owasp_oracles.yaml`.
-- GenAI scenario definitions reside in `benchmarks/fixtures/genai/scenarios.yaml`.
-
-### MITRE ATLAS reference
-
-- The MITRE ATLAS AI technique planning matrix is in [`docs/MITRE_ATLAS_AI_MATRIX.md`](MITRE_ATLAS_AI_MATRIX.md).
-- An OWASP/GenAI/Agentic-to-MITRE mapping is documented in [`docs/owasp/OWASP_TO_MITRE_ATLAS_CROSSWALK.md`](owasp/OWASP_TO_MITRE_ATLAS_CROSSWALK.md).
-
-### Detection coverage status
-
-| Area | Detection vs planning |
-|---|---|
-| OWASP LLM safe local checks | Complete for current scope |
-| OWASP/ATLAS mapping metadata | Complete CI governance check |
-| GenAI `DSGAI01–DSGAI21` scenario coverage | Complete current-scope manifest and validator coverage |
-| GenAI `DSGAI22–DSGAI25` | Source discrepancy / map later |
-| Independent assurance | Future maturity item |
-
-> **Note:** Current-scope coverage has not been independently validated against real-world targets. Use findings as structured evidence for internal review, not as final assurance conclusions.
+Do not use wording that states or implies certified assurance, guaranteed exploitability, or permission to test third-party systems.

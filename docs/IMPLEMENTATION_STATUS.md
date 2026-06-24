@@ -1,137 +1,83 @@
-# Implementation Status
+# Implementation status
 
-This document separates current complete capability from future assurance and maturity items so users can understand what is ready today.
+This document separates current implemented capability from future assurance and maturity work.
 
-> **Current maturity:** VulnoraIQ version `0.2.0` has passed the **controlled internal production-readiness gate** for self-hosted laptop/server use, with security hardening, SQLite persistence, auth, CSRF, rate limiting, audit logging, metrics, backup/restore tooling, container support, standalone local launchers, production startup validation, completed OWASP LLM readiness coverage for the current safe local/internal scope, completed OWASP AI Testing Guide methodology-harness integration, completed Agentic Applications readiness gates, and completed GenAI Security scenario-harness readiness for `DSGAI01–DSGAI21`.
+> **Current maturity:** VulnoraIQ `0.2.0` is a Docker-first, self-hosted AI security testing lab with controlled internal production-readiness gates. It supports authorised local/internal testing of LLM, RAG, tool-using, agentic, and GenAI data-security scenarios through a Python scanner, target adapters, a hosted React WebUI, CLI, SQLite job persistence, reports, evidence, and CI validation. This is complete for self-hosted laptop/server use within the current authorised local/internal scope.
 
-> **Important limitation:** OWASP LLM 2025, OWASP AI Testing Guide, GenAI Security, Agentic Applications, and MITRE ATLAS mappings are framework evidence and planning/validation controls. They are not the same as independently validated assurance. Treat output as development and internal assessment evidence requiring human review.
+> **Assurance limitation:** OWASP, GenAI, Agentic, and MITRE mappings are framework evidence and planning/validation controls. They are not independently validated VAPT-grade assurance. See [`ASSESSMENT_ASSURANCE.md`](ASSESSMENT_ASSURANCE.md) for the full assurance boundary.
 
-## Seven-phase implementation status
+## Mainline status as of 2026-06-24
 
-| Phase | Status | Completed implementation |
+| Area | Status | Evidence |
 | --- | --- | --- |
-| Phase 1 — OWASP depth | Complete for current scope | `docs/owasp/` contains implementation specs for all 10 OWASP LLM 2025 categories. |
-| Phase 2 — Safe demo fixtures | Complete for current scope | `examples/local_demo_targets/owasp_fixture_targets.py` models local good/bad control behaviour for all 10 categories. |
-| Phase 3 — Stronger evaluators | Complete for current scope | `core/evaluators.py` adds deterministic local evaluators for text checks, schema checks, source access, provenance, approval, citations, action boundaries, resource limits, and manual review. |
-| Phase 4 — Contract-tested adapters | Complete for current scope | `config/target_contracts.yaml` and `integrations/contract_validation.py` validate configured target adapter shapes before approved testing. |
-| Phase 5 — Web UI hardening | Complete for self-hosted production scope | `webui/hosted_server.py`, `webui/auth.py`, `webui/persistent_jobs.py`, and `webui/production_checks.py` provide the hardened Web UI with env-token auth, trusted proxy identity mode, CSRF, rate limiting, security headers, proxy trust, audit logging, metrics, request IDs, concurrency limits, and startup validation. |
-| Phase 6 — Report quality and presentation | Complete for current scope | Report generation includes structured evidence; `reports/html_export_package.py` builds a branded export bundle; `docs/assets/vulnoraiq-webui-home.png` provides a README Web UI home screen image. |
-| Phase 7 — Release gates | Complete for self-hosted production scope | Package metadata, GenAI readiness, OWASP/ATLAS mapping, production readiness, runtime config, backup/restore, Docker smoke tooling, and CI gates validate package, runtime, docs, readiness, and functional acceptance. |
+| Version/package | Complete for `0.2.0` beta | `pyproject.toml`, package entry points, metadata validation. |
+| Docker-first safe lab | Complete for current scope | `docker-compose.yml`, `Dockerfile`, `config/targets.docker.yaml`, `docker/mock-agent/`, `scripts/docker_smoke_test.py`. |
+| Real authorised target testing | Complete for current local/internal scope | Target adapters, target validation, scanner wiring, runtime target APIs, mock-agent targets. |
+| React WebUI | Complete as supported WebUI | `webui/console/` source and `webui/static/console/` built assets. Legacy static console has been removed. |
+| WebUI target workspace | Complete for current backend APIs | Search/filtering, readiness metrics, health/status pills, safety checklist, target save/delete, validation, scan launch, recent jobs. |
+| CLI | Complete for current scope | `targets list`, `targets validate`, `scan`, `reports list`, `jobs list`, `jobs show`. |
+| Auth/security hardening | Complete for self-hosted internal scope | Token auth, trusted proxy mode, CSRF, rate limiting, request limits, security headers, audit logs, metrics, artifact path protection. |
+| Persistence | Complete for current scope | SQLite job store with WAL, schema versioning, foreign keys, busy timeout. |
+| OWASP LLM | Complete for current safe local/internal scope | OWASP docs, oracles, fixtures, profile/module coverage, mapping validation. |
+| OWASP AI Testing Guide | Foundation integration complete; full 32-test roadmap planned | `ai_testing_guide_foundation`, safe payloads, integration docs, implementation roadmap. |
+| GenAI Security | Complete for current controlled scenario-harness scope | `DSGAI01–DSGAI21`, 84 scenario cases, deterministic evaluators, validator, tests, docs. |
+| Agentic Applications | Complete for repo-level self-hosted readiness gates | Agentic readiness plan, mapping validation, CI gates. |
+| MITRE ATLAS | Complete for planning/mapping governance scope | Matrix docs, crosswalk, mapping validator, third-party notices. |
+| CI | Complete gate set, subject to external Playwright browser availability in local environments | Python matrix, Ruff, mypy, pytest, pip check/audit, validation scripts, hosted WebUI flow, demo scan, functional acceptance. |
 
-## GenAI Security Production Readiness Plan
+## Recent codebase changes reflected here
 
-| Scope | Status | Evidence |
-| --- | --- | --- |
-| Controlled internal GenAI Security readiness for `DSGAI01–DSGAI21` | Complete for current scope | `docs/genai/PRODUCTION_READINESS_PLAN.md`, `benchmarks/fixtures/genai/scenarios.yaml`, `core/genai_evaluators.py`, `scripts/validate_genai_readiness.py`, `tests/test_genai_readiness_validation.py` |
-| Source discrepancy `DSGAI22–DSGAI25` | Tracked / map later | Preserved in `benchmarks/fixtures/genai/scenarios.yaml` metadata. |
-| Stronger assurance validation | Future maturity item | Requires approved environment validation, evidence review, and independent assessment before stronger assurance claims. |
-
-## Agentic Applications Production Readiness Plan
-
-| Scope | Status | Evidence |
-| --- | --- | --- |
-| Self-hosted controlled internal deployment gates | Complete | `docs/AGENTIC_APPLICATIONS_PRODUCTION_READINESS_PLAN.md`, `scripts/validate_owasp_atlas_mappings.py`, `.github/workflows/ci.yml`, `.github/workflows/python-ci.yml` |
-| Independent assurance validation | Future maturity item | Tracked through the scorecard, assurance documentation, and hardening backlog. |
+| PR | Status reflected in docs |
+| --- | --- |
+| #45 | Legacy static WebUI removed; React console is the supported WebUI. |
+| #46 | Real authorised target testing added: adapters, scanner wiring, runtime target APIs, target validation, mock agent, and docs. |
+| #47 | Docker-first lab added with mock agent, Docker target config, safety profiles, smoke tests, and Docker-first docs. |
+| #49 | React target-management workspace enhanced with backend scan/target API wiring, readiness metrics, safety checklist, and recent job display. |
 
 ## Current complete capability
 
-| Area | Status | Notes |
-| --- | --- | --- |
-| Python package scaffold | Complete | VulnoraIQ version `0.2.0` installs as a Python package with CLI entry points. |
-| Standalone local launchers | Complete for laptop/workstation use | `launch-vulnoraiq-webui.bat`, `launch-vulnoraiq-webui.command`, `launch-vulnoraiq-webui.sh`, and `launch-vulnoraiq-webui.py` start the local Web UI, run startup checks, prepare local output/job-store paths, and open the browser. |
-| Launcher startup and shutdown controls | Complete for local loopback launcher mode | `scripts/launch_webui.py`, `webui/static/launcher-controls.js`, and `webui/static/launcher-controls.css` provide dependency checks, quick-start actions, configurable runtime option display, and a loopback-only **Stop local server** action. |
-| Functional acceptance runner | Complete | `scripts/run_functional_test.py` runs a safe demo/baseline assessment, validates outputs, and refreshes the dashboard example PNG. |
-| Production readiness gate | Complete for self-hosted production scope | `scripts/validate_production_testing_readiness.py` validates production controls and documentation guardrails. |
-| Production runtime config validation | Complete for self-hosted production scope | `scripts/validate_runtime_production_config.py` validates runtime environment before startup. |
-| GenAI Security readiness plan | Complete for current scope | `DSGAI01–DSGAI21` safe synthetic scenario coverage, deterministic evaluators, validator, tests, package metadata integration, and CI workflow gates. |
-| OWASP AI Testing Guide integration | Complete for current scope | `ai_testing_guide_foundation` profile, safe payload library, framework modules, local OWASP lab targets, documentation, and tests are in place for controlled methodology-harness assessment. |
-| Agentic production readiness plan | Complete for self-hosted internal deployment | Agentic readiness gates are complete for the intended local/internal-server application model. |
-| Web UI home screen image | Complete | `docs/assets/vulnoraiq-webui-home.png` is a real captured Web UI home screen screenshot referenced in `README.md`. |
-| Modern Web UI | Complete for self-hosted production scope | `webui/hosted_server.py` — hardened HTTP server with auth, CSRF, rate limiting, security headers, proxy trust, audit logging, metrics, request IDs, concurrency limits, and structured error handling. |
-| Authentication | Complete for self-hosted production scope | `webui/auth.py` — env-driven token auth with hmac constant-time comparison, production-mode validation, trusted reverse-proxy identity headers, role-based access control. |
-| CSRF protection | Complete for self-hosted production scope | Per-session CSRF tokens with configurable TTL, periodic cleanup, validated on state-changing requests. |
-| Rate limiting | Complete for self-hosted production scope | IP-based in-memory rate limiting with configurable window/max and periodic cleanup. Use reverse-proxy controls for internal server deployments that need centralised network controls. |
-| Security headers | Complete for self-hosted production scope | CSP, HSTS conditional behaviour, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, and Permissions-Policy on every response. |
-| Proxy IP trust | Complete for self-hosted production scope | `X-Forwarded-For` and trusted proxy identity are trusted only from configured CIDRs. |
-| Audit logging | Complete for self-hosted production scope | Structured JSON-line audit with request IDs, no token/secret/request-body leakage. |
-| Prometheus metrics | Complete for self-hosted production scope | `/metrics` endpoint with request/scan/auth counters, protected by default. |
-| Job persistence | Complete for self-hosted production scope | SQLite default with WAL mode, schema versioning, foreign keys, and busy timeout. JSON store is legacy/dev only. |
-| Backup and restore | Complete for self-hosted production scope | `scripts/backup_sqlite_store.py` and `scripts/restore_sqlite_store.py` use the SQLite online backup API, validation, compression, and retention. |
-| Container deployment | Complete for self-hosted production scope | Dockerfile with non-root user, `/data` volume, healthcheck; `docker-compose.yml` with production env example. |
-| Concurrency limits | Complete for self-hosted production scope | Configurable max concurrent scans and queue limit, with audit of rejected requests. |
-| Scan artifact security | Complete for self-hosted production scope | Path protection, allowlist-based artifact lookup, audit logging, proper Content-Disposition. |
-| Runbook and incident response | Complete for self-hosted production scope | `docs/RUNBOOK.md`, `docs/INCIDENT_RESPONSE.md`, `docs/RELEASE_CHECKLIST.md`. |
-| Demo target | Complete | The default `demo` target uses an in-memory echo client and requires no external API keys. |
-| Local demo targets | Complete for current scope | Safe HTTP JSON, control-gap, and OWASP good/bad fixture targets for local demonstration and tests. |
-| Configured target adapters | Complete for current scope | Chat-completions-compatible, Ollama-style generate, webhook JSON, and HTTP JSON endpoint shapes. |
-| Profiles | Complete for current scope | `baseline`, `rag`, `agent`, `full`, and `ai_testing_guide_foundation` profiles are defined and validated by smoke/functional or profile-resolution flows. |
-| Scanner | Complete for current scope | Scanner loads config, runs profile modules, scores findings, evaluates policy, and creates evidence. Findings require human review. |
-| OWASP LLM 2025 oracle coverage | Complete for current scope | Safe oracle coverage exists for all 10 OWASP LLM 2025 categories. |
-| GenAI Security coverage | Complete for current scope | Safe synthetic `DSGAI01–DSGAI21` manifest, deterministic evaluator suite, CI validator, and source discrepancy tracking. |
-| MITRE ATLAS AI matrix | Complete for current scope | Planning matrix with source-driven generation and unmapped backlog preservation. |
-| Package metadata validation | Complete for self-hosted production scope | Validates package name, version, CLI entries, README maturity warnings, OWASP docs, MITRE ATLAS doc, third-party notices, functional test assets, evaluators, fixtures, OWASP/ATLAS metadata, and GenAI readiness assets before release. |
-| OWASP/ATLAS mapping metadata validation | Complete for self-hosted production scope | `scripts/validate_owasp_atlas_mappings.py` and CI validate required mapping metadata for active oracles/checks. |
-| GenAI readiness validation | Complete for self-hosted production scope | `scripts/validate_genai_readiness.py` and CI validate GenAI scenario manifests, evidence fields, fixture coverage, docs, and source discrepancy tracking. |
-| CI | Complete for self-hosted production scope | GitHub Actions across Python 3.10/3.11/3.12; Ruff, mypy, pytest, pip check, pip-audit, metadata validation, OWASP/ATLAS mapping validation, GenAI readiness validation, production readiness validation, demo scan, functional acceptance readiness path. |
+| Capability | Current implementation |
+| --- | --- |
+| Safe local demo | `demo` target remains an in-memory safe target requiring no external keys. |
+| Docker mock-agent lab | Deterministic local target with chat-completions, Ollama-generate, RAG, webhook, and dry-run tool-loop contracts. |
+| Configured target adapters | HTTP JSON, chat-completions, Ollama-generate, webhook JSON, RAG query, and agent tool-loop shapes. |
+| Authorisation gate | CLI `--authorised` and WebUI checklist for non-demo scans. |
+| Scanner/reporting | Markdown, JSON, SARIF, Markdown dashboard, HTML dashboard, branded export and evidence output. |
+| Policy and scoring | Findings, scores, policy status, exceptions, and approval evidence validation. |
+| WebUI server | Hardened Python hosted server with security headers, CSRF, rate limiting, structured errors, metrics, and audit logs. |
+| WebUI console | React TypeScript SecOps console with target management, dashboards, findings/intelligence panels, and typed UI data models. |
+| Persistence | SQLite default with operational backup/restore tooling. |
+| Release validation | Package metadata, OWASP/ATLAS mapping, GenAI readiness, production readiness, runtime config, and functional acceptance scripts. |
 
-## Current safe usage
+## Known incomplete or future maturity items
 
-Run the standalone local Web UI launcher for laptop/workstation use:
+| Area | Status |
+| --- | --- |
+| WebUI live progress | SSE `/api/scans/{id}/events` backend remains future work for live streaming in the React console. |
+| WebUI finding mutations | Persisted finding remediation/status APIs remain future work. |
+| WebUI assistant chat | Assistant backend API remains future work. |
+| Full OWASP AI Testing Guide | Current foundation profile exists; full 32-test AITG implementation is planned. |
+| Real-world GenAI assurance | Current harness uses safe synthetic scenarios and controlled validation; approved-environment validation remains future work. |
+| Enterprise identity | Trusted proxy identity exists; direct OIDC/JWT remains future work. |
+| Release packaging | Release-only packages are documented; signed/notarised/native installers remain future work. |
+| Independent assurance | External review of VulnoraIQ itself remains future work. |
+
+## Safe usage summary
+
+```bash
+docker compose build
+docker compose up -d
+docker compose exec vulnoraiq-web vulnoraiq targets validate --target local_mock_agent
+docker compose exec vulnoraiq-web vulnoraiq scan --target local_mock_agent --profile ai_agent_foundation --authorised
+```
+
+For host-native demo/development:
 
 ```bash
 python launch-vulnoraiq-webui.py
+vulnoraiq --target demo --profile baseline
 ```
-
-Or double-click the platform launcher from the repository root:
-
-- Windows: `launch-vulnoraiq-webui.bat`
-- macOS: `launch-vulnoraiq-webui.command`
-- Linux: `launch-vulnoraiq-webui.sh`
-
-Run the Web UI in production mode for a self-hosted internal server:
-
-```bash
-VULNORAIQ_ENV=production \
-VULNORAIQ_AUTH_ENABLED=true \
-VULNORAIQ_ADMIN_TOKEN="your-strong-token-min-20-chars" \
-vulnoraiq-web --host 127.0.0.1 --port 8787
-```
-
-Validate production and assessment readiness:
-
-```bash
-python scripts/validate_runtime_production_config.py
-python scripts/validate_owasp_atlas_mappings.py
-python scripts/validate_genai_readiness.py
-python scripts/validate_production_testing_readiness.py
-python scripts/validate_production_testing_readiness.py \
-  --run-functional \
-  --output-dir reports/output/production-readiness
-```
-
-For any configured target outside demo mode:
-
-1. Confirm the target is owned by you or explicitly approved for assessment.
-2. Replace the placeholder endpoint in `config/targets.yaml` or start a local lab target that matches one of the `owasp_lab_*` loopback templates.
-3. Validate target contracts before testing.
-4. Set any required token environment variable.
-5. Run with the CLI authorisation flag or tick the Web UI authorisation confirmation.
-6. Treat results as framework evidence requiring human review.
-7. Store reports securely and review evidence before sharing.
-
-## Implementation roadmap status
-
-All production hardening blockers PRD-001 through PRD-012 are closed for self-hosted internal deployment. The OWASP LLM 2025 safe local/internal readiness scope is complete for all 10 categories. The OWASP AI Testing Guide foundation suite is complete for the current controlled methodology-harness scope. The Agentic Applications Production Readiness Plan is complete for the intended laptop/server application model. The GenAI Security Production Readiness Plan is complete for `DSGAI01–DSGAI21` controlled internal readiness. The standalone local launcher path is complete for laptop/workstation use.
-
-The next phases should focus on:
-
-- Scanner/evaluator depth: deeper OWASP and GenAI check logic, evaluator thresholds, fixture realism, and approved environment validation.
-- Signed/packaged installer artifacts for laptop/server installation rather than repository-checkout launchers only.
-- Target adapter templates for AI agents, LLM APIs, RAG systems, and local model servers.
-- Report language and assurance validation for stronger claims.
-
-Scanner and evaluator assurance limitations are documented in [`docs/ASSESSMENT_ASSURANCE.md`](ASSESSMENT_ASSURANCE.md).
 
 ## Documentation rule
 
-README, `SECURITY.md`, and all top-level docs must remain aligned. If a capability is complete only for the current self-hosted/internal scope, source discrepancy, accepted risk, future maturity item, or assurance limitation, mark that clearly everywhere it appears.
+Keep `README.md`, `docs/README.md`, this file, WebUI/CLI/Docker docs, safety/target docs, scorecard, backlog, assurance doc, `SECURITY.md`, and `CHANGELOG.md` aligned whenever code changes affect deployment posture, target support, WebUI behaviour, CI gates, or release claims.

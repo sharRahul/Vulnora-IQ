@@ -1,295 +1,129 @@
-# VulnoraIQ Production Runbook
+# VulnoraIQ operations runbook
 
-This runbook is for VulnoraIQ `0.2.0` self-hosted laptop/server deployments.
+This runbook covers VulnoraIQ `0.2.0` as a self-hosted Docker-first AI security testing lab and internal-server application.
 
-> **Scope:** adapt paths, hostnames, secret-management steps, reverse proxy, and backup destinations to your environment. VulnoraIQ `0.2.0` is intended to run as a local or self-hosted internal application for authorised assessment work. GenAI Security coverage is complete for the current controlled-internal scenario-harness scope, not certified assurance.
+## 1. Normal startup
 
-## 1. Service management
+### Docker lab
 
-### Start local standalone launcher
+```bash
+docker compose build
+docker compose up -d
+docker compose ps
+```
 
-For laptop/workstation use, launch from the repository root after installation:
+Open <http://localhost:8787>.
+
+### Host-native local launcher
 
 ```bash
 python launch-vulnoraiq-webui.py
 ```
 
-Or double-click the platform launcher:
+Launcher mode is loopback/local only.
 
-| Platform | Launcher |
-| --- | --- |
-| Windows | `launch-vulnoraiq-webui.bat` |
-| macOS | `launch-vulnoraiq-webui.command` |
-| Linux | `launch-vulnoraiq-webui.sh` |
-
-The launcher binds to loopback by default, prepares `reports/output/webui/`, opens the browser, and exposes the Web UI startup panel. Use **Stop local server** in the startup panel to stop this launcher-mode server cleanly.
-
-### Start service: Docker Compose
-
-```bash
-cp .env.production.example .env.production
-# Edit .env.production and replace placeholders.
-docker compose up -d --build
-```
-
-### Start service: direct runtime
+### Production-mode hosted server
 
 ```bash
 export VULNORAIQ_ENV=production
 export VULNORAIQ_AUTH_ENABLED=true
-export VULNORAIQ_ADMIN_TOKEN="replace-with-strong-token-min-20-chars"
-export VULNORAIQ_JOB_STORE_BACKEND=sqlite
-export VULNORAIQ_JOB_STORE_PATH=/data/jobs.db
-export VULNORAIQ_WEB_OUTPUT_ROOT=/data/reports
-
+export VULNORAIQ_ADMIN_TOKEN="your-strong-token-min-20-chars"
 python scripts/validate_runtime_production_config.py
 vulnoraiq-web --host 127.0.0.1 --port 8787
 ```
 
-### Stop / restart service
+## 2. Health checks
+
+| Check | Command or URL |
+| --- | --- |
+| Docker services | `docker compose ps` |
+| Web logs | `docker compose logs vulnoraiq-web` |
+| Mock-agent logs | `docker compose logs local-mock-agent` |
+| Health | `/healthz` |
+| Readiness | `/readyz` |
+| Metrics | `/metrics` with auth where enabled |
+| Target validation | `vulnoraiq targets validate --target local_mock_agent` |
+
+## 3. Common operations
+
+### Validate targets
 
 ```bash
-# Local launcher run
-# Click Stop local server in the Web UI startup panel.
+docker compose exec vulnoraiq-web vulnoraiq targets validate --target local_mock_agent
+```
 
-# Foreground terminal run
-# Press Ctrl+C in the terminal where vulnoraiq-web is running.
+### Run a scan
 
-# Background direct run on port 8787
-lsof -ti :8787 | xargs kill
+```bash
+docker compose exec vulnoraiq-web vulnoraiq scan \
+  --target local_mock_agent \
+  --profile ai_agent_foundation \
+  --authorised
+```
 
-# Docker Compose
+### List reports and jobs
+
+```bash
+docker compose exec vulnoraiq-web vulnoraiq reports list
+docker compose exec vulnoraiq-web vulnoraiq jobs list
+docker compose exec vulnoraiq-web vulnoraiq jobs show --job-id <job-id>
+```
+
+## 4. Data locations
+
+| Location | Contents |
+| --- | --- |
+| `/data/jobs.db` | SQLite job store. |
+| `/data/reports` | Markdown, JSON, SARIF, dashboard, and HTML outputs. |
+| `/data/evidence` | Evidence files. |
+| `/data/audit` | Audit logs. |
+
+## 5. Backup and restore
+
+Use the SQLite backup script for the job store and preserve reports/evidence as normal files.
+
+```bash
+python scripts/backup_sqlite_store.py --database /data/jobs.db --output-dir /data/backups
+python scripts/restore_sqlite_store.py --backup <backup-file> --database /data/jobs.db
+```
+
+Before restore, stop the service or ensure no scans are running.
+
+## 6. Shutdown
+
+```bash
 docker compose down
-docker compose restart
-
-# systemd
-sudo systemctl stop vulnoraiq
-sudo systemctl restart vulnoraiq
-sudo systemctl status vulnoraiq --no-pager
 ```
 
-## 2. Health, readiness, and metrics
+Remove volumes only when intentionally deleting all local jobs/reports/evidence/audit data:
 
 ```bash
-curl -f http://127.0.0.1:8787/healthz
-curl -f http://127.0.0.1:8787/readyz
-curl -H "X-VulnoraIQ-Token: $VULNORAIQ_ADMIN_TOKEN" http://127.0.0.1:8787/metrics
+docker compose down -v
 ```
 
-For launcher-mode runs, the Web UI startup panel also shows dependency checks, quick-start actions, runtime options, and local stop availability.
+## 7. Troubleshooting
 
-Key metrics to monitor:
-
-- `vulnoraiq_up`
-- `vulnoraiq_auth_failures_total`
-- `vulnoraiq_authz_failures_total`
-- `vulnoraiq_csrf_failures_total`
-- `vulnoraiq_rate_limit_exceeded_total`
-- `vulnoraiq_scans_created_total`
-- `vulnoraiq_scans_completed_total`
-- `vulnoraiq_scans_failed_total`
-- `vulnoraiq_active_scans`
-- `vulnoraiq_scan_queue_full_total`
-- `vulnoraiq_internal_errors_total`
-
-## 3. Logs and audit events
-
-```bash
-docker compose logs -f --tail=100
-sudo journalctl -u vulnoraiq -n 100 -f
-```
-
-Audit events are JSON lines emitted by the `vulnoraiq.audit` logger. Audit logs must not contain tokens, CSRF tokens, request bodies, secrets, or full report contents.
-
-## 4. Runtime and readiness validation
-
-Run before starting or after changing environment variables, docs, mappings, GenAI scenarios, or release assets:
-
-```bash
-python scripts/validate_runtime_production_config.py
-python scripts/validate_owasp_atlas_mappings.py
-python scripts/validate_genai_readiness.py
-python scripts/validate_package_metadata.py
-python scripts/validate_production_testing_readiness.py
-```
-
-Important production checks:
-
-- auth enabled
-- admin token set and strong enough
-- no demo/default production token
-- SQLite backend in production
-- writable output path
-- readable config path
-- trusted proxy CIDRs valid when enabled
-- `0.0.0.0` / `::` binding fails unless trusted proxy config is present
-- sane rate limit, request body, and CSRF TTL values
-
-Important local launcher checks:
-
-- Python 3.10+
-- `PyYAML`, `requests`, and `rich` available after install
-- core package modules present
-- `config/targets.yaml` and `config/attack_profiles.yaml` present
-- Web UI assets present
-- output directory and SQLite job-store path writable
-- launcher bound to loopback when stop control is enabled
-
-Important GenAI checks:
-
-- `DSGAI01–DSGAI21` source-confirmed categories are covered
-- `DSGAI22–DSGAI25` source discrepancy remains tracked
-- secure, vulnerable, ambiguous, and edge-case fixture coverage is present
-- required GenAI evidence fields are present
-- MITRE ATLAS tactic IDs are valid
-- GenAI readiness docs remain aligned
-
-## 5. Token rotation
-
-1. Generate a new token:
-
-   ```bash
-   openssl rand -hex 32
-   ```
-
-2. Update the secret source or runtime env var, for example `VULNORAIQ_ADMIN_TOKEN`.
-3. Restart the service.
-4. Verify old token is rejected and new token works.
-5. Review audit logs for failed use of the old token.
-
-## 6. Backup and restore
-
-### Create SQLite backup
-
-```bash
-mkdir -p /data/backups
-python scripts/backup_sqlite_store.py \
-  /data/jobs.db \
-  /data/backups/jobs-$(date +%Y%m%d-%H%M%S).db \
-  --compress \
-  --validate \
-  --retention 90
-```
-
-### Restore SQLite backup
-
-```bash
-sudo systemctl stop vulnoraiq || docker compose down
-cp /data/jobs.db /data/jobs.db.before-restore-$(date +%Y%m%d-%H%M%S)
-python scripts/restore_sqlite_store.py \
-  /data/backups/jobs-YYYYMMDD-HHMMSS.db.gz \
-  /data/jobs.db \
-  --compressed \
-  --validate
-sudo systemctl start vulnoraiq || docker compose up -d
-curl -f http://127.0.0.1:8787/healthz
-curl -f http://127.0.0.1:8787/readyz
-```
-
-Run a restore drill once per release candidate and record the result in the release checklist.
-
-## 7. Clear stuck scans
-
-There is no separate job-management CLI yet. Use this controlled manual procedure:
-
-1. Stop the service.
-2. Back up `/data/jobs.db`.
-3. Inspect stuck rows.
-4. If a job is confirmed stale, mark failed.
-5. Restart the service and verify `/api/scans`.
-
-## 8. Reverse proxy and TLS checks
-
-Use these checks when running on an internal server behind nginx or Caddy:
-
-```bash
-sudo nginx -t
-caddy validate --config /etc/caddy/Caddyfile
-curl -f https://vulnoraiq.example.com/healthz
-```
-
-Certificate expiry:
-
-```bash
-echo | openssl s_client -servername vulnoraiq.example.com \
-  -connect vulnoraiq.example.com:443 2>/dev/null | \
-  openssl x509 -noout -dates
-```
-
-## 9. Troubleshooting
-
-| Symptom | Check | Likely resolution |
-| --- | --- | --- |
-| Local launcher does not open browser | Console output and `/healthz` | Run `python launch-vulnoraiq-webui.py --no-browser`, check Python install and port availability |
-| Startup panel shows failed dependency | Startup dependency check detail | Re-run `pip install -e .[dev]` and confirm config files exist |
-| Stop local server button disabled | Launcher mode and host binding | Use `launch-vulnoraiq-webui.py` on `127.0.0.1`; stop hosted/production runs with terminal/service manager |
-| Service exits on startup | `docker compose logs` or `journalctl -u vulnoraiq` | Run `scripts/validate_runtime_production_config.py`; fix failed production check |
-| `401 authentication required` | Token header missing or wrong | Send `X-VulnoraIQ-Token`; rotate/regenerate token if needed |
-| `403 forbidden` | Role lacks permission or CSRF missing | Use admin/analyst token as appropriate; fetch `/api/csrf-token` before POST |
-| `413 request too large` | Body exceeds `VULNORAIQ_MAX_REQUEST_BODY` | Reduce request size or raise limit within production validation bounds |
-| `429 rate limit exceeded` | IP exceeded app rate limit | Check client retry behaviour; tune env vars; add proxy limits where needed |
-| `scan queue at capacity` | Too many active/queued scans | Tune `VULNORAIQ_MAX_CONCURRENT_SCANS` / `VULNORAIQ_SCAN_QUEUE_LIMIT` or wait |
-| `/metrics` returns 401 | Metrics auth required | Add `X-VulnoraIQ-Token` or intentionally disable auth only in a protected monitoring network |
-| Ready check returns 503 | Targets/profiles failed to load | Check `VULNORAIQ_CONFIG_DIR`, `config/targets.yaml`, and `config/attack_profiles.yaml` |
-| SQLite error | DB missing, corrupted, or not writable | Check `/data` permissions; run backup/restore validation |
-| Artifacts return 404 | Report path missing or job incomplete | Confirm job status and `/data/reports` persistence |
-| GenAI readiness validator fails | Scenario manifest, evidence fields, docs, or source discrepancy drifted | Fix `benchmarks/fixtures/genai/scenarios.yaml`, `docs/genai/`, or validator tests |
-
-## 10. Upgrade procedure
-
-1. Review `CHANGELOG.md`, `docs/MIGRATION.md`, `docs/genai/PRODUCTION_READINESS_PLAN.md`, and `docs/AGENTIC_APPLICATIONS_PRODUCTION_READINESS_PLAN.md`.
-2. Back up SQLite DB.
-3. Pull or build the new image.
-4. Run validation commands:
-
-   ```bash
-   ruff check .
-   mypy .
-   pytest -q
-   python scripts/validate_package_metadata.py
-   python scripts/validate_owasp_atlas_mappings.py
-   python scripts/validate_genai_readiness.py
-   python scripts/validate_production_testing_readiness.py
-   ```
-
-5. Start the release candidate.
-6. Verify `/healthz`, `/readyz`, `/metrics`, Web UI auth, scan creation, artifact download, backup, restore, launcher startup checks where applicable, and GenAI readiness validation.
-7. Monitor logs and metrics for at least one hour.
-
-## 11. Rollback procedure
-
-1. Stop the service.
-2. Restore the previous image/tag or code revision.
-3. Restore the pre-upgrade SQLite backup if schema/data changed.
-4. Start the previous version.
-5. Verify `/healthz`, `/readyz`, scan history, artifacts, and release validators.
-6. Document the rollback reason in `CHANGELOG.md` or release notes.
-
-## 12. Reference
-
-| Artifact | Typical path |
+| Symptom | Action |
 | --- | --- |
-| SQLite job store | `/data/jobs.db` or `reports/output/webui/jobs.db` for local launcher mode |
-| Reports/artifacts | `/data/reports` or `reports/output/webui/` for local launcher mode |
-| Backups | `/data/backups` |
-| Production env file | `.env.production` or secret-manager injected env |
-| Example env file | `.env.production.example` |
-| GenAI scenario manifest | `benchmarks/fixtures/genai/scenarios.yaml` |
+| WebUI unreachable | Check `docker compose ps`, port `8787`, and `docker compose logs vulnoraiq-web`. |
+| Target validation fails | Check `local-mock-agent` logs and ensure the active target config is `targets.docker.yaml` inside Docker. |
+| Scans fail authorisation | Confirm `--authorised` in CLI or the WebUI checklist for non-demo targets. |
+| Reports missing | Confirm `VULNORAIQ_WEB_OUTPUT_ROOT` and `/data/reports`. |
+| Jobs missing | Confirm `VULNORAIQ_JOB_STORE_PATH` and whether the Docker volume was reset. |
+| Browser tests fail locally | Install Playwright Chromium and ensure the environment can download browser binaries. |
+| Production mode refuses startup | Run `python scripts/validate_runtime_production_config.py` and fix every fail-closed item. |
 
-| Variable | Purpose |
-| --- | --- |
-| `VULNORAIQ_ENV=production` | Enable production validation |
-| `VULNORAIQ_ADMIN_TOKEN` | Required admin token |
-| `VULNORAIQ_AUTH_MODE` | `token` or `trusted_proxy` |
-| `VULNORAIQ_AUTH_ENABLED=false` | Local launcher convenience only; do not use for shared production deployment |
-| `VULNORAIQ_ENABLE_WEB_SHUTDOWN` | Enables launcher-mode local stop-server endpoint when bound to loopback |
-| `VULNORAIQ_JOB_STORE_BACKEND=sqlite` | Production persistence backend |
-| `VULNORAIQ_JOB_STORE_PATH` | SQLite path |
-| `VULNORAIQ_WEB_OUTPUT_ROOT` | Report/artifact output path |
-| `VULNORAIQ_TRUST_PROXY_HEADERS` | Trust proxy headers when enabled |
-| `VULNORAIQ_TRUSTED_PROXY_CIDRS` | Allowed proxy source networks |
-| `VULNORAIQ_METRICS_AUTH_REQUIRED` | Protect `/metrics`; default true |
+## 8. Incident handling trigger points
 
-## 13. Escalation
+Escalate to the incident response plan for:
 
-Use [`INCIDENT_RESPONSE.md`](INCIDENT_RESPONSE.md) for security events. Escalate immediately for suspected token leak, access-control failure, report exposure, repeated rate-limit spikes, scan queue exhaustion, corrupted SQLite store, dependency issue affecting runtime security, broken local launcher path on a release branch, or GenAI readiness regression on a release branch.
+- suspected auth bypass or token compromise;
+- report/evidence exposure;
+- unsafe target configuration;
+- repeated CSRF/rate-limit abuse;
+- dependency vulnerability impacting the deployed version;
+- GenAI/OWASP readiness validation drift before release.
+
+## 9. Current operational limitations
+
+VulnoraIQ is designed for a single self-hosted instance. Multi-instance shared state, enterprise OIDC, SIEM rule packs, signed installers, image signing/scanning, and independent assurance validation remain future maturity items.

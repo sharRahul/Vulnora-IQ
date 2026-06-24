@@ -1,8 +1,8 @@
-# Docker Runtime Dependencies
+# Docker runtime dependencies
 
-Docker is optional for VulnoraIQ. The core WebUI, demo scans, reports, dashboards, and local launcher do not require Docker.
+Docker is now the recommended path for VulnoraIQ's current local lab workflow. The Docker Compose lab starts the hosted WebUI, deterministic mock AI target, SQLite job store, reports, evidence, and audit paths in a controlled environment.
 
-Docker is only needed when starting Docker-hosted AI agent runtime templates from the WebUI.
+Docker is still optional for simple host-native demo use with the `demo` target and local launcher, but real local AI-agent/RAG/tool-loop lab testing should use Docker Compose.
 
 ## Check Docker availability
 
@@ -15,25 +15,34 @@ python scripts/check_docker_runtime.py --json
 
 The script uses the same Docker discovery logic as the WebUI agent runtime manager, including the `VULNORAIQ_DOCKER_CLI` override.
 
+## Recommended Docker lab startup
+
+```bash
+docker compose build
+docker compose up -d
+docker compose ps
+```
+
+Open <http://localhost:8787>.
+
 ## Installation boundary
 
 VulnoraIQ should not silently install Docker as part of normal dependency setup. Docker installation can require administrator rights, service changes, virtualization changes, and operating-system package changes.
 
-The WebUI should therefore:
+The WebUI and launcher should therefore:
 
 - detect whether Docker is available;
 - show clear remediation guidance when it is missing;
 - allow the user to set `VULNORAIQ_DOCKER_CLI` when Docker is installed outside `PATH`;
-- skip Docker-dependent tests gracefully when Docker is not available.
-
-## Recommended user flow
-
-1. Run the WebUI normally.
-2. Review the startup dependency panel.
-3. If Docker is shown as missing, install Docker using official OS guidance.
-4. Restart the WebUI.
-5. Re-run the Docker runtime check.
+- keep host-native demo use available where Docker is unavailable;
+- keep Docker-dependent checks clearly separated from host-native checks.
 
 ## CI behavior
 
-Normal CI should not install Docker Engine. Docker-dependent checks should be conditional and should report a clear skip reason when Docker is unavailable.
+Normal Python CI validates the package, scanner, WebUI server, mappings, GenAI readiness, and functional paths. Docker-dependent checks should remain explicit and report a clear skip/failure reason when Docker is unavailable.
+
+## Current boundary
+
+- Docker Compose is recommended for current local lab operation.
+- Host-native launcher mode is for local demo/development use.
+- Docker should be installed and maintained by the user or organisation, not silently modified by VulnoraIQ.
