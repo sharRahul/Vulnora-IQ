@@ -68,8 +68,10 @@ Before exposing the service beyond local loopback, confirm:
 - `VULNORAIQ_WEB_USERS_PATH` is not used as a production credential source;
 - the service is behind a trusted reverse proxy;
 - TLS is enabled at the reverse proxy;
+- `/healthz`, `/readyz`, and `/metrics` are reachable only as intended;
 - audit logs are stored under a controlled path;
 - backup and restore procedures for SQLite, reports, and evidence are tested;
+- retention policy is defined for reports, evidence, audit logs, and backups;
 - `/metrics` access is protected by auth or network controls;
 - only authorised targets and safety profiles are configured.
 
@@ -81,8 +83,8 @@ For remote internal access:
 - keep `vulnoraiq-web` bound to loopback or an internal network;
 - configure trusted proxy CIDRs before trusting forwarded headers;
 - use strong environment-backed tokens or trusted reverse-proxy identity;
-- protect `/metrics` with auth;
-- store logs, reports, and backups in controlled locations.
+- protect `/healthz`, `/readyz`, and `/metrics` according to your internal monitoring model;
+- store logs, reports, and backups in controlled locations with retention rules.
 
 ## 6. Local standalone launcher
 
