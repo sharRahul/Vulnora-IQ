@@ -52,7 +52,7 @@ jobs:
           path: reports/output/ci-logs/python-ci-pytest-${{ matrix.python-version }}.log
 
       - name: Validate Web UI package wiring
-        run: python -c "from webui.hosted_server import STATIC_DIR, load_config; assert (STATIC_DIR / 'index.html').exists(); assert (STATIC_DIR / 'styles.css').exists(); assert (STATIC_DIR / 'app.js').exists(); cfg = load_config(); assert 'demo' in cfg['targets']; assert 'baseline' in cfg['profiles']"
+        run: python -c "from webui.hosted_server import STATIC_DIR, load_config; console = STATIC_DIR / 'console'; assert (console / 'index.html').exists(); assert any((console / 'assets').glob('*.js')); assert any((console / 'assets').glob('*.css')); cfg = load_config(); assert 'demo' in cfg['targets']; assert 'baseline' in cfg['profiles']"
 
       - name: Validate package metadata
         run: python scripts/validate_package_metadata.py
