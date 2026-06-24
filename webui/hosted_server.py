@@ -432,7 +432,10 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
             self._serve_metrics()
             return
         if clean_path == "/":
-            self._serve_static("index.html")
+            # Prefer the modern React tri-pane console when its build is present,
+            # otherwise fall back to the legacy static console.
+            console_index = STATIC_DIR / "console" / "index.html"
+            self._serve_static("console/index.html" if console_index.exists() else "index.html")
             return
         if clean_path.startswith("/static/"):
             self._serve_static(clean_path.removeprefix("/static/"))

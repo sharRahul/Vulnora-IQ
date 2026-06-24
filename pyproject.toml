@@ -79,6 +79,13 @@ include = ["core*", "integrations*", "modules*", "rag_testing*", "agent_testing*
 
 [tool.setuptools.package-data]
 webui = ["static/*", "static/dist/*", "static/assets/*"]
+webui = [
+    "static/*.html",
+    "static/*.css",
+    "static/*.js",
+    "static/console/*",
+    "static/console/assets/*",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

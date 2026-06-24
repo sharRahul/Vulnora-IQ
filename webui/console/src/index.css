@@ -1,0 +1,135 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Light theme — crisp off-white canvas framed by lavender-gray */
+  --canvas: #f8f9fa;
+  --surface: #e8dfe0;
+  --background: #f8f9fa;
+  --foreground: #2a2f35;
+  --card: #ffffff;
+  --card-foreground: #2a2f35;
+  --muted: #eef0f2;
+  --muted-foreground: #6b7280;
+  --border: #ddd5d7;
+  --input: #ddd5d7;
+  --ring: #8a9ea7;
+
+  /* Deep Navy Night primary for critical / primary actions */
+  --primary: #1e2229;
+  --primary-foreground: #f8f9fa;
+
+  /* Brand accents */
+  --accent-slate: #8a9ea7;
+  --accent-sage: #8d9b6a;
+  --accent-sand: #dab692;
+
+  /* Severity scale */
+  --sev-info: #8a9ea7;
+  --sev-low: #4b8b3b;
+  --sev-medium: #c98a1e;
+  --sev-high: #d64545;
+  --sev-critical: #8f1d1d;
+
+  color-scheme: light;
+}
+
+.dark {
+  --canvas: #15181d;
+  --surface: #1b1f25;
+  --background: #15181d;
+  --foreground: #e8dfe0;
+  --card: #1b1f25;
+  --card-foreground: #e8dfe0;
+  --muted: #232830;
+  --muted-foreground: #9aa3ad;
+  --border: #2c323b;
+  --input: #2c323b;
+  --ring: #8a9ea7;
+
+  /* In dark mode a navy CTA loses contrast, so use a light high-contrast primary */
+  --primary: #e8dfe0;
+  --primary-foreground: #1e2229;
+
+  --accent-slate: #9fb4bd;
+  --accent-sage: #a6b483;
+  --accent-sand: #e2c4a3;
+
+  --sev-info: #9fb4bd;
+  --sev-low: #5fae4b;
+  --sev-medium: #e0a93f;
+  --sev-high: #ef6a6a;
+  --sev-critical: #d35454;
+
+  color-scheme: dark;
+}
+
+* {
+  border-color: var(--border);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--canvas);
+  color: var(--foreground);
+  font-family: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 999px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  /* Code blocks must wrap cleanly without breaking usability */
+  .code-wrap {
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    tab-size: 2;
+  }
+  .skeleton-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .skeleton-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--foreground) 8%, transparent),
+      transparent
+    );
+    animation: shimmer 1.4s infinite;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
