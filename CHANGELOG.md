@@ -23,6 +23,8 @@ All notable changes to this project will be documented in this file.
 - Local launcher startup checks for Python runtime, required dependencies, core modules, target/profile config, Web UI assets, output directory, and SQLite job-store readiness.
 - Web UI startup and local-server-controls panel with dependency checks, quick-start actions, runtime options, refresh checks, and loopback launcher-mode **Stop local server** control.
 - Quick-start guidance for stopping the Web UI in foreground, background, launcher, Docker, and Docker Compose runs.
+- Docker-first AI-agent lab with deterministic mock agent, Docker target config, safety profile, and smoke tooling.
+- React target-management workspace with target search/filtering, readiness metrics, validation, authorisation checklist, scan creation controls, and recent job refresh.
 
 ### Changed
 
@@ -30,14 +32,16 @@ All notable changes to this project will be documented in this file.
 - Project license changed from MIT to Apache License 2.0.
 - Package metadata now declares `Apache-2.0`, includes license files, PyPI classifiers, project URLs, keywords, and a release extra for package builds.
 - Package metadata validation now checks PyPI publishing metadata and release extras.
-- Documentation now consistently describes VulnoraIQ as a self-hosted laptop/workstation/internal-server application for authorised AI assessment work.
+- Documentation now consistently describes VulnoraIQ as a Docker-first, self-hosted laptop/workstation/internal-server application for authorised AI assessment work.
 - Current-scope readiness items are now consistently marked **Complete** for the self-hosted/internal assessment scope.
 - README, docs index, deployment guide, security policy, implementation status, readiness scorecard, backlog, release checklist, assurance, runbook, incident response, GenAI readiness plan, and Agentic Applications readiness plan were aligned to the same product positioning and completion vocabulary.
 - Local standalone launcher mode is documented as a loopback-only convenience path, separate from the hardened hosted/production `vulnoraiq-web` path.
+- WebUI docs now identify the React console as the supported UI and mark the legacy static console direction as superseded.
 
 ### Fixed
 
 - Web UI catalog toolbar overflow where the `Showing ... options` badge could clip into the neighbouring panel in narrow columns.
+- `scripts/run_scan.py` jobs-show typing issue that could fail `mypy` by reusing a loop variable for an optional job lookup.
 
 ### Notes
 
