@@ -111,7 +111,7 @@ def test_proxy_identity_permissions(monkeypatch) -> None:
         trusted=True,
     )
     assert viewer is not None
-    assert not manager.can(viewer, "start_demo_scan")
+    assert not manager.can(viewer, "start_configured_scan")
     assert manager.can(viewer, "view_scans")
 
 
@@ -211,7 +211,7 @@ def test_proxy_identity_role_mapping_unknown_to_viewer(monkeypatch) -> None:
     assert principal.role == "viewer"
     # Verify viewer permissions
     assert "view_scans" in principal.permissions
-    assert "start_demo_scan" not in principal.permissions
+    assert "start_configured_scan" not in principal.permissions
 
 
 def test_proxy_identity_viewer_permissions(monkeypatch) -> None:
@@ -224,13 +224,13 @@ def test_proxy_identity_viewer_permissions(monkeypatch) -> None:
     assert principal is not None
     assert manager.can(principal, "view_scans")
     assert manager.can(principal, "download_artifacts")
-    assert not manager.can(principal, "start_demo_scan")
     assert not manager.can(principal, "start_configured_scan")
+    assert not manager.can(principal, "manage_runtime")
     assert not manager.can(principal, "manage_runtime")
 
 
 def test_proxy_identity_analyst_permissions(monkeypatch) -> None:
-    """Analyst role adds start_demo_scan to viewer permissions."""
+    """Analyst role inherits viewer permissions (view + download)."""
     manager = WebAuthManager()
     principal = manager.authenticate_proxy_identity(
         {"X-Authenticated-User": "analyst-user", "X-VulnoraIQ-Role": "analyst"},
@@ -239,7 +239,6 @@ def test_proxy_identity_analyst_permissions(monkeypatch) -> None:
     assert principal is not None
     assert manager.can(principal, "view_scans")
     assert manager.can(principal, "download_artifacts")
-    assert manager.can(principal, "start_demo_scan")
     assert not manager.can(principal, "start_configured_scan")
     assert not manager.can(principal, "manage_runtime")
 
@@ -254,7 +253,6 @@ def test_proxy_identity_admin_permissions(monkeypatch) -> None:
     assert principal is not None
     assert manager.can(principal, "view_scans")
     assert manager.can(principal, "download_artifacts")
-    assert manager.can(principal, "start_demo_scan")
     assert manager.can(principal, "start_configured_scan")
     assert manager.can(principal, "manage_runtime")
 

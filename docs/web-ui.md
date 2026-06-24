@@ -1,6 +1,6 @@
 # VulnoraIQ Modern Web UI
 
-The VulnoraIQ Web UI provides a user-friendly console for VAPT specialists to run local/demo-safe AI security assessments, monitor scan progress in real time, and present completed outputs.
+The VulnoraIQ Web UI provides a user-friendly console for VAPT specialists to run AI security assessments against configured authorised targets, monitor scan progress in real time, and review completed outputs.
 
 ## Start the UI
 
@@ -32,13 +32,13 @@ Tokens map to roles and permissions:
 
 | Token source | Role | Capabilities |
 | --- | --- | --- |
-| `VULNORAIQ_ADMIN_TOKEN` | admin | view, download, demo + configured scans, full config/targets |
-| `VULNORAIQ_ANALYST_TOKEN` | analyst | view, download, demo scans |
+| `VULNORAIQ_ADMIN_TOKEN` | admin | view, download, configured scans, full config/targets |
+| `VULNORAIQ_ANALYST_TOKEN` | analyst | view, download |
 | `VULNORAIQ_VIEWER_TOKEN` | viewer | view and download only |
 
 For local development (non-production) you can sign in with the built-in
 `vulnoraiq-internal-admin-token`, or disable auth entirely with
-`VULNORAIQ_AUTH_ENABLED=false` (open-access demo mode, not for shared deployments).
+`VULNORAIQ_AUTH_ENABLED=false` (open-access mode, not for shared deployments).
 Use **Sign out** in the top bar to clear the session token.
 
 ## User workflow
@@ -46,7 +46,7 @@ Use **Sign out** in the top bar to clear the session token.
 1. Sign in with an access token (when auth is enabled).
 2. Select a target.
 3. Select an assessment profile or a single test from the categorised catalog.
-4. Confirm authorisation for any configured non-demo target.
+4. Confirm authorisation for the configured target.
 5. Start the assessment.
 6. Watch the progress ring and realtime event timeline.
 7. Review the completed executive dashboard.
@@ -122,7 +122,7 @@ Generated artifacts:
 
 ## Safety model
 
-- The default `demo` target is local and safe.
+- Every target passes through the scanner authorisation gate.
 - Configured targets still pass through the scanner authorisation gate.
 - Placeholder endpoints are rejected by the scanner.
 - Target contract validation is available before configured target testing.
@@ -132,4 +132,4 @@ Generated artifacts:
 
 ## Operator notes
 
-Use VulnoraIQ for demonstrations, tabletop reviews, internal VAPT reporting, and presenting completed evidence packs. For CI/CD usage, prefer the command-line tools and GitHub Actions workflow.
+Use VulnoraIQ for internal VAPT reporting, authorised AI security assessments, and presenting completed evidence packs. For CI/CD usage, prefer the command-line tools and GitHub Actions workflow.

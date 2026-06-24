@@ -107,11 +107,14 @@ jobs:
         if: matrix.python-version == '3.12'
         run: npm run test:webui:hosted
 
-      - name: Run demo scan
+      - name: Run scan (test fixture target)
+        env:
+          VULNORAIQ_ALLOW_TEST_FIXTURE_TARGETS: "true"
         run: |
           python scripts/run_scan.py \
             --target demo \
             --profile baseline \
+            --authorised \
             --output reports/output/ci-demo-report.md \
             --json-output reports/output/ci-demo-report.json \
             --sarif-output reports/output/ci-demo-report.sarif \

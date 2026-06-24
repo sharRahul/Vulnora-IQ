@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Removed
+
+- All demo, mock, and fixture targets from default runtime. No default scan target; `--target` is now required. Backend rejects target IDs containing `demo`, `mock`, `fake`, or `fixture` unless `VULNORAIQ_ALLOW_TEST_FIXTURE_TARGETS=true` is set.
+- `local-mock-agent` service removed from default Docker Compose; moved behind `profiles: ["test"]`.
+- `start_demo_scan` permission removed; all scans use `start_configured_scan`.
+- Demo special-casing in scan authorisation gate and module severity logic.
+- `config/targets.yaml` and `config/targets.docker.yaml` cleaned of all fake targets; replaced with commented templates.
+- WebUI "Run Scan" no longer defaults to `target: demo`; requires a configured target; disabled when none exist.
+
 ### Added
 
 - OWASP AI Testing Guide foundation suite and single-test Web UI profiles covering GenAI red teaming methodology, CSA agentic AI red teaming, OWASP AI Exchange controls, AI Security and Privacy design, AI VSS scoring review, and NIST AI 100-2 adversarial ML taxonomy alignment.

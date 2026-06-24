@@ -23,9 +23,6 @@ services:
     volumes:
       - vulnoraiq_data:/data
       - ./config:/app/config:ro
-    depends_on:
-      local-mock-agent:
-        condition: service_healthy
     networks:
       - vulnoraiq-lab
     healthcheck:
@@ -42,6 +39,7 @@ services:
   local-mock-agent:
     build: docker/mock-agent
     image: vulnoraiq/local-mock-agent:docker-lab
+    profiles: ["test"]
     container_name: vulnoraiq-local-mock-agent
     restart: unless-stopped
     init: true

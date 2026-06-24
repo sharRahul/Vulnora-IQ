@@ -8,7 +8,6 @@ You may use VulnoraIQ for:
 
 - testing systems you own;
 - testing systems you are explicitly authorised to assess;
-- safe local demo testing;
 - internal security validation;
 - defensive control testing;
 - evidence collection for internal review.

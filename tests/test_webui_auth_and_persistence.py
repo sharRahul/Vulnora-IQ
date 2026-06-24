@@ -19,7 +19,7 @@ def test_auth_manager_anonymous_role_when_disabled(monkeypatch) -> None:
     principal = manager.authenticate_token(None)
     assert principal is not None
     assert principal.username == "anonymous"
-    assert manager.can(principal, "start_demo_scan")
+    assert manager.can(principal, "view_scans")
     assert not manager.can(principal, "start_configured_scan")
 
 
@@ -100,7 +100,6 @@ def test_role_permissions_include_inherited_permissions() -> None:
     permissions = manager.permissions_for_role("admin")
     assert "view_scans" in permissions
     assert "download_artifacts" in permissions
-    assert "start_demo_scan" in permissions
     assert "start_configured_scan" in permissions
 
 

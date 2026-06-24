@@ -22,6 +22,7 @@ interface HeaderBarProps {
   scanStatusLabel?: string;
   scanProgressPercent?: number;
   scanFindingCount?: number;
+  scanDisabled?: boolean;
   onToggleScan: () => void;
 }
 
@@ -34,6 +35,7 @@ export function HeaderBar({
   scanStatusLabel,
   scanProgressPercent = 0,
   scanFindingCount = 0,
+  scanDisabled = false,
   onToggleScan,
 }: HeaderBarProps) {
   const scanLabel = scanning
@@ -88,7 +90,7 @@ export function HeaderBar({
           <span className="truncate">{scanLabel}</span>
         </span>
 
-        <Button variant="primary" size="sm" onClick={onToggleScan} disabled={scanning} className="shrink-0">
+        <Button variant="primary" size="sm" onClick={onToggleScan} disabled={scanning || scanDisabled} className="shrink-0" title={scanDisabled ? "No targets configured. Add a target in the Targets view first." : "Run a scan"}>
           {scanning ? (
             <>
               <Loader2 className="size-4 animate-spin" /> <span>Scanning…</span>

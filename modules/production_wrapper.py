@@ -46,8 +46,6 @@ class ProductionAssessmentModule:
         finding.evidence["production_detection_status_summary"] = production_summary
         finding.evidence["production_detection_profile"] = detector.detector_profile
         finding.evidence["production_validation_status"] = "authorised_production_assessment_testing_ready"
-        if context.target_name == "demo":
-            finding.severity = "info"
         return finding
 
 

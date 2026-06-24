@@ -46,7 +46,7 @@ class StarterAssessmentModule:
             "production_validation_status": "not_validated_for_real_world_vapt",
         }
 
-        severity = "info" if context.target_name == "demo" else self.metadata.default_severity
+        severity = self.metadata.default_severity
         if evidence["oracle_status_summary"]["fail"]:
             severity = self.metadata.default_severity
         return Finding(

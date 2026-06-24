@@ -1,13 +1,13 @@
 # CLI guide
 
-The `vulnoraiq` CLI is the same scanner/reporting path used by the WebUI backend. The safest default is to run it inside Docker Compose.
+The `vulnoraiq` CLI is the same scanner/reporting path used by the WebUI backend. All scan commands require `--target <name>`; no default target is provided. Run it inside Docker Compose or from a local package install.
 
 ## Docker-first usage
 
 ```bash
 docker compose exec vulnoraiq-web vulnoraiq targets list
-docker compose exec vulnoraiq-web vulnoraiq targets validate --target local_mock_agent
-docker compose exec vulnoraiq-web vulnoraiq scan --target local_mock_agent --profile ai_agent_foundation --authorised
+docker compose exec vulnoraiq-web vulnoraiq targets validate --target <target_name>
+docker compose exec vulnoraiq-web vulnoraiq scan --target <target_name> --profile ai_agent_foundation --authorised
 docker compose exec vulnoraiq-web vulnoraiq reports list
 docker compose exec vulnoraiq-web vulnoraiq jobs list
 docker compose exec vulnoraiq-web vulnoraiq jobs show --job-id <job-id>
@@ -21,10 +21,10 @@ Docker reports are written under `/data/reports`; evidence under `/data/evidence
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -e .[dev]
-vulnoraiq --target demo --profile baseline
+vulnoraiq scan --target <target_name> --profile baseline --authorised
 ```
 
-The default `demo` target is an in-memory echo target and does not require external services.
+The `--target` argument is required; there is no default target. You must configure a target in your `config/targets.yaml` before running a scan.
 
 ## Command groups
 
@@ -41,7 +41,7 @@ The default `demo` target is an in-memory echo target and does not require exter
 
 ```bash
 vulnoraiq scan \
-  --target local_mock_agent \
+  --target <target_name> \
   --profile ai_agent_foundation \
   --authorised \
   --output reports/output/scan-report.md \

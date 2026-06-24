@@ -72,8 +72,8 @@ function endpointLabel(target: TargetConfig): string {
 
 export function TargetsManager() {
   const [targets, setTargets] = useState<TargetRecord[]>([]);
-  const [selectedId, setSelectedId] = useState("local_mock_agent");
-  const [draftId, setDraftId] = useState("local_mock_agent");
+  const [selectedId, setSelectedId] = useState("");
+  const [draftId, setDraftId] = useState("");
   const [draft, setDraft] = useState<TargetConfig>(defaultTarget());
   const [headersText, setHeadersText] = useState("{}");
   const [bodyText, setBodyText] = useState(JSON.stringify(defaultTarget().request_body_template, null, 2));
@@ -122,6 +122,11 @@ export function TargetsManager() {
       setTargets(records);
       const next = records.find((record) => record.id === selectedId) || records[0];
       if (next) selectTarget(next);
+      else { setSelectedId(""); setDraftId("");
+        setDraft(defaultTarget());
+        setHeadersText("{}");
+        setBodyText("{}");
+      }
     } catch (exc) {
       setError(exc instanceof Error ? exc.message : String(exc));
     } finally {
@@ -253,7 +258,7 @@ export function TargetsManager() {
       const job = await api<ScanJob>("/api/scans", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-CSRF-Token": token },
-        body: JSON.stringify({ target: draftId, profile: scanProfile, authorised: draftId !== "demo" }),
+        body: JSON.stringify({ target: draftId, profile: scanProfile, authorised: true }),
       });
       setJobs((prev) => [job, ...prev.filter((item) => item.id !== job.id)]);
       connectScanEvents(job.id);
@@ -271,10 +276,9 @@ export function TargetsManager() {
   }, []);
 
   const isExternal = draft.allow_external === true;
-  const isDemo = draftId === "demo" || draft.type === "echo";
   const safetyChecklist = [
-    { label: "Authorisation gate", ok: isDemo || draft.authorisation_required !== false },
-    { label: "Owner contact", ok: Boolean(draft.owner?.contact) || isDemo },
+    { label: "Authorisation gate", ok: draft.authorisation_required !== false },
+    { label: "Owner contact", ok: Boolean(draft.owner?.contact) },
     { label: "Bounded rate limit", ok: Number(draft.rate_limit?.requests_per_second || 0) > 0 },
     { label: "Safety profile", ok: Boolean(draft.safety_profile) },
   ];
@@ -331,13 +335,12 @@ export function TargetsManager() {
               </div>
               <div className="ui-action-row justify-start sm:justify-end">
                 <Button variant="secondary" onClick={() => void loadJobs()} className="w-full sm:w-auto"><RefreshCw /> <span>Refresh jobs</span></Button>
-                <Button variant="secondary" onClick={testConnectivity} disabled={testing || isDemo} className="w-full sm:w-auto">{testing ? <Loader2 className="animate-spin" /> : <Wifi />} <span>Test connectivity</span></Button>
-                <Button variant="primary" onClick={saveTarget} disabled={saving || isDemo} className="w-full sm:w-auto">{saving ? <Loader2 className="animate-spin" /> : <Save />} <span>Save</span></Button>
-                <Button variant="danger" onClick={deleteTarget} disabled={saving || isDemo} className="w-full sm:w-auto"><Trash2 /> <span>Delete</span></Button>
+                <Button variant="secondary" onClick={testConnectivity} disabled={testing} className="w-full sm:w-auto">{testing ? <Loader2 className="animate-spin" /> : <Wifi />} <span>Test connectivity</span></Button>
+                <Button variant="primary" onClick={saveTarget} disabled={saving} className="w-full sm:w-auto">{saving ? <Loader2 className="animate-spin" /> : <Save />} <span>Save</span></Button>
+                <Button variant="danger" onClick={deleteTarget} disabled={saving} className="w-full sm:w-auto"><Trash2 /> <span>Delete</span></Button>
               </div>
             </div>
             {selected ? null : <p className="mt-2 text-xs text-muted-foreground">Creating a new runtime target.</p>}
-            {isDemo ? <Warning title="Demo target" body="The in-memory demo target is read-only. Add a new authorised target to edit real configurations." /> : null}
             {isExternal ? <Warning title="External host override enabled" body="Only enable allow_external for systems you own or are explicitly authorised to assess. The backend still requires the normal non-demo authorisation confirmation before scans." /> : null}
             {error ? <Warning title="Target error" body={error} danger /> : null}
           </div>
@@ -345,7 +348,7 @@ export function TargetsManager() {
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(300px,360px)]">
             <div className="space-y-4">
               <div className="grid gap-4 lg:grid-cols-2">
-                <Field label="Target ID"><input value={draftId} onChange={(e) => setDraftId(e.target.value)} className="input" disabled={isDemo} /></Field>
+                <Field label="Target ID"><input value={draftId} onChange={(e) => setDraftId(e.target.value)} className="input" /></Field>
                 <Field label="Display name"><input value={draft.name || ""} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className="input" /></Field>
                 <Field label="Type"><select value={draft.type} onChange={(e) => setDraft({ ...draft, type: e.target.value })} className="input">{TARGET_TYPES.map((type) => <option key={type}>{type}</option>)}</select></Field>
                 <Field label="Environment"><select value={draft.environment || "local"} onChange={(e) => setDraft({ ...draft, environment: e.target.value })} className="input">{ENVIRONMENTS.map((env) => <option key={env}>{env}</option>)}</select></Field>
@@ -363,7 +366,7 @@ export function TargetsManager() {
                 <Field label="Request body template JSON"><textarea value={bodyText} onChange={(e) => setBodyText(e.target.value)} className="input min-h-32 font-mono text-xs" /></Field>
               </div>
               <div className="grid gap-4 lg:grid-cols-3">
-                <Toggle checked={draft.authorisation_required !== false} onChange={(checked) => setDraft({ ...draft, authorisation_required: checked })} title="Authorisation required" body="Required for all non-demo real targets." />
+                <Toggle checked={draft.authorisation_required !== false} onChange={(checked) => setDraft({ ...draft, authorisation_required: checked })} title="Authorisation required" body="Required for all real targets." />
                 <Toggle checked={draft.allow_external === true} onChange={(checked) => setDraft({ ...draft, allow_external: checked })} title="Allow external host" body="Overrides the loopback/internal host guard for authorised scopes." icon={<ExternalLink className="size-4" />} />
                 <Field label="Owner/contact"><input value={draft.owner?.contact || ""} onChange={(e) => setDraft({ ...draft, owner: { ...(draft.owner || {}), contact: e.target.value } })} className="input" placeholder="team@example.com" /></Field>
               </div>
@@ -375,7 +378,7 @@ export function TargetsManager() {
               </Panel>
               <Panel title="Launch scan" icon={<PlayCircle className="size-4" />}>
                 <select value={scanProfile} onChange={(e) => setScanProfile(e.target.value)} className="input text-sm">{SCAN_PROFILES.map((profile) => <option key={profile}>{profile}</option>)}</select>
-                <Button className="mt-3 w-full" variant="success" onClick={startScan} disabled={scanning || (!isDemo && draft.authorisation_required === false)}>{scanning ? <Loader2 className="animate-spin" /> : <PlayCircle />} <span>Start authorised scan</span></Button>
+                <Button className="mt-3 w-full" variant="success" onClick={startScan} disabled={scanning || draft.authorisation_required === false}>{scanning ? <Loader2 className="animate-spin" /> : <PlayCircle />} <span>Start authorised scan</span></Button>
                 <p className="mt-2 text-xs text-muted-foreground">Live progress streams from the authenticated SSE endpoint. State: {streamState}.</p>
                 {liveEvents.length ? <div className="mt-3 space-y-2" aria-live="polite">
                   <div className="h-2 overflow-hidden rounded bg-muted"><div className="h-full bg-[var(--accent-sage)]" style={{ width: `${Math.max(...liveEvents.map((event) => event.progress?.percent || 0))}%` }} /></div>

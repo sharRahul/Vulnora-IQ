@@ -1,31 +1,28 @@
 # Target configuration
 
-VulnoraIQ now has two supported target-configuration paths:
+VulnoraIQ requires at least one configured target before any scan can run. There is no default scan target.
 
 | Path | File | Use |
 | --- | --- | --- |
-| Docker-first safe lab | `config/targets.docker.yaml` | Recommended for real local AI-agent/RAG/tool-loop testing through Docker Compose. |
-| Host-native development/demo | `config/targets.yaml` | Local development, loopback demos, and placeholder internal examples. |
+| Docker deployment | `config/targets.docker.yaml` | Target configuration for Docker Compose (VULNORAIQ_TARGET_CONFIG=targets.docker.yaml). |
+| Host-native | `config/targets.yaml` | Target configuration for local package or source installs. |
 
-## Docker lab targets
+## Configuring a target
 
-Docker lab targets use service names on the private Compose network, for example `http://local-mock-agent:9090`.
+Add your target to the active config file (e.g. `config/targets.yaml`) with the following fields:
 
-Current Docker lab target shapes include:
+- A unique target ID (the YAML key)
+- `type`: one of `http_json`, `chat_completions`, `ollama_generate`, `rag_query`, `webhook_json`, `agent_tool_loop`
+- `base_url` and `endpoint_path` (or full `endpoint`)
+- `method`: `POST` or `GET`
+- `response_extraction_path`: JSON path to the text response
+- `timeout`, `rate_limit`, `retry` settings
+- `authorisation_required: true`
+- `safety_profile`: e.g. `local_lab_safe`
+- `environment`: `local`, `lab`, `internal`, or `production-like`
+- `owner.contact`: team contact email
 
-| Target | Type | Purpose |
-| --- | --- | --- |
-| `local_mock_agent` | `chat_completions` | OpenAI-compatible chat-completions mock agent. |
-| `local_rag_app` | `rag_query` | Mock RAG query target with answer/context extraction. |
-| `local_mock_ollama` | `ollama_generate` | Ollama-style generate endpoint. |
-| `local_webhook_agent` | `webhook_json` | Generic webhook-style JSON target. |
-| `local_agent_tool_loop` | `agent_tool_loop` | Dry-run tool-loop mock target. |
-
-Docker lab targets are marked with `environment: docker_lab`, `authorisation_required: true`, and `safety_profile: docker_lab`.
-
-## Host-native targets
-
-`config/targets.yaml` keeps the safe `demo` target and loopback/internal templates for local development. Current examples include HTTP JSON, chat-completions, Ollama-generate, RAG query, webhook JSON, and tool-loop shapes.
+See the commented template in `config/targets.yaml` and the safety profiles in `config/safety_profiles.yaml`.
 
 When testing outside Docker, keep targets on loopback unless you have written permission and a safety profile designed for the environment.
 
@@ -40,7 +37,7 @@ A configured target should state:
 - timeout and rate limit;
 - environment label;
 - owner/contact where applicable;
-- `authorisation_required: true` for non-demo targets;
+- `authorisation_required: true` for all targets;
 - safety profile;
 - tags that describe the target shape and environment.
 
@@ -56,7 +53,7 @@ The React WebUI target workspace currently calls backend APIs for:
 
 ## Safety rules
 
-- Non-demo targets require explicit authorisation.
+- All targets require explicit authorisation (`--authorised` in CLI, authorisation gate in WebUI).
 - Secrets must be referenced through environment variables, not committed config values.
 - Public or external hosts must be disallowed unless the safety profile explicitly permits them for an approved environment.
 - Headers, request bodies, responses, evidence, and reports are passed through redaction before persistence.

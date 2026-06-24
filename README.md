@@ -11,7 +11,6 @@ VulnoraIQ is a **self-hosted internal application**. The same scope covers an **
 | Version | `0.2.0` beta |
 | GUI/WebUI | Yes. Browser-based React console served by `vulnoraiq-web` / `webui/hosted_server.py`. |
 | Default posture | Local laptop/workstation Docker Compose lab with loopback-only WebUI publishing. |
-| Local target | Deterministic mock target for local lab testing. |
 | Persistence | SQLite job store with WAL mode, foreign keys, busy timeout, and schema versioning. |
 | Future identity | Direct OIDC/JWT is deferred; see `docs/future-plans/OIDC_JWT_AUTH_PLAN.md`. |
 
@@ -27,7 +26,7 @@ Choose the path you want to run.
 | Local wheel build | Python 3.10 or newer plus the release extra: `pip install -e .[release]`. |
 | WebUI development/tests | Node.js 20 or newer, npm, and Playwright browser dependencies. End users do not need Node.js when using Docker, release packages, or the Python package. |
 
-Before running a real non-demo target, also prepare explicit authorisation, target credentials through environment variables, owner/contact details, and an approved safety profile. The default Docker GUI lab binds the WebUI to `127.0.0.1:8787` and is intended for local single-user use.
+Before running any target, prepare explicit authorisation, target credentials through environment variables, owner/contact details, and an approved safety profile. The default Docker GUI lab binds the WebUI to `127.0.0.1:8787` and is intended for local single-user use.
 
 ## Quick start
 
@@ -47,8 +46,6 @@ Useful Docker commands:
 
 ```bash
 docker compose exec vulnoraiq-web vulnoraiq targets list
-docker compose exec vulnoraiq-web vulnoraiq targets validate --target local_mock_agent
-docker compose exec vulnoraiq-web vulnoraiq scan --target local_mock_agent --profile ai_agent_foundation --authorised
 docker compose exec vulnoraiq-web vulnoraiq reports list
 docker compose exec vulnoraiq-web vulnoraiq jobs list
 ```

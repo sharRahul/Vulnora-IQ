@@ -52,7 +52,7 @@ jobs:
           path: reports/output/ci-logs/python-ci-pytest-${{ matrix.python-version }}.log
 
       - name: Validate Web UI package wiring
-        run: python -c "from webui.hosted_server import STATIC_DIR, load_config; console = STATIC_DIR / 'console'; assert (console / 'index.html').exists(); assert any((console / 'assets').glob('*.js')); assert any((console / 'assets').glob('*.css')); cfg = load_config(); assert 'demo' in cfg['targets']; assert 'baseline' in cfg['profiles']"
+        run: python -c "from webui.hosted_server import STATIC_DIR, load_config; console = STATIC_DIR / 'console'; assert (console / 'index.html').exists(); assert any((console / 'assets').glob('*.js')); assert any((console / 'assets').glob('*.css')); cfg = load_config(); assert not cfg.get('targets') or len(cfg['targets']) == 0; assert 'baseline' in cfg['profiles']"
 
       - name: Validate package metadata
         run: python scripts/validate_package_metadata.py
@@ -81,8 +81,10 @@ jobs:
             --output-dir reports/output/functional-test
 
       - name: Run baseline assessment smoke test
+        env:
+          VULNORAIQ_ALLOW_TEST_FIXTURE_TARGETS: "true"
         run: |
-          python scripts/run_scan.py --target demo --profile baseline \
+          python scripts/run_scan.py --target demo --profile baseline --authorised \
             --output reports/output/baseline-report.md \
             --json-output reports/output/baseline-report.json \
             --sarif-output reports/output/baseline-report.sarif \
@@ -90,8 +92,10 @@ jobs:
             --html-dashboard-output reports/output/baseline-dashboard.html
 
       - name: Run RAG assessment smoke test
+        env:
+          VULNORAIQ_ALLOW_TEST_FIXTURE_TARGETS: "true"
         run: |
-          python scripts/run_scan.py --target demo --profile rag \
+          python scripts/run_scan.py --target demo --profile rag --authorised \
             --output reports/output/rag-report.md \
             --json-output reports/output/rag-report.json \
             --sarif-output reports/output/rag-report.sarif \
@@ -99,8 +103,10 @@ jobs:
             --html-dashboard-output reports/output/rag-dashboard.html
 
       - name: Run agent assessment smoke test
+        env:
+          VULNORAIQ_ALLOW_TEST_FIXTURE_TARGETS: "true"
         run: |
-          python scripts/run_scan.py --target demo --profile agent \
+          python scripts/run_scan.py --target demo --profile agent --authorised \
             --output reports/output/agent-report.md \
             --json-output reports/output/agent-report.json \
             --sarif-output reports/output/agent-report.sarif \
@@ -143,10 +149,10 @@ jobs:
       - name: Build release package smoke test
         run: python scripts/build_release_package.py --manifest config/release_package.yaml
 
-      - name: Upload VulnoraIQ demo reports and release package
+      - name: Upload VulnoraIQ reports and release package
         uses: actions/upload-artifact@v4
         with:
-          name: vulnoraiq-demo-reports-${{ matrix.python-version }}
+          name: vulnoraiq-reports-${{ matrix.python-version }}
           path: |
             reports/output/
             dist/vulnoraiq-example-package.zip

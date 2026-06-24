@@ -8,8 +8,8 @@ This guide covers migration from legacy `0.0.1.x` style deployments to the curre
 | --- | --- | --- |
 | Deployment default | Host-native demo/server | Docker-first safe lab for real local AI-agent testing. |
 | WebUI | Legacy/static console path | React 18 + TypeScript console built to `webui/static/console/` and served by `webui/hosted_server.py`. |
-| Target testing | Demo-first and limited templates | Real authorised target adapters, Docker mock-agent targets, runtime target APIs, validation, safety profiles. |
-| Target config | `config/targets.yaml` only | Docker lab uses `config/targets.docker.yaml`; host-native development uses `config/targets.yaml`. |
+| Target testing | Demo-first and limited templates | Real authorised target adapters, runtime target APIs, validation, safety profiles. No default or mock targets. |
+| Target config | `config/targets.yaml` only | Docker uses `config/targets.docker.yaml`; host-native uses `config/targets.yaml`. Both are empty by default. |
 | Job store | JSON-style local jobs | SQLite job store with WAL, foreign keys, busy timeout, schema versioning. |
 | Auth | Config/fallback style | Env-backed token auth or trusted reverse-proxy identity; production mode fails closed. |
 | Security hardening | Limited | CSRF, rate limiting, request limits, security headers, trusted proxy checks, artifact path protection. |
@@ -34,16 +34,12 @@ docker compose build
 docker compose up -d
 ```
 
-5. Validate the Docker mock target:
+5. Review the target configuration docs and configure your own targets.
+
+6. Run a scan against your configured target:
 
 ```bash
-docker compose exec vulnoraiq-web vulnoraiq targets validate --target local_mock_agent
-```
-
-6. Run a safe scan:
-
-```bash
-docker compose exec vulnoraiq-web vulnoraiq scan --target local_mock_agent --profile ai_agent_foundation --authorised
+docker compose exec vulnoraiq-web vulnoraiq scan --target <target_name> --profile ai_agent_foundation --authorised
 ```
 
 7. Recreate any old custom targets using the current target schema and safety profile rules.
@@ -61,7 +57,7 @@ Legacy host-native targets should be reviewed before use. For each custom target
 - assign a safety profile;
 - validate the target before scanning.
 
-Docker lab targets should use Docker service names such as `local-mock-agent`, not host `localhost`.
+Docker lab targets should use Docker service names, not host `localhost`.
 
 ## Job store migration
 
@@ -118,6 +114,6 @@ python scripts/validate_production_testing_readiness.py --output-dir reports/out
 - Python minimum is `>=3.10`.
 - The supported WebUI is the React console, not the removed legacy static console.
 - Real target tests should use Docker-first lab defaults unless you intentionally run host-native local targets.
-- Non-demo targets require explicit authorisation.
+- All targets require explicit authorisation. Scan `--target` is required (no default).
 - Production mode requires safe auth/runtime configuration.
 - Framework coverage claims remain scoped and require human review.

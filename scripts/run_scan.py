@@ -35,14 +35,14 @@ def build_parser() -> argparse.ArgumentParser:
     jsub.add_parser("list")
     show = jsub.add_parser("show")
     show.add_argument("--job-id", required=True)
-    scan = sub.add_parser("scan", help="Run a scan")
+    scan = sub.add_parser("scan", help="Run a scan against a configured target (--target required, no default). Must pass --authorised.")
     add_scan_args(scan)
     add_scan_args(parser)
     return parser
 
 
 def add_scan_args(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--target", default="demo", help="Target name from config/targets.yaml. Default: demo")
+    parser.add_argument("--target", required=True, help="Target name from your config/targets.yaml (required). No default target is provided.")
     parser.add_argument("--profile", default="baseline", help="Assessment profile from config/attack_profiles.yaml. Default: baseline")
     outroot = __import__("os").getenv("VULNORAIQ_WEB_OUTPUT_ROOT", "reports/output")
     parser.add_argument("--output", default=str(Path(outroot) / "scan-report.md"), help="Markdown report output path.")
@@ -50,7 +50,7 @@ def add_scan_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--sarif-output", default=str(Path(outroot) / "scan-report.sarif"), help="SARIF-style report output path.")
     parser.add_argument("--dashboard-output", default=str(Path(outroot) / "dashboard.md"), help="Markdown dashboard output path.")
     parser.add_argument("--html-dashboard-output", default=str(Path(outroot) / "dashboard.html"), help="HTML dashboard output path.")
-    parser.add_argument("--authorised", action="store_true", help="Required for non-demo targets you own or are explicitly authorised to assess.")
+    parser.add_argument("--authorised", action="store_true", help="Confirm you are authorised to assess this target. Required for all real targets.")
 
 
 def run_scan(args: argparse.Namespace) -> None:

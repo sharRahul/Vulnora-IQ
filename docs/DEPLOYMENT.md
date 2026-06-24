@@ -3,12 +3,12 @@
 This guide describes the supported VulnoraIQ `0.2.0` deployment posture.
 
 > **Supported posture:** self-hosted laptop/workstation/internal-server AI security testing lab for approved assessments.  
-> **Safe default:** Docker Compose lab with loopback-only WebUI publishing and a deterministic local mock target.  
+> **Safe default:** Docker Compose lab with loopback-only WebUI publishing.  
 > **Not claimed:** certified VAPT-grade assurance or permission to test systems without explicit approval.
 
 ## 1. Recommended Docker-first lab
 
-Use this path for local AI-agent testing and demonstrations of target validation, scan execution, evidence capture, reports, and WebUI target management.
+Use this path for local AI-agent testing, target validation, scan execution, evidence capture, reports, and WebUI target management.
 
 ```bash
 docker compose build
@@ -18,7 +18,7 @@ docker compose ps
 
 Open <http://localhost:8787>.
 
-The WebUI is published on host loopback only through `127.0.0.1:8787:8787`. The mock target remains reachable only on the internal Docker lab network. Keep this posture for single-user laptop/workstation operation.
+The WebUI is published on host loopback only through `127.0.0.1:8787:8787`. Keep this posture for single-user laptop/workstation operation.
 
 The Docker lab sets:
 
@@ -36,8 +36,7 @@ VULNORAIQ_AUDIT_DIR=/data/audit
 | Service | Description |
 | --- | --- |
 | `vulnoraiq-web` | Hosted WebUI, scanner, CLI, SQLite job store, reports, evidence, audit logs, healthcheck. |
-| `local-mock-agent` | Deterministic local mock AI target with chat-completions, Ollama-generate, RAG, webhook, and tool-loop endpoints. |
-| `test-runner` | Optional test profile service. |
+| `test-runner` | Optional test profile service (includes mock agent). |
 
 The lab network is private/internal. Do not replace it with host networking for normal use.
 
@@ -91,7 +90,7 @@ Trusted proxy identity is currently the enterprise identity bridge. Direct OIDC/
 
 ## 6. Local standalone launcher
 
-The local launcher remains supported for laptop/workstation demo and development use.
+The local launcher remains supported for laptop/workstation development use.
 
 ```bash
 python -m venv .venv

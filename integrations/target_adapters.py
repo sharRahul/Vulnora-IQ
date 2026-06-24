@@ -99,7 +99,7 @@ def normalize_target_config(name: str, raw: dict[str, Any]) -> dict[str, Any]:
     cfg.setdefault("timeout", cfg.get("timeout_seconds", 30))
     cfg.setdefault("retry", {"attempts": 1, "backoff_seconds": 0.2})
     cfg.setdefault("rate_limit", {"requests_per_second": 1})
-    cfg.setdefault("authorisation_required", name != "demo")
+    cfg.setdefault("authorisation_required", True)
     cfg.setdefault("safety_profile", "local_lab_safe")
     cfg.setdefault("environment", "local")
     cfg.setdefault("tags", [])

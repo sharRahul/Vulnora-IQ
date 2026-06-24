@@ -32,7 +32,6 @@ _DEFAULT_PERMISSIONS: dict[str, set[str]] = {
         "download_artifacts",
         "view_own_scans",
         "download_own_artifacts",
-        "start_demo_scan",
     },
     "admin": {
         "view_scans",
@@ -41,7 +40,6 @@ _DEFAULT_PERMISSIONS: dict[str, set[str]] = {
         "download_own_artifacts",
         "view_all_scans",
         "download_all_artifacts",
-        "start_demo_scan",
         "start_configured_scan",
         "manage_runtime",
     },
@@ -76,7 +74,7 @@ class WebAuthManager:
 
     Token env vars (mutually exclusive with file config):
       VULNORAIQ_ADMIN_TOKEN  - full access
-      VULNORAIQ_ANALYST_TOKEN - demo-scan + view access
+      VULNORAIQ_ANALYST_TOKEN - view access
       VULNORAIQ_VIEWER_TOKEN  - view-only access
 
     Falls back to config/web_users.yaml if no token env vars are set.
@@ -85,7 +83,7 @@ class WebAuthManager:
     Production mode (VULNORAIQ_ENV=production):
       - Auth must be enabled
       - At least VULNORAIQ_ADMIN_TOKEN must be set and meet minimum length
-      - File-based demo users are rejected
+      - File-based users are rejected
       - Internal admin token is disabled
     """
 

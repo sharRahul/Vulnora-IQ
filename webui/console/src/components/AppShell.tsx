@@ -9,6 +9,7 @@ interface AppShellProps {
   scanStatusLabel?: string;
   scanProgressPercent?: number;
   scanFindingCount?: number;
+  scanDisabled?: boolean;
   onToggleScan: () => void;
   children: React.ReactNode;
 }

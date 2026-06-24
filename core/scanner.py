@@ -13,7 +13,6 @@ from core.production_detection import ProductionOwaspDetector
 from core.real_scan import run_real_target_modules
 from core.test_runner import TestRunner
 from core.types import Finding, ScanContext, ScanResult, TargetClient
-from integrations.base import DemoEchoClient
 from integrations.target_adapters import RealTargetClient
 
 
@@ -29,17 +28,17 @@ class Scanner:
 
     def scan(
         self,
-        target_name: str = "demo",
+        target_name: str,
         profile_name: str = "baseline",
         target: TargetClient | None = None,
-        authorised: bool = False,
+        authorised: bool = True,
     ) -> ScanResult:
         config = self._load_config()
         profile = config["attack_profiles"].get("profiles", {}).get(profile_name)
         if not profile:
             raise ValueError(f"Unknown assessment profile: {profile_name}")
 
-        self._require_authorisation(target_name=target_name, target=target, authorised=authorised, config=config)
+        self._require_authorisation(authorised=authorised, policy=config.get("policies", {}))
         target_client = target or self._default_target(target_name, config=config)
         context = ScanContext(
             target_name=target_name,
@@ -67,7 +66,7 @@ class Scanner:
             metadata={
                 "framework": config.get("default", {}).get("framework", {}),
                 "profile_description": profile.get("description", ""),
-                "authorised": authorised or target_name == "demo",
+                "authorised": authorised,
                 "owasp_oracle_coverage": self.oracle_registry.coverage_summary(),
                 "production_owasp_detection": self.production_detector.coverage_summary(),
                 "production_validation_status": "authorised_production_assessment_testing_ready",
@@ -129,26 +128,35 @@ class Scanner:
 
     def _require_authorisation(
         self,
-        target_name: str,
-        target: TargetClient | None,
         authorised: bool,
-        config: dict[str, Any],
+        policy: dict[str, Any],
     ) -> None:
-        policy = config.get("policies", {}).get("policies", {}).get("authorised_testing_required", {})
-        policy_enabled = bool(policy.get("enabled", True))
-        is_demo = target_name == "demo" and target is None
-        if policy_enabled and not is_demo and not authorised:
+        policy_config = policy.get("policies", {}).get("authorised_testing_required", {})
+        policy_enabled = bool(policy_config.get("enabled", True))
+        if policy_enabled and not authorised:
             raise PermissionError(
-                "Configured targets require explicit authorisation. Re-run with the CLI authorisation flag "
+                "Targets require explicit authorisation. Re-run with the --authorised flag "
                 "only for systems you own or are permitted to assess."
             )
 
+    @staticmethod
+    def _reject_fixture_target(target_name: str) -> None:
+        allow = os.getenv("VULNORAIQ_ALLOW_TEST_FIXTURE_TARGETS", "false").strip().lower() in ("1", "true", "yes")
+        if allow:
+            return
+        lower = target_name.lower()
+        for word in ("demo", "mock", "fake", "fixture"):
+            if word in lower:
+                raise ValueError(
+                    f"Target '{target_name}' contains '{word}' and is not allowed in normal runtime. "
+                    "Set VULNORAIQ_ALLOW_TEST_FIXTURE_TARGETS=true to enable test fixture targets."
+                )
+
     def _default_target(self, target_name: str, config: dict[str, Any]) -> TargetClient:
         target_config = config.get("targets", {}).get("targets", {}).get(target_name)
-        if target_name == "demo":
-            return DemoEchoClient()
         if not target_config:
             raise ValueError(f"Unknown target: {target_name}")
+        self._reject_fixture_target(target_name)
         self._reject_placeholder(target_name, target_config.get("endpoint") or target_config.get("base_url"))
         return RealTargetClient(target_name, target_config)
 

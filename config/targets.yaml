@@ -1,158 +1,21 @@
+# VulnoraIQ Target Configuration
+# --------------------------------
+# Define your own authorised AI application targets here.
+# Scans require at least one target with a real endpoint.
+# Test fixture targets are not allowed in normal runtime;
+# set VULNORAIQ_ALLOW_TEST_FIXTURE_TARGETS=true to enable them.
+
 targets:
-  demo:
-    name: Demo Echo
-    type: echo
-    description: Safe in-memory demonstration target.
-    endpoint: null
-    authorisation_required: false
-    environment: local
-    safety_profile: demo_safe
-    tags: [demo]
-
-  local_mock_agent:
-    name: Local Mock Agent
-    type: http_json
-    endpoint: http://127.0.0.1:9090/agent
-    base_url: http://127.0.0.1:9090
-    endpoint_path: /agent
-    method: POST
-    headers: {Content-Type: application/json}
-    request_body_template: {prompt: "{{prompt}}", mode: normal}
-    response_extraction_path: response
-    timeout: 10
-    retry: {attempts: 2, backoff_seconds: 0.1}
-    rate_limit: {requests_per_second: 2}
-    authorisation_required: true
-    safety_profile: local_lab_safe
-    tags: [local, mock, e2e]
-    owner: {name: Local tester, contact: security@example.invalid}
-    environment: local
-
-  local_mock_chat:
-    name: Local Mock Chat Completions
-    type: chat_completions
-    endpoint: http://127.0.0.1:9090/v1/chat/completions
-    base_url: http://127.0.0.1:9090
-    endpoint_path: /v1/chat/completions
-    method: POST
-    model: mock-agent
-    response_extraction_path: choices.0.message.content
-    timeout: 10
-    retry: {attempts: 2, backoff_seconds: 0.1}
-    rate_limit: {requests_per_second: 2}
-    authorisation_required: true
-    safety_profile: local_lab_safe
-    tags: [local, chat]
-    environment: local
-
-  local_mock_ollama:
-    name: Local Mock Ollama
-    type: ollama_generate
-    endpoint: http://127.0.0.1:9090/api/generate
-    base_url: http://127.0.0.1:9090
-    endpoint_path: /api/generate
-    model: mock-agent
-    response_extraction_path: response
-    timeout: 10
-    authorisation_required: true
-    safety_profile: local_lab_safe
-    environment: local
-
-  local_rag_app:
-    name: Local RAG App
-    type: rag_query
-    endpoint: http://127.0.0.1:9090/rag/query
-    base_url: http://127.0.0.1:9090
-    endpoint_path: /rag/query
-    request_body_template: {query: "{{prompt}}", include_context: true}
-    response_extraction_path: answer
-    retrieval_context_path: context
-    timeout: 15
-    rate_limit: {requests_per_second: 1}
-    authorisation_required: true
-    safety_profile: local_lab_safe
-    tags: [rag, local]
-    environment: lab
-
-  internal_webhook_agent:
-    name: Internal Webhook Agent
-    type: webhook_json
-    endpoint: http://localhost:9090/webhook
-    base_url: http://localhost:9090
-    endpoint_path: /webhook
-    auth_token_env: VULNORAIQ_WEBHOOK_TOKEN
-    auth_header: X-Assessment-Token
-    auth_prefix: ""
-    request_body_template: {input: "{{prompt}}", assessment: vulnoraiq}
-    response_extraction_path: output
-    timeout: 20
-    retry: {attempts: 2, backoff_seconds: 0.5}
-    rate_limit: {requests_per_second: 1}
-    authorisation_required: true
-    safety_profile: internal_authorised
-    tags: [webhook, internal]
-    owner: {name: AI Platform Team, contact: ai-platform@example.invalid}
-    environment: internal
-
-  agent_tool_loop:
-    name: Tool-Using Agent Workflow
-    type: agent_tool_loop
-    endpoint: http://127.0.0.1:9090/agent/tool-loop
-    base_url: http://127.0.0.1:9090
-    endpoint_path: /agent/tool-loop
-    request_body_template: {input: "{{prompt}}", max_steps: 2, dry_run: true}
-    response_extraction_path: answer
-    tool_calls_path: tool_calls
-    timeout: 20
-    rate_limit: {requests_per_second: 1}
-    authorisation_required: true
-    safety_profile: agent_tool_safe
-    tags: [agentic, tools, dry-run]
-    environment: lab
-
-  openai_compatible_example:
-    name: OpenAI-compatible Internal Endpoint Example
-    type: chat_completions
-    endpoint: https://example.invalid/v1/chat/completions
-    base_url: https://example.invalid
-    endpoint_path: /v1/chat/completions
-    model: local-model
-    auth_token_env: LLM_VAPT_TARGET_TOKEN
-    timeout: 30
-    authorisation_required: true
-    safety_profile: production_like_bounded
-    environment: production-like
-    allow_external: false
-
-  custom_http_agent:
-    type: custom_agent
-    description: Placeholder for an authorised HTTP-based AI application target.
-    endpoint: https://example.invalid/agent
-    auth: bearer_env
-    token_env_var: LLM_VAPT_TARGET_TOKEN
-
-  owasp_lab_agent_http:
-    type: http_json
-    endpoint: http://127.0.0.1:9090/agent
-    auth: none
-    environment: lab
-
-  owasp_lab_chat_completions:
-    type: chat_completions_compatible
-    endpoint: http://127.0.0.1:9090/v1/chat/completions
-    model: mock-agent
-    auth: none
-    environment: lab
-
-  owasp_lab_ollama_generate:
-    type: ollama_generate
-    endpoint: http://127.0.0.1:9090/api/generate
-    model: mock-agent
-    auth: none
-    environment: lab
-
-  owasp_lab_webhook_json:
-    type: webhook_json
-    endpoint: http://127.0.0.1:9090/webhook
-    auth: none
-    environment: lab
+  # Example: OpenAI-compatible chat completions endpoint
+  # my_llm_endpoint:
+  #   name: My LLM Endpoint
+  #   type: chat_completions
+  #   base_url: http://127.0.0.1:8080
+  #   endpoint_path: /v1/chat/completions
+  #   model: my-model
+  #   auth_token_env: LLM_VAPT_TARGET_TOKEN
+  #   timeout: 30
+  #   authorisation_required: true
+  #   safety_profile: local_lab_safe
+  #   environment: local
+  #   owner: {name: "", contact: "team@example.com"}

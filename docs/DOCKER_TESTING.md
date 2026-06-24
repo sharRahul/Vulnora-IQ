@@ -2,7 +2,7 @@
 
 VulnoraIQ's current safe path for real AI-agent, RAG, webhook, Ollama-style, and tool-loop testing is the Docker Compose lab.
 
-The host should only run Docker commands, open the WebUI at <http://localhost:8787>, and inspect exported reports. Scans, mock-agent traffic, target validation, evidence capture, report generation, and smoke testing run inside containers.
+The host should only run Docker commands, open the WebUI at <http://localhost:8787>, and inspect exported reports. Scans, target validation, evidence capture, report generation, and smoke testing run inside containers.
 
 ## Start the lab
 
@@ -21,10 +21,9 @@ The WebUI is published as `127.0.0.1:8787:8787`. Keep this loopback binding for 
 | Service | Purpose |
 | --- | --- |
 | `vulnoraiq-web` | Non-root hosted WebUI and CLI container. Stores `/data/jobs.db`, `/data/reports`, `/data/evidence`, and `/data/audit`. |
-| `local-mock-agent` | Deterministic mock target with chat-completions, Ollama-generate, RAG, webhook, and dry-run tool-loop endpoints. |
 | `test-runner` | Optional Docker-only utility service under the `test` profile. |
 
-All services run on the private `vulnoraiq-lab` bridge network. The network is marked internal, containers drop capabilities, and the Compose file does not use host networking, privileged mode, or Docker socket mounting. The mock agent is exposed only inside the lab network.
+All services run on the private `vulnoraiq-lab` bridge network. The network is marked internal, containers drop capabilities, and the Compose file does not use host networking, privileged mode, or Docker socket mounting.
 
 ## Current Docker target configuration
 
@@ -39,14 +38,14 @@ VULNORAIQ_EVIDENCE_DIR=/data/evidence
 VULNORAIQ_AUDIT_DIR=/data/audit
 ```
 
-Docker lab targets are defined in `config/targets.docker.yaml` and use Docker service names such as `http://local-mock-agent:9090`, not host `localhost`.
+Docker lab targets are defined in `config/targets.docker.yaml`. You must configure your own targets with real endpoints.
 
 ## CLI from Docker
 
 ```bash
 docker compose exec vulnoraiq-web vulnoraiq targets list
-docker compose exec vulnoraiq-web vulnoraiq targets validate --target local_mock_agent
-docker compose exec vulnoraiq-web vulnoraiq scan --target local_mock_agent --profile ai_agent_foundation --authorised
+docker compose exec vulnoraiq-web vulnoraiq targets validate --target <target_name>
+docker compose exec vulnoraiq-web vulnoraiq scan --target <target_name> --profile ai_agent_foundation --authorised
 docker compose exec vulnoraiq-web vulnoraiq reports list
 docker compose exec vulnoraiq-web vulnoraiq jobs list
 docker compose exec vulnoraiq-web vulnoraiq jobs show --job-id <job-id>
@@ -58,7 +57,7 @@ docker compose exec vulnoraiq-web vulnoraiq jobs show --job-id <job-id>
 2. Open <http://localhost:8787>.
 3. Use the target workspace to search/filter targets.
 4. Validate target connectivity.
-5. Confirm the authorisation checklist for non-demo targets.
+5. Confirm the authorisation checklist.
 6. Select a profile such as `ai_agent_foundation`, `baseline`, `rag`, `agent`, `full`, or a single focused profile.
 7. Start the scan.
 8. Review live progress, findings, policy status, recent jobs, and report outputs.
@@ -101,11 +100,11 @@ docker compose down -v
 | --- | --- |
 | WebUI does not open | `docker compose ps`, then `docker compose logs vulnoraiq-web` |
 | WebUI is not reachable from another device | Expected for the local lab; it is bound to `127.0.0.1` on the host |
-| Target validation fails | `docker compose logs local-mock-agent`; confirm the target uses `local-mock-agent:9090` inside Docker |
+| Target validation fails | Check the target endpoint is reachable from inside the container |
 | No reports appear | Check `/data/reports` in the container and `VULNORAIQ_WEB_OUTPUT_ROOT` |
 | Jobs are missing | Check `/data/jobs.db` and whether the Docker volume was reset |
 | Browser tests fail locally | Confirm Playwright Chromium is installed and the environment can download browser binaries |
 
 ## Assurance boundary
 
-Passing Docker smoke tests proves the lab wiring, target adapters, scanner path, and report/evidence generation work for deterministic mock targets. It does not prove real-world target assurance or certified VAPT-grade coverage.
+Passing Docker smoke tests proves the lab wiring, target adapters, scanner path, and report/evidence generation work. It does not prove real-world target assurance or certified VAPT-grade coverage.

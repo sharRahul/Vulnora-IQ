@@ -23,6 +23,7 @@ def get(url: str) -> dict:
 def main() -> int:
     if not Path("/.dockerenv").exists():
         print("WARNING: smoke test is intended to run inside Docker Compose test-runner, not host")
+    os.environ.setdefault("VULNORAIQ_ALLOW_TEST_FIXTURE_TARGETS", "true")
     assert get("http://vulnoraiq-web:8787/healthz")["status"] == "ok"
     assert get("http://local-mock-agent:9090/healthz")["status"] == "ok"
     validation = run(["vulnoraiq", "targets", "validate", "--target", "local_mock_agent"]).stdout

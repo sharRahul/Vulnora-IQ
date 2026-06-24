@@ -33,8 +33,7 @@ roles:
   analyst:
     inherits:
       - viewer
-    permissions:
-      - start_demo_scan
+    permissions: []
   admin:
     inherits:
       - analyst

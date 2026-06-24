@@ -279,13 +279,29 @@ def load_config() -> dict[str, Any]:
     }
 
 
+def _reject_demo_target(target_name: str) -> None:
+    allow = os.getenv("VULNORAIQ_ALLOW_TEST_FIXTURE_TARGETS", "false").strip().lower() in ("1", "true", "yes")
+    if allow:
+        return
+    lower = target_name.lower()
+    for word in ("demo", "mock", "fake", "fixture"):
+        if word in lower:
+            raise ValueError(
+                f"Target '{target_name}' contains '{word}' and is not allowed in normal runtime. "
+                "Set VULNORAIQ_ALLOW_TEST_FIXTURE_TARGETS=true to enable test fixture targets."
+            )
+
+
 def validate_scan_request(payload: dict[str, Any]) -> tuple[str, str, bool]:
     config = load_config()
-    target = str(payload.get("target") or "demo")
+    target = str(payload.get("target") or "")
     profile = str(payload.get("profile") or "baseline")
-    authorised = bool(payload.get("authorised", False))
+    authorised = bool(payload.get("authorised", True))
+    if not target:
+        raise ValueError("target is required")
     if target not in config["targets"]:
         raise ValueError(f"Unknown target: {target}")
+    _reject_demo_target(target)
     if profile not in config["profiles"]:
         raise ValueError(f"Unknown profile: {profile}")
     return target, profile, authorised
@@ -660,8 +676,7 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
             self._send_error_response(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, "Content-Type must be application/json")
             return
         target, profile, authorised = validate_scan_request(self._read_json())
-        required = "start_demo_scan" if target == "demo" else "start_configured_scan"
-        if not AUTH_MANAGER.can(principal, required):
+        if not AUTH_MANAGER.can(principal, "start_configured_scan"):
             self._forbidden()
             return
         with _active_scans_lock:

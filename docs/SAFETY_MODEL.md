@@ -4,7 +4,7 @@ VulnoraIQ is a controlled AI security assessment lab. Use it only against system
 
 The current safety model has three layers:
 
-1. **Scope controls** — the default `demo` target is safe and local; configured non-demo targets require explicit authorisation.
+1. **Scope controls** — no default target; all configured targets require explicit authorisation.
 2. **Runtime controls** — Docker lab targets use private service names, bounded request limits, safety profiles, rate limits, timeouts, and response-size limits.
 3. **Evidence controls** — reports and evidence are written to controlled paths with redaction and artifact path protection.
 
@@ -20,14 +20,14 @@ The current safe lab uses Docker Compose:
 - capability drop and `no-new-privileges`;
 - Docker-only service-name targets in `config/targets.docker.yaml`;
 - host allowlists through safety profiles;
-- safe deterministic mock-agent behaviour;
+- deterministic test-agent behaviour (behind test profile);
 - bounded request count, concurrency, size, timeout, and rate limits;
 - sanitized reports and evidence with secret redaction;
 - reports, evidence, audit logs, and jobs under `/data`.
 
 ## Authorisation gate
 
-Non-demo scans require one of these:
+All scans require one of these:
 
 - CLI: pass `--authorised`.
 - WebUI: confirm the authorisation checklist before scan launch.
@@ -38,7 +38,7 @@ Authorisation means the assessor owns the target or has written permission to as
 
 The current safety posture blocks or fails closed for:
 
-- missing authorisation on non-demo targets;
+- missing authorisation on configured targets;
 - unsupported URL schemes;
 - public or external hosts when the selected safety profile does not allow them;
 - oversized requests or responses;

@@ -1,7 +1,4 @@
 safety_profiles:
-  demo_safe:
-    max_payloads_per_module: 3
-    destructive_tests: false
   local_lab_safe:
     max_payloads_per_module: 5
     max_concurrency: 1
@@ -26,9 +23,8 @@ safety_profiles:
   docker_lab:
     allow_external_network: false
     allowed_hosts:
-      - local-mock-agent
-      - local-rag-app
-      - ollama-mock
+      - localhost
+      - 127.0.0.1
     allowed_schemes:
       - http
     max_requests_per_scan: 100

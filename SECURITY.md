@@ -23,9 +23,9 @@ VulnoraIQ is a self-hosted defensive AI security assessment application for auth
 
 Use VulnoraIQ only against systems you own or are explicitly authorised to assess.
 
-Allowed use includes safe local demo testing, internal AI security validation, authorised AI red-team exercises, defensive control testing, CI regression checks for owned AI systems, and evidence collection for internal review.
+Allowed use includes internal AI security validation, authorised AI red-team exercises, defensive control testing, CI regression checks for owned AI systems, and evidence collection for internal review.
 
-Configured non-demo targets require explicit authorisation. Reports and artifacts may contain sensitive evidence and must be handled according to your organisation's data-handling rules.
+All configured targets require explicit authorisation. Reports and artifacts may contain sensitive evidence and must be handled according to your organisation's data-handling rules.
 
 Users are solely responsible for complying with [`ACCEPTABLE_USE.md`](ACCEPTABLE_USE.md), obtaining required authorisation, and using VulnoraIQ only within the defensive assessment scope. To the fullest extent permitted by law, the maintainer and contributors disclaim responsibility for prohibited, unlawful, unauthorised, or otherwise improper use by any user or third party.
 
@@ -37,7 +37,7 @@ The self-hosted production path includes:
 - fail-closed protected endpoints;
 - `VULNORAIQ_ENV=production` runtime validation;
 - required strong `VULNORAIQ_ADMIN_TOKEN` for token-mode production deployments;
-- known demo/default token rejection;
+- known default token rejection;
 - internal development admin token disabled in production;
 - constant-time token comparison;
 - `VULNORAIQ_AUTH_MODE=token`;
@@ -76,7 +76,7 @@ Only enable trusted-proxy identity when the proxy performs authentication and re
 
 ## Container, CI, and supply-chain controls
 
-The default Docker Compose lab keeps the WebUI bound to host loopback and keeps the mock target reachable only on the internal Docker lab network. The containers run with dropped capabilities and no privileged mode or Docker socket mount.
+The default Docker Compose lab keeps the WebUI bound to host loopback. The containers run with dropped capabilities and no privileged mode or Docker socket mount.
 
 The current CI/release posture includes Ruff, mypy, pytest, `pip check`, `pip-audit`, package metadata validation, OWASP/ATLAS validation, GenAI readiness validation, production readiness validation, hosted WebUI browser flow, functional acceptance, Docker smoke testing, release package builds, SBOM generation, Trivy filesystem/image reports, SARIF upload, GHCR publishing path, and Cosign keyless image-signing path.
 

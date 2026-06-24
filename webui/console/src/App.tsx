@@ -13,7 +13,7 @@ import { IntelligencePanel } from "@/components/intelligence/IntelligencePanel";
 import { TargetsManager } from "@/components/targets/TargetsManager";
 import { useTheme } from "@/hooks/useTheme";
 import { emptyDashboardMetrics, emptySeverityDistribution, emptyTrendData } from "@/data/cleanState";
-import type { Asset, BackendFinding, Finding, FindingHistoryEntry, FindingMutationState, FindingStatus, ScanEvent, ScanJob, Severity, SeverityDistributionPoint } from "@/types";
+import type { Asset, BackendFinding, Finding, FindingHistoryEntry, FindingMutationState, FindingStatus, ScanEvent, ScanJob, Severity, SeverityDistributionPoint, TargetConfig } from "@/types";
 
 const SCAN_EVENT_TYPES = ["scan_queued", "scan_started", "target_validated", "phase_started", "check_started", "check_completed", "finding_created", "evidence_saved", "report_written", "scan_completed", "scan_failed", "heartbeat"];
 const SEVERITIES: Severity[] = ["critical", "high", "medium", "low", "info"];
@@ -147,6 +147,8 @@ function ConsoleInner() {
   const [scanProgressPercent, setScanProgressPercent] = useState(0);
   const [scanPhase, setScanPhase] = useState("Idle");
   const [liveFindingCount, setLiveFindingCount] = useState(0);
+  const [configuredTargetIds, setConfiguredTargetIds] = useState<string[]>([]);
+  const [scanTargetId, setScanTargetId] = useState<string>("");
 
   const displayFindings = runtimeFindings;
   const displayAssets = activeScan ? [scanAsset(activeScan, runtimeFindings)] : [];
@@ -158,10 +160,22 @@ function ConsoleInner() {
   const selectedFindingHistory = selectedFindingId ? findingHistories[selectedFindingId] || [] : [];
 
   useEffect(() => {
+    void loadTargets();
     void loadExistingScanState();
     return () => { scanSourceRef.current?.close(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function loadTargets() {
+    try {
+      const data = await api<{ targets: Record<string, TargetConfig> }>("/api/targets");
+      const ids = Object.keys(data.targets || {});
+      setConfiguredTargetIds(ids);
+      if (!scanTargetId && ids.length > 0) setScanTargetId(ids[0]);
+    } catch {
+      // Targets unavailable; scan button will be disabled.
+    }
+  }
 
   async function refreshFindingHistory(scanId: string, findingId: string): Promise<void> {
     const data = await api<{ history: FindingHistoryEntry[] }>(`/api/scans/${encodeURIComponent(scanId)}/findings/${encodeURIComponent(findingId)}/history`);
@@ -244,8 +258,9 @@ function ConsoleInner() {
     setFindingHistories({});
     setSelectedFindingId(null);
     try {
+      if (!scanTargetId) { notify("No targets configured. Add a target in the Targets view before running a scan.", "error"); setScanning(false); setDashboardLoading(false); return; }
       const token = await csrfToken();
-      const job = await api<ScanJob>("/api/scans", { method: "POST", headers: { "Content-Type": "application/json", "X-CSRF-Token": token }, body: JSON.stringify({ target: "demo", profile: "baseline", authorised: false }) });
+      const job = await api<ScanJob>("/api/scans", { method: "POST", headers: { "Content-Type": "application/json", "X-CSRF-Token": token }, body: JSON.stringify({ target: scanTargetId, profile: "baseline", authorised: true }) });
       setActiveScan(job);
       notify(`Scan ${job.id} queued — streaming live backend progress`, "info");
       connectScanEvents(job);
@@ -282,7 +297,7 @@ function ConsoleInner() {
   const intelPane = selectedFinding ? <IntelligencePanel finding={selectedFinding} /> : <EmptyState icon={ScanSearch} title="No finding selected" description="Vulnerability intelligence and the Ask VulnorAIQ assistant appear here after a real backend finding is selected." />;
 
   return (
-    <AppShell view={view} onChangeView={setView} theme={theme} onToggleTheme={toggleTheme} scanning={scanning} scanStatusLabel={scanPhase} scanProgressPercent={scanProgressPercent} scanFindingCount={liveFindingCount} onToggleScan={handleToggleScan}>
+    <AppShell view={view} onChangeView={setView} theme={theme} onToggleTheme={toggleTheme} scanning={scanning} scanStatusLabel={scanPhase} scanProgressPercent={scanProgressPercent} scanFindingCount={liveFindingCount} scanDisabled={configuredTargetIds.length === 0} onToggleScan={handleToggleScan}>
       {view === "targets" ? <TargetsManager /> : view === "overview" ? (
         <div className="h-full overflow-y-auto scrollbar-thin p-4 sm:p-6">
           <div className="mx-auto max-w-[1400px]">

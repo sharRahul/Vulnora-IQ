@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
+
+os.environ.setdefault("VULNORAIQ_ALLOW_TEST_FIXTURE_TARGETS", "true")
 
 from core.scanner import Scanner
 from dashboards.generate_dashboard import DashboardGenerator

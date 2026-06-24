@@ -11,7 +11,7 @@ This document separates current implemented capability from future assurance and
 | Area | Status | Evidence |
 | --- | --- | --- |
 | Version/package | Complete for `0.2.0` beta | `pyproject.toml`, package entry points, metadata validation. |
-| Docker-first safe lab | Complete for current local scope | `docker-compose.yml`, loopback-only `127.0.0.1:8787:8787` WebUI publishing, Dockerfile, mock-agent, Docker smoke tests. |
+| Docker-first safe lab | Complete for current local scope | `docker-compose.yml`, loopback-only `127.0.0.1:8787:8787` WebUI publishing, Dockerfile, Docker smoke tests. |
 | Real authorised target testing | Complete for current local/internal scope | Target adapters, target validation, scanner wiring, runtime target APIs, mock-agent targets. |
 | React WebUI | Complete as supported WebUI | `webui/console/` source and `webui/static/console/` built assets. Legacy static console has been removed. |
 | WebUI target workspace | Complete for current backend APIs | Search/filtering, readiness metrics, health/status pills, safety checklist, target save/delete, validation, scan launch, recent jobs, SSE progress, finding actions/history. |
@@ -26,17 +26,17 @@ This document separates current implemented capability from future assurance and
 | MITRE ATLAS | Complete for planning/mapping governance scope | Matrix docs, crosswalk, mapping validator, third-party notices. |
 | Release packaging | Complete for self-hosted package scope | Manual release workflow, double-click launchers, bootstrap `.venv`, checksums, GitHub artifact attestations, optional GPG signatures. |
 | Supply-chain workflow | Complete for current container release scope | Trivy filesystem/image scans, SARIF artifacts, SPDX/CycloneDX SBOMs, optional strict gates, GHCR publish, Cosign keyless signing, and verification evidence. |
-| CI | Complete gate set | Python matrix, Ruff, mypy, pytest, pip check/audit, validators, hosted WebUI flow, demo scan, functional acceptance, loopback/docs cleanup regression tests. |
+| CI | Complete gate set | Python matrix, Ruff, mypy, pytest, pip check/audit, validators, hosted WebUI flow, functional acceptance, loopback/docs cleanup regression tests. |
 
 ## Current complete capability
 
 | Capability | Current implementation |
 | --- | --- |
-| Safe local demo | `demo` target remains an in-memory safe target requiring no external keys. |
-| Docker mock-agent lab | Deterministic local target with chat-completions, Ollama-generate, RAG, webhook, and dry-run tool-loop contracts. |
+| Real target testing | Users configure their own authorised targets. No default or mock targets are provided. |
+| Docker test-lab (test profile) | Deterministic test-agent available behind the `test` Docker Compose profile for CI and integration testing. |
 | Loopback Docker WebUI | Docker Compose publishes the WebUI as `127.0.0.1:8787:8787`; tests fail if it regresses to all-interface publishing. |
 | Configured target adapters | HTTP JSON, chat-completions, Ollama-generate, webhook JSON, RAG query, and agent tool-loop shapes. |
-| Authorisation gate | CLI `--authorised` and WebUI checklist for non-demo scans. |
+| Authorisation gate | CLI `--authorised` and WebUI checklist for all scans. |
 | Scanner/reporting | Markdown, JSON, SARIF, Markdown dashboard, HTML dashboard, branded export and evidence output. |
 | Policy and scoring | Findings, scores, policy status, exceptions, and approval evidence validation. |
 | WebUI server | Hardened Python hosted server with security headers, CSRF, rate limiting, structured errors, metrics, audit logs, SSE events, persisted finding APIs, and assistant chat API wrapper. |
@@ -63,15 +63,15 @@ This document separates current implemented capability from future assurance and
 ```bash
 docker compose build
 docker compose up -d
-docker compose exec vulnoraiq-web vulnoraiq targets validate --target local_mock_agent
-docker compose exec vulnoraiq-web vulnoraiq scan --target local_mock_agent --profile ai_agent_foundation --authorised
+docker compose exec vulnoraiq-web vulnoraiq targets list
+docker compose exec vulnoraiq-web vulnoraiq scan --target <target_name> --profile ai_agent_foundation --authorised
 ```
 
-For host-native demo/development:
+For host-native use:
 
 ```bash
 python launch-vulnoraiq-webui.py
-vulnoraiq --target demo --profile baseline
+vulnoraiq scan --target <target_name> --profile baseline --authorised
 ```
 
 ## Documentation rule

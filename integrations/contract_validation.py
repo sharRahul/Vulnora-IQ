@@ -35,8 +35,6 @@ class TargetContractValidator:
         validated = 0
         configured = targets.get("targets", {})
         for name, target in configured.items():
-            if name == "demo":
-                continue
             contract_name = self._contract_for_type(str(target.get("type")), contracts.get("contracts", {}))
             if not contract_name:
                 errors.append(f"Target {name} uses unsupported type {target.get('type')}")
