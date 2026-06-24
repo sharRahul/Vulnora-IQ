@@ -4,9 +4,9 @@ cd /d "%~dp0"
 echo Starting VulnoraIQ Web UI...
 where py >nul 2>nul
 if %ERRORLEVEL%==0 (
-  py scripts\launch_webui.py %*
+  py scripts\bootstrap_launch.py %*
 ) else (
-  python scripts\launch_webui.py %*
+  python scripts\bootstrap_launch.py %*
 )
 echo VulnoraIQ Web UI launcher has stopped.
 pause

@@ -12,6 +12,9 @@ All notable changes to this project will be documented in this file.
 - Documentation for testing actual local AI agents through `docs/AI_TESTING_GUIDE_INTEGRATION.md`.
 - Release-only Windows, Linux, and macOS artifact build workflow triggered by published GitHub Releases or manual dispatch only.
 - Platform release package builder for native release formats: `vulnoraiq-<version>-windows.zip`, `vulnoraiq-<version>-linux.tar.gz`, and `vulnoraiq-<version>-macos.dmg`.
+- On-demand release signing bundle with SHA256 checksums, GitHub artifact attestations, and optional GPG detached signatures.
+- Self-bootstrapping double-click release launchers that create `.venv`, install VulnoraIQ locally, and start the WebUI.
+- Linux `VulnoraIQ.desktop` launcher descriptor for extracted release packages.
 - Release artifact documentation in `docs/RELEASE_ARTIFACTS.md`.
 - Python package build workflow for wheel/source distributions, with manual TestPyPI/PyPI publishing using trusted publishing.
 - PyPI package publishing documentation in `docs/PYPI_PACKAGE.md`.
@@ -40,6 +43,7 @@ All notable changes to this project will be documented in this file.
 - Local standalone launcher mode is documented as a loopback-only convenience path, separate from the hardened hosted/production `vulnoraiq-web` path.
 - WebUI docs now identify the React console as the supported UI and mark the legacy static console direction as superseded.
 - `vulnoraiq-web` now starts the assistant-enabled hosted WebUI wrapper.
+- Release packaging now rebuilds React assets before packaging and publishes final release bundles from a signing/attestation job.
 
 ### Fixed
 
@@ -51,8 +55,9 @@ All notable changes to this project will be documented in this file.
 - VulnoraIQ findings remain framework evidence requiring human review.
 - This release does not claim certified VAPT-grade assurance or independently validated real-environment GenAI detection coverage.
 - Launcher mode is intended for local laptop/workstation use only; exposed or shared deployments must use production mode with auth enabled and production configuration validation.
-- Platform release artifacts use native formats where practical: Windows `.zip`, Linux `.tar.gz`, and macOS unsigned `.dmg`.
-- Signed native installers remain future maturity items.
+- Platform release artifacts use native formats where practical: Windows `.zip`, Linux `.tar.gz`, and macOS `.dmg`.
+- Release packages include checksums and GitHub artifact attestations by default; detached GPG signatures are produced when signing secrets are configured.
+- Native OS certificate-signed installers remain future maturity items.
 - PyPI publication is opt-in and should be tested on TestPyPI before publishing to PyPI.
 
 ## [0.2.0] - 2026-06-22
@@ -88,16 +93,3 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - CSRF expiry test stability.
-- Ruff import ordering across test files.
-- README, implementation status, and hardening backlog maturity claims.
-- HTTP error response consistency.
-- Scanner exception handling.
-- Production listen-address validation reachability.
-- `.env.production.example` ignore-rule exception.
-
-### Breaking
-
-- Legacy `webui/server.py` removed.
-- JSON job store backend is legacy/dev only; SQLite is default.
-- File-based auth is disabled in production mode.
-- `VULNORAIQ_ADMIN_TOKEN` is required in production.
