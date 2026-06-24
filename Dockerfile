@@ -16,6 +16,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 RUN groupadd --system vulnoraiq && useradd --system --gid vulnoraiq --home-dir /app --shell /usr/sbin/nologin vulnoraiq
+RUN apt-get update && apt-get install -y --no-install-recommends docker.io docker-cli && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt pyproject.toml README.md ./
 # Pre-create package directories so editable install discovers them
 RUN for pkg in core integrations modules rag_testing agent_testing reports dashboards scripts benchmarks examples webui; do mkdir -p "$pkg" && touch "$pkg/__init__.py"; done

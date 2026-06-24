@@ -1,0 +1,72 @@
+# Hosted Agent Templates
+# Each template defines a deployable AI agent that VulnoraIQ can manage via Docker.
+templates:
+  vulnerable-chatbot:
+    display_name: Vulnerable AI Chatbot
+    description: Intentional vulnerable chatbot with prompt injection and command injection weaknesses (port 5000 + 7000)
+    image: vulnerable-chatbot
+    build:
+      context: F:\GitHub\Vulnerable-AI-Chatbot-main\Vulnerable-AI-Chatbot-main
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+      - "7000:7000"
+    env:
+      OPENAI_API_KEY: ""
+    network_mode: bridge
+    targets:
+      - id: vulnerable-assistant
+        config:
+          name: Vulnerable AI Assistant
+          type: http_json
+          base_url: http://vulnerable-chatbot:5000
+          endpoint_path: /get
+          method: GET
+          request_body_template:
+            msg: "{{prompt}}"
+          response_extraction_path: ""
+          authorisation_required: true
+          environment: lab
+          safety_profile: local_lab_safe
+      - id: website-summarizer
+        config:
+          name: Website Summarizer
+          type: http_json
+          base_url: http://vulnerable-chatbot:7000
+          endpoint_path: /get
+          method: GET
+          request_body_template:
+            msg: "{{prompt}}"
+          response_extraction_path: ""
+          authorisation_required: true
+          environment: lab
+          safety_profile: local_lab_safe
+
+  local-mock-agent:
+    display_name: Local Mock Agent
+    description: Safe deterministic mock agent for basic connectivity testing (port 9090)
+    image: vulnoraiq/local-mock-agent:docker-lab
+    build:
+      context: ./docker/mock-agent
+      dockerfile: Dockerfile
+    ports:
+      - "9090:9090"
+    env: {}
+    network_mode: bridge
+    targets:
+      - id: mock-agent
+        config:
+          name: Mock Agent
+          type: chat_completions
+          base_url: http://local-mock-agent:9090
+          endpoint_path: /v1/chat/completions
+          method: POST
+          request_body_template:
+            model: mock-agent
+            messages:
+              - role: user
+                content: "{{prompt}}"
+          response_extraction_path: choices.0.message.content
+          authorisation_required: true
+          environment: lab
+          safety_profile: local_lab_safe

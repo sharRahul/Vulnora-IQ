@@ -1,4 +1,5 @@
 import {
+  Cpu,
   LayoutDashboard,
   Loader2,
   Moon,
@@ -11,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export type ConsoleView = "overview" | "workspace" | "targets";
+export type ConsoleView = "overview" | "workspace" | "targets" | "agents";
 
 interface HeaderBarProps {
   view: ConsoleView;
@@ -76,6 +77,12 @@ export function HeaderBar({
           onClick={() => onChangeView("targets")}
           icon={<Server className="size-4" />}
           label="Targets"
+        />
+        <ViewTab
+          active={view === "agents"}
+          onClick={() => onChangeView("agents")}
+          icon={<Cpu className="size-4" />}
+          label="Agents"
         />
       </nav>
 

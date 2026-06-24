@@ -28,6 +28,7 @@ from integrations.target_adapters import connectivity_check
 from reports.json_report_generator import JsonReportGenerator
 from reports.report_generator import MarkdownReportGenerator
 from reports.sarif_report_generator import SarifReportGenerator
+from webui.agent_host import agent_logs, deploy_agent, get_agent, list_agents, list_templates, remove_agent, start_agent, stop_agent, template_targets
 from webui.auth import AuthPrincipal, WebAuthManager
 from webui.persistent_jobs import JobStore, PersistedScanJob, create_job_store
 from webui.production_checks import validate_all
@@ -566,6 +567,21 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
             cfg = load_config()
             self._send_json({"targets": cfg.get("targets", {})})
             return
+        if clean_path == "/api/agents":
+            agents = list_agents()
+            templates = list_templates()
+            self._send_json({"agents": agents, "templates": {k: {"display_name": v.get("display_name", k), "description": v.get("description", "")} for k, v in templates.items()}})
+            return
+        if clean_path.startswith("/api/agents/") and clean_path.endswith("/logs"):
+            parts = [unquote(item) for item in clean_path.split("/") if item]
+            agent_id = parts[2]
+            self._send_json({"logs": agent_logs(agent_id)})
+            return
+        if clean_path.startswith("/api/agents/") and clean_path.endswith("/templates"):
+            parts = [unquote(item) for item in clean_path.split("/") if item]
+            template_key = parts[2]
+            self._send_json({"template": list_templates().get(template_key, {})})
+            return
         if clean_path == "/api/config":
             cfg = load_config()
             if not AUTH_MANAGER.can(principal, "manage_runtime"):
@@ -636,6 +652,53 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
                 self._send_error_response(HTTPStatus.NOT_FOUND, "target not found")
                 return
             self._send_json(connectivity_check(target_id, cfg[target_id]))
+            return
+        if clean_path == "/api/agents/deploy":
+            if not _validate_csrf(self._session_key(principal), self.headers.get("X-CSRF-Token")):
+                self._send_error_response(HTTPStatus.FORBIDDEN, "invalid or missing CSRF token")
+                return
+            if not AUTH_MANAGER.can(principal, "manage_runtime"):
+                self._forbidden()
+                return
+            payload = self._read_json()
+            agent_id = str(payload.get("id") or "").strip()
+            template_key = payload.get("template")
+            image = payload.get("image")
+            env = payload.get("env") or {}
+            if not agent_id:
+                self._send_error_response(HTTPStatus.BAD_REQUEST, "agent id is required")
+                return
+            if not template_key and not image:
+                self._send_error_response(HTTPStatus.BAD_REQUEST, "template or image is required")
+                return
+            result = deploy_agent(agent_id, template_key=template_key, image=image, env=env)
+            for entry in template_targets(template_key) if template_key else []:
+                try:
+                    _save_runtime_target(entry["id"], entry["config"])
+                except ValueError:
+                    pass
+            self._send_json(result)
+            return
+        if clean_path.startswith("/api/agents/") and any(clean_path.endswith(suffix) for suffix in ("/stop", "/start", "/remove")):
+            if not _validate_csrf(self._session_key(principal), self.headers.get("X-CSRF-Token")):
+                self._send_error_response(HTTPStatus.FORBIDDEN, "invalid or missing CSRF token")
+                return
+            if not AUTH_MANAGER.can(principal, "manage_runtime"):
+                self._forbidden()
+                return
+            parts = [unquote(item) for item in clean_path.split("/") if item]
+            agent_id = parts[2]
+            action = parts[3]
+            if action == "stop":
+                ok = stop_agent(agent_id)
+            elif action == "start":
+                ok = start_agent(agent_id)
+            elif action == "remove":
+                ok = remove_agent(agent_id)
+            else:
+                self._send_error_response(HTTPStatus.BAD_REQUEST, f"unknown action: {action}")
+                return
+            self._send_json({"ok": ok, "agent_id": agent_id, "action": action})
             return
         parts = [unquote(item) for item in clean_path.split("/") if item]
         if len(parts) == 6 and parts[:2] == ["api", "scans"] and parts[3] == "findings" and parts[5] == "actions":
