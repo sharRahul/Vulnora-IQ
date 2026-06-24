@@ -42,5 +42,5 @@ test('runs a hosted demo scan through the WebUI', async ({ page }) => {
 
   await expect(page.locator('#dashboard')).toBeVisible({ timeout: 20_000 });
   await expect(page.locator('#summary-target')).not.toHaveText('-', { timeout: 10_000 });
-  await expect(page.locator('#artifact-links a')).toHaveCountGreaterThan(0);
+  await expect(page.locator('#artifact-links a').first()).toBeVisible();
 });
