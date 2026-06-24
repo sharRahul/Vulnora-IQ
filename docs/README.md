@@ -18,7 +18,7 @@ This folder documents the current VulnoraIQ `0.2.0` codebase.
 | CLI | `vulnoraiq` supports `targets list`, `targets validate`, `scan`, `reports list`, `jobs list`, and `jobs show`. |
 | Persistence | SQLite job store with WAL, foreign keys, busy timeout, and schema versioning. |
 | Security hardening | Auth, trusted proxy mode, CSRF, request limits, rate limiting, security headers, audit logs, metrics, artifact path protection, and production startup validation. |
-| CI | Python 3.10/3.11/3.12 checks plus lint, typing, tests, dependency checks/audit, metadata validation, OWASP/ATLAS validation, GenAI validation, production-readiness validation, hosted WebUI Playwright flow, demo scan, and functional acceptance path. |
+| CI | Python 3.10/3.11/3.12 checks plus lint, typing, tests, dependency checks/audit, metadata validation, OWASP/ATLAS validation, GenAI validation, production-readiness validation, hosted WebUI Playwright flow, demo scan, functional acceptance path, supply-chain scans, SBOMs, and image signing workflow. |
 | Release/packaging | Release-only platform artifact and Python package workflows are documented; signed/native installers remain future maturity work. |
 
 ## Start here
@@ -38,6 +38,7 @@ This folder documents the current VulnoraIQ `0.2.0` codebase.
 | Incident response | [`INCIDENT_RESPONSE.md`](INCIDENT_RESPONSE.md) |
 | Release checklist | [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) |
 | Release artifacts | [`RELEASE_ARTIFACTS.md`](RELEASE_ARTIFACTS.md) |
+| Supply-chain pipeline | [`SUPPLY_CHAIN_PIPELINE.md`](SUPPLY_CHAIN_PIPELINE.md) |
 | Python package publishing | [`PYPI_PACKAGE.md`](PYPI_PACKAGE.md) |
 | Migration from legacy versions | [`MIGRATION.md`](MIGRATION.md) |
 | Current implementation status | [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) |
