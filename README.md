@@ -165,6 +165,7 @@ npm run test:webui:hosted
 
 | Need | Document |
 | --- | --- |
+| User guide | [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) |
 | Documentation index and status | [`docs/README.md`](docs/README.md), [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md) |
 | Docker lab | [`docs/DOCKER_TESTING.md`](docs/DOCKER_TESTING.md) |
 | Deployment and operations | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md), [`docs/RUNBOOK.md`](docs/RUNBOOK.md), [`docs/INCIDENT_RESPONSE.md`](docs/INCIDENT_RESPONSE.md) |
