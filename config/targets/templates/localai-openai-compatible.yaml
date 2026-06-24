@@ -1,0 +1,29 @@
+target:
+  name: PLACEHOLDER_LOCALAI
+  type: chat_completions
+  base_url: http://127.0.0.1:8080
+  endpoint_path: /v1/chat/completions
+  method: POST
+  auth_token_env: LOCALAI_API_KEY
+  auth_header: X-API-Key
+  auth_prefix: ""
+  explicit_authorisation: true
+  dry_run: true
+  allow_live_requests: false
+  allowed_host_pattern: "127.0.0.1|localhost|*.internal"
+  model: localai-model
+  request_body_template:
+    model: "{{model}}"
+    messages:
+      - role: user
+        content: "{{prompt}}"
+  response_extraction_path: choices.0.message.content
+  rate_limit:
+    requests_per_second: 1
+  timeout: 60
+  safety_profile: local_lab_safe
+  data_handling_notes: "LocalAI validation only in approved local/internal environments."
+  evidence_redaction:
+    redact_headers: [X-API-Key, cookie]
+    redact_body_patterns: ["token=[A-Za-z0-9._-]+"]
+  example_test_profile: baseline
