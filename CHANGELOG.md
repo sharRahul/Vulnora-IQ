@@ -27,6 +27,8 @@ All notable changes to this project will be documented in this file.
 - Expanded real-environment target templates for Anthropic Claude, Google Gemini, Cohere, Ollama, vLLM, LocalAI, Pinecone/LangChain RAG, LangGraph, CrewAI, LiteLLM, Portkey, and AWS Bedrock gateway patterns.
 - Future OIDC/JWT authentication implementation plan under `docs/future-plans/`.
 - Regression tests that ensure Docker WebUI publishing stays loopback-only and removed archival docs are not re-linked.
+- README prerequisites for Docker, launcher, source/package, wheel-build, and WebUI development run paths.
+- WebUI visual alignment utilities and regression coverage for icon/text wrapping in the header, cards, and target workspace.
 
 ### Changed
 
@@ -43,12 +45,14 @@ All notable changes to this project will be documented in this file.
 - `vulnoraiq-web` now starts the assistant-enabled hosted WebUI wrapper.
 - Release packaging now rebuilds React assets before packaging and publishes final release bundles from a signing/attestation job.
 - README and SECURITY were rewritten to reflect the current loopback-local, self-hosted internal scope.
+- WebUI header, target manager, KPI cards, action buttons, and asset cards now use responsive alignment/wrapping rules so icons and labels stay together across narrow layouts.
 
 ### Fixed
 
 - Web UI catalog toolbar overflow where the `Showing ... options` badge could clip into the neighbouring panel in narrow columns.
 - `scripts/run_scan.py` jobs-show typing issue that could fail `mypy` by reusing a loop variable for an optional job lookup.
 - Stale documentation index entries that pointed readers toward superseded planning notes.
+- WebUI icon/text placement issues caused by fixed-width target panes, non-wrapping button labels, and long target/job labels.
 
 ### Removed
 
@@ -78,23 +82,3 @@ All notable changes to this project will be documented in this file.
 - Scan concurrency limits.
 - Container smoke test script.
 - Production readiness scorecard, runbook, incident response, release checklist, migration guide, and assessment assurance docs.
-- Dependency checks in CI.
-- OWASP-to-MITRE ATLAS planning crosswalk and mapping metadata validator.
-- GenAI security implementation planning docs.
-- Agentic Applications security implementation planning docs.
-- OWASP source document review index.
-- Source-confirmed GenAI Data Security category extraction for `DSGAI01–DSGAI21`.
-- Source-confirmed OWASP Top 10 for Agentic Applications category extraction for `ASI01–ASI10`.
-
-### Changed
-
-- Version bumped to 0.2.0.
-- Auth, CSRF, rate limiting, security headers, proxy IP resolution, SQLite persistence, HTTP errors, configuration output, metrics, and deployment docs were hardened for the self-hosted application model.
-- Production readiness docs were updated for self-hosted internal scope.
-- README, SECURITY.md, and docs index were rewritten for the `0.2.0` self-hosted production posture.
-- `docs/genai/` and `docs/agentic/` were updated from placeholder planning IDs to source-confirmed ranges.
-- Active LLM oracle/check configs now include OWASP-to-ATLAS mapping metadata.
-
-### Fixed
-
-- CSRF expiry test stability.
