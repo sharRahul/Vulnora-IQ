@@ -52,6 +52,7 @@ export VULNORAIQ_JOB_STORE_PATH=/data/jobs.db
 export VULNORAIQ_WEB_OUTPUT_ROOT=/data/reports
 export VULNORAIQ_EVIDENCE_DIR=/data/evidence
 export VULNORAIQ_AUDIT_DIR=/data/audit
+# Legacy/user-file auth path is disabled for production; keep VULNORAIQ_WEB_USERS_PATH unset.
 
 python scripts/validate_runtime_production_config.py
 vulnoraiq-web --host 127.0.0.1 --port 8787
@@ -59,7 +60,20 @@ vulnoraiq-web --host 127.0.0.1 --port 8787
 
 Production mode fails closed when required controls are missing or unsafe.
 
-## 4. Reverse proxy and TLS
+## 4. Production Checklist
+
+Before exposing the service beyond local loopback, confirm:
+
+- `VULNORAIQ_ADMIN_TOKEN` is set to a strong secret;
+- `VULNORAIQ_WEB_USERS_PATH` is not used as a production credential source;
+- the service is behind a trusted reverse proxy;
+- TLS is enabled at the reverse proxy;
+- audit logs are stored under a controlled path;
+- backup and restore procedures for SQLite, reports, and evidence are tested;
+- `/metrics` access is protected by auth or network controls;
+- only authorised targets and safety profiles are configured.
+
+## 5. Reverse proxy and TLS
 
 For remote internal access:
 
@@ -70,7 +84,7 @@ For remote internal access:
 - protect `/metrics` with auth;
 - store logs, reports, and backups in controlled locations.
 
-## 5. Local standalone launcher
+## 6. Local standalone launcher
 
 The local launcher remains supported for laptop/workstation demo and development use.
 
@@ -81,18 +95,9 @@ pip install -e .[dev]
 python launch-vulnoraiq-webui.py
 ```
 
-Or double-click from the repository root:
-
-| Platform | Launcher |
-| --- | --- |
-| Windows | `launch-vulnoraiq-webui.bat` |
-| macOS | `launch-vulnoraiq-webui.command` |
-| Linux | `launch-vulnoraiq-webui.sh` |
-| Any platform | `launch-vulnoraiq-webui.py` |
-
 Launcher mode is loopback/local. Do not use launcher-mode auth-disabled defaults for shared deployments.
 
-## 6. WebUI deployment details
+## 7. WebUI deployment details
 
 The supported WebUI is the React console:
 
@@ -103,7 +108,7 @@ The supported WebUI is the React console:
 
 Node is required only to develop or rebuild the console. The Python server serves the built bundle at runtime.
 
-## 7. Validation gates
+## 8. Validation gates
 
 Run before release or shared deployment:
 
@@ -134,17 +139,17 @@ For Docker validation:
 python scripts/docker_smoke_test.py
 ```
 
-## 8. Data paths
+## 9. Data paths
 
 | Path | Purpose |
 | --- | --- |
 | `/data/jobs.db` | SQLite job persistence. |
-| `/data/reports` | Markdown, JSON, SARIF, dashboard, and HTML report outputs. |
-| `/data/evidence` | Evidence output. |
+| `/data/reports` | Markdown, JSON, SARIF, dashboard, and HTML outputs. |
+| `/data/evidence` | Evidence files. |
 | `/data/audit` | Structured audit logs. |
 
 Back up SQLite and report/evidence paths according to the runbook before upgrades or release validation.
 
-## 9. Deployment limitations
+## 10. Deployment limitations
 
 The current codebase is suitable for self-hosted internal use with documented controls. Remaining maturity items include signed/notarised installers, OIDC/JWT integration, image signing/scanning, SAST/DAST pipeline, SIEM-specific rule packs, multi-instance shared state, and independent assurance validation.
