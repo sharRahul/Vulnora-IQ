@@ -1,0 +1,30 @@
+target:
+  name: PLACEHOLDER_LANGGRAPH_AGENT
+  type: agent_tool_loop
+  base_url: https://langgraph-agent.internal
+  endpoint_path: /invoke
+  method: POST
+  auth_token_env: LANGGRAPH_AGENT_TOKEN
+  auth_header: X-API-Key
+  auth_prefix: ""
+  explicit_authorisation: true
+  dry_run: true
+  allow_live_requests: false
+  allow_external: false
+  allowed_host_pattern: "*.internal|langgraph-agent.internal"
+  request_body_template:
+    input: "{{prompt}}"
+    config:
+      configurable:
+        thread_id: vulnoraiq-test
+  response_extraction_path: output
+  tool_calls_path: tool_calls
+  rate_limit:
+    requests_per_second: 0.5
+  timeout: 60
+  safety_profile: local_lab_safe
+  data_handling_notes: "Approved agent validation only; tools must run in a non-production test scope."
+  evidence_redaction:
+    redact_headers: [X-API-Key, cookie]
+    redact_body_patterns: ["token=[A-Za-z0-9._-]+", "secret=[A-Za-z0-9._-]+"]
+  example_test_profile: agent
