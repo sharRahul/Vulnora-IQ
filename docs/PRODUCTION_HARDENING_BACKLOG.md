@@ -6,7 +6,7 @@ Target: Docker-first laptop/workstation/internal-server assessment lab.
 
 ## Current verdict
 
-VulnoraIQ is complete for the current self-hosted internal deployment scope with Docker-first lab startup, authorised target adapters, React WebUI target management, SQLite persistence, auth/security hardening, audit/metrics, OWASP/GenAI/Agentic/MITRE governance, WebUI assistant backend controls, expanded target templates, and CI gates.
+VulnoraIQ is complete for the current self-hosted internal deployment scope with Docker-first lab startup, authorised target adapters, React WebUI target management, SQLite persistence, auth/security hardening, audit/metrics, OWASP/GenAI/Agentic/MITRE governance, WebUI assistant backend controls, expanded target templates, on-demand signed release packages, and CI gates.
 
 Self-hosted internal deployment readiness is attested by this blocker register, the production-readiness scorecard, the implementation status, the assessment assurance boundary, the release gates, and the CI validators.
 
@@ -44,7 +44,7 @@ This does not mean certified VAPT-grade assurance or independently validated rea
 | Full OWASP AI Testing Guide | Extend beyond safe synthetic coverage with reviewer-approved real-target evidence modules and reporting. | High |
 | Real-environment GenAI validation | Continue validating GenAI harness against approved internal environments, provider configs, vector stores, telemetry, and governance workflows. | High |
 | Enterprise identity | Add direct OIDC/JWT support beyond trusted reverse-proxy identity. | Medium |
-| Packaging | Add signed Windows, Linux, and notarised macOS installers. | Medium |
+| Native installer certificates | Add Authenticode-signed Windows `.exe/.msi`, notarised macOS `.pkg/.app`, and Linux distro packages after certificate/secrets decisions. | Medium |
 | Container supply chain | Add image signing, SBOM, and image vulnerability scanning. | Medium |
 | Security testing pipeline | Add SAST/DAST or equivalent application security scans. | Medium |
 | SIEM integration | Add audit schema, alert rules, and integration guidance. | Medium |
@@ -57,8 +57,12 @@ Allowed wording must stay scoped to self-hosted/internal readiness. Stronger cla
 
 ## High-priority items completed on 2026-06-24
 
-The previous high-priority backlog entries for WebUI live progress, WebUI finding actions, full AITG coverage, controlled real-environment GenAI validation support, and independent assurance workflow support have implementation, tests, and CI validators. Remaining maturity work includes external reviewer execution, SIEM/SOAR integrations, signed release hardening, and stronger third-party validation.
+The previous high-priority backlog entries for WebUI live progress, WebUI finding actions, full AITG coverage, controlled real-environment GenAI validation support, and independent assurance workflow support have implementation, tests, and CI validators. Remaining maturity work includes external reviewer execution, SIEM/SOAR integrations, native installer certificate signing, and stronger third-party validation.
 
 ## Medium-priority items completed on 2026-06-24
 
 The previous medium-priority backlog entries for the WebUI assistant backend/model controls and target template expansion are implemented with backend API wiring, React model controls, CSRF-protected requests, expanded provider/RAG/local/agent/gateway templates, and validator coverage.
+
+## Release-packaging item completed on 2026-06-24
+
+The previous packaging backlog entry for on-demand signed release packages is implemented with manual GitHub Actions dispatch, platform packages, self-bootstrapping double-click launchers, SHA256 checksums, GitHub artifact attestations, and optional GPG detached signatures. Native OS certificate-signed installers remain a separate future maturity item.
