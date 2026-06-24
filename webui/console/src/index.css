@@ -109,6 +109,23 @@ body {
     overflow-wrap: anywhere;
     tab-size: 2;
   }
+
+  .input {
+    width: 100%;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border);
+    background: var(--canvas);
+    color: var(--foreground);
+    padding: 0.55rem 0.65rem;
+    outline: none;
+  }
+  .input:focus {
+    box-shadow: 0 0 0 2px var(--ring);
+  }
+  .input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
   .skeleton-shimmer {
     position: relative;
     overflow: hidden;

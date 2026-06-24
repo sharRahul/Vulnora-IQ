@@ -10,6 +10,7 @@ import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import { AssetNavigationPane } from "@/components/navigation/AssetNavigationPane";
 import { AnalysisWorkspace } from "@/components/workspace/AnalysisWorkspace";
 import { IntelligencePanel } from "@/components/intelligence/IntelligencePanel";
+import { TargetsManager } from "@/components/targets/TargetsManager";
 import { useTheme } from "@/hooks/useTheme";
 import {
   assets,
@@ -119,7 +120,9 @@ function ConsoleInner() {
       scanning={scanning}
       onToggleScan={handleToggleScan}
     >
-      {view === "overview" ? (
+      {view === "targets" ? (
+        <TargetsManager />
+      ) : view === "overview" ? (
         <div className="h-full overflow-y-auto scrollbar-thin p-4 sm:p-6">
           <div className="mx-auto max-w-[1400px]">
             <DashboardOverview

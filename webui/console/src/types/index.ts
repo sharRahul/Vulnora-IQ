@@ -133,3 +133,48 @@ export interface SeverityDistributionPoint {
   severity: Severity;
   count: number;
 }
+
+export type TargetEnvironment = "local" | "lab" | "internal" | "production-like";
+
+export interface TargetConfig {
+  name?: string;
+  type: string;
+  base_url?: string;
+  endpoint?: string | null;
+  endpoint_path?: string;
+  method?: string;
+  headers?: Record<string, string>;
+  auth_token_env?: string;
+  token_env_var?: string;
+  auth_header?: string;
+  auth_prefix?: string;
+  request_body_template?: unknown;
+  response_extraction_path?: string;
+  tool_calls_path?: string;
+  retrieval_context_path?: string;
+  timeout?: number;
+  retry?: { attempts?: number; backoff_seconds?: number };
+  rate_limit?: { requests_per_second?: number };
+  authorisation_required?: boolean;
+  safety_profile?: string;
+  tags?: string[];
+  owner?: { name?: string; contact?: string };
+  environment?: TargetEnvironment | string;
+  allow_external?: boolean;
+  model?: string;
+}
+
+export interface TargetRecord {
+  id: string;
+  config: TargetConfig;
+}
+
+export interface ConnectivityResult {
+  target_id: string;
+  ready: boolean;
+  normalized_response?: string;
+  status_code?: number;
+  error?: { type?: string; message?: string } | null;
+  request?: unknown;
+  response_preview?: unknown;
+}

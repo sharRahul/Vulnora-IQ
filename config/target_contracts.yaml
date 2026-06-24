@@ -40,6 +40,8 @@ contracts:
       - endpoint
     allowed_types:
       - webhook_json
+      - rag_query
+      - agent_tool_loop
     response_keys:
       - output
       - response

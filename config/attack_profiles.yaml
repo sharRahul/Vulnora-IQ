@@ -228,3 +228,24 @@ profiles:
     description: Run only the multi-agent trust-boundary review.
     modules:
       - multi_agent_abuse
+
+  ai_agent_foundation:
+    category: Real AI agent suites
+    display_name: AI agent foundation
+    description: Safe bounded checks for prompt injection, leakage, tools, exfiltration, refusal boundaries, and logging signals.
+    modules:
+      - owasp_llm01_prompt_injection
+      - owasp_llm02_sensitive_information_disclosure
+      - owasp_llm06_excessive_agency
+      - owasp_llm07_system_prompt_leakage
+      - tool_execution_monitor
+
+  rag_security:
+    category: Real AI agent suites
+    display_name: RAG security
+    description: Safe bounded checks for context leakage, poisoning indicators, retrieval boundaries, and source handling.
+    modules:
+      - owasp_llm08_vector_embedding_weaknesses
+      - rag_poisoning
+      - retrieval_manipulation
+      - corpus_validation

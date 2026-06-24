@@ -1,0 +1,24 @@
+safety_profiles:
+  demo_safe:
+    max_payloads_per_module: 3
+    destructive_tests: false
+  local_lab_safe:
+    max_payloads_per_module: 5
+    max_concurrency: 1
+    request_size_limit_bytes: 65536
+    response_size_limit_bytes: 200000
+    destructive_tests: false
+  internal_authorised:
+    max_payloads_per_module: 5
+    max_concurrency: 1
+    require_authorisation: true
+    destructive_tests: false
+  agent_tool_safe:
+    max_tool_steps: 2
+    dry_run_required: true
+    destructive_tests: false
+  production_like_bounded:
+    max_payloads_per_module: 3
+    max_concurrency: 1
+    require_authorisation: true
+    destructive_tests: false
