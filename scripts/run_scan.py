@@ -92,8 +92,8 @@ def main() -> None:
                 print(f"{job.id}	{job.status}	{job.target}	{job.profile}	{job.created_at}")
             return
         if args.jobs_command == "show":
-            job = store.get(args.job_id)
-            print(json.dumps(job.to_dict() if job else {"error": "not found"}, indent=2, default=str))
+            found = store.get(args.job_id)
+            print(json.dumps(found.to_dict() if found else {"error": "not found"}, indent=2, default=str))
             return
     run_scan(args)
 
