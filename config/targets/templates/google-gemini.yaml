@@ -1,0 +1,28 @@
+target:
+  name: PLACEHOLDER_GOOGLE_GEMINI
+  type: http_json
+  base_url: https://generativelanguage.googleapis.com
+  endpoint_path: /v1beta/models/gemini-1.5-pro:generateContent
+  method: POST
+  auth_token_env: GOOGLE_GEMINI_API_KEY
+  auth_header: X-Goog-Api-Key
+  auth_prefix: ""
+  explicit_authorisation: true
+  dry_run: true
+  allow_live_requests: false
+  allow_external: true
+  allowed_host_pattern: "generativelanguage.googleapis.com"
+  request_body_template:
+    contents:
+      - parts:
+          - text: "{{prompt}}"
+  response_extraction_path: candidates.0.content.parts.0.text
+  rate_limit:
+    requests_per_second: 0.5
+  timeout: 30
+  safety_profile: local_lab_safe
+  data_handling_notes: "Approved internal validation only; avoid regulated or production data in prompts."
+  evidence_redaction:
+    redact_headers: [X-Goog-Api-Key, cookie]
+    redact_body_patterns: ["AIza[A-Za-z0-9._-]+", "Bearer [A-Za-z0-9._-]+"]
+  example_test_profile: baseline
