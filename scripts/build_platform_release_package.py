@@ -25,6 +25,7 @@ ROOT_FILES = [
     "launch-vulnoraiq-webui.bat",
     "launch-vulnoraiq-webui.command",
     "launch-vulnoraiq-webui.sh",
+    "VulnoraIQ.desktop",
 ]
 
 ROOT_DIRS = [
@@ -59,7 +60,7 @@ EXCLUDED_PARTS = {
 EXCLUDED_SUFFIXES = {".pyc", ".pyo", ".db", ".key", ".pem"}
 EXCLUDED_NAME_FRAGMENTS = (".secret", "_secret")
 PLATFORMS = {"windows", "linux", "macos"}
-EXECUTABLE_LAUNCHERS = {"launch-vulnoraiq-webui.command", "launch-vulnoraiq-webui.sh"}
+EXECUTABLE_LAUNCHERS = {"launch-vulnoraiq-webui.command", "launch-vulnoraiq-webui.sh", "VulnoraIQ.desktop"}
 PACKAGE_EXTENSIONS = {
     "windows": "zip",
     "linux": "tar.gz",
@@ -121,35 +122,47 @@ def _iter_release_files() -> list[Path]:
 def _readme_for(platform: str, version: str) -> str:
     launcher = {
         "windows": "launch-vulnoraiq-webui.bat",
-        "linux": "launch-vulnoraiq-webui.sh",
+        "linux": "VulnoraIQ.desktop or launch-vulnoraiq-webui.sh",
         "macos": "launch-vulnoraiq-webui.command",
+    }[platform]
+    terminal_launcher = {
+        "windows": "launch-vulnoraiq-webui.bat",
+        "linux": "./launch-vulnoraiq-webui.sh",
+        "macos": "./launch-vulnoraiq-webui.command",
     }[platform]
     return f"""VulnoraIQ {version} {platform} release package
 
 This package is for local/self-hosted authorised AI security assessment only.
 
-Quick start
------------
+Double-click quick start
+------------------------
 1. Install Python 3.10 or newer.
-2. Open a terminal in this extracted folder.
-3. Run:
+2. Extract this package to a normal writable folder.
+3. Double-click: {launcher}
 
-   python -m venv .venv
-   python -m pip install --upgrade pip
-   python -m pip install -e .
+First run creates a local .venv folder, installs VulnoraIQ dependencies into that
+folder, starts the local Web UI, and opens the browser. Later runs reuse .venv.
 
-4. Start the Web UI with:
+Terminal alternative
+--------------------
+Open a terminal in this extracted folder and run:
 
-   {launcher}
+   {terminal_launcher}
 
-Alternative cross-platform launcher:
+Cross-platform Python alternative:
 
-   python launch-vulnoraiq-webui.py
+   python scripts/bootstrap_launch.py
 
 Security and acceptable use
 ---------------------------
 Use VulnoraIQ only against systems you own or are explicitly authorised to assess.
 See ACCEPTABLE_USE.md, SECURITY.md, and LICENSE before use.
+
+Release verification
+--------------------
+When downloaded from GitHub Actions or GitHub Releases, verify SHA256SUMS.txt and
+GitHub artifact attestations before use. If maintainer GPG signing secrets were
+configured, also verify the .asc detached signatures.
 
 Production/internal server mode
 -------------------------------
