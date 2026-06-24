@@ -20,5 +20,6 @@ docs/
 Dockerfile
 docker-compose*.yml
 *.md
+!README.md
 THIRD_PARTY_NOTICES.md
 LICENSE
