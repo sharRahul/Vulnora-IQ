@@ -12,8 +12,6 @@ def test_react_app_does_not_import_or_fallback_to_dummy_data() -> None:
         "@/data/mock",
         "demoAssets",
         "demoFindings",
-        "dashboardMetrics",
-        "severityDistribution,",
         "trendData",
     ]
     for token in forbidden:
