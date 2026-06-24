@@ -1,6 +1,6 @@
 # WebUI guide
 
-The supported VulnoraIQ WebUI is the React 18 + TypeScript SecOps console in `webui/console/`, built to `webui/static/console/` and served by `webui/hosted_server.py`.
+The supported VulnoraIQ WebUI is the React 18 + TypeScript SecOps console in `webui/console/`, built to `webui/static/console/` and served by the Python hosted WebUI entry point.
 
 The legacy static console has been removed. Static files under `webui/static/console/` are build output for the React console and are included as Python package data.
 
@@ -17,14 +17,14 @@ Open <http://localhost:8787>.
 
 | Area | Current behaviour |
 | --- | --- |
-| Dashboard / overview | Shows high-level security and assessment status using React console data models. |
+| Dashboard / overview | Shows high-level security and assessment status using React console data models and live backend scan progress. |
 | Target management | Loads configured/runtime targets, supports search and environment filters, shows readiness metrics and status pills, validates targets, saves/deletes runtime targets, launches authorised scans, and refreshes recent jobs. |
-| Findings and intelligence | Provides analyst-facing panels for findings, triage context, and dashboard exploration. Some interactions still use typed mock state until backend APIs are implemented. |
+| Findings and intelligence | Provides analyst-facing panels for findings, triage context, persisted remediation/status actions, finding history, and assistant-backed analysis. |
 | Assessment options | Uses configured profiles and single-test options from `config/attack_profiles.yaml`. |
 
 ## Current backend API wiring
 
-The target-management workspace is wired to:
+The WebUI is wired to:
 
 - `GET /api/targets`
 - `POST /api/targets/save`
@@ -32,17 +32,29 @@ The target-management workspace is wired to:
 - `POST /api/targets/{id}/validate`
 - `GET /api/scans`
 - `POST /api/scans`
+- `GET /api/scans/{id}`
+- `GET /api/scans/{id}/events`
+- `GET /api/scans/{id}/findings`
+- `PATCH /api/scans/{id}/findings/{finding_id}`
+- `GET /api/scans/{id}/findings/{finding_id}/history`
+- `GET /api/assistant/config`
+- `POST /api/assistant/chat`
 
-The scan launch path keeps the non-demo authorisation guard. Target validation uses the same target adapter/connectivity logic as the CLI.
+The scan launch path keeps the non-demo authorisation guard. Target validation uses the same target adapter/connectivity logic as the CLI. Assistant requests require authentication and CSRF protection and pass model controls from the React panel to the backend orchestrator.
+
+## Assistant model controls
+
+The Ask VulnorAIQ panel sends live chat payloads to `/api/assistant/chat`. Operators can adjust:
+
+- model selection from the server-provided allow-list;
+- temperature, constrained by backend validation;
+- instruction text used for the backend assistant request.
+
+The default backend provider is local/deterministic so self-hosted deployments work without outbound network access. Operators can configure provider settings with environment variables documented in deployment/runbook material. Assistant output is advisory and requires human review before closure or remediation.
 
 ## Remaining WebUI backend work
 
-These UI flows still use typed mock state or non-persistent behaviour because their backend APIs are not complete yet:
-
-- live SSE scan progress via `/api/scans/{id}/events`;
-- persisted remediation actions such as `POST /api/findings/{id}/apply-fix`;
-- persisted finding status transitions such as `PATCH /api/findings/{id}`;
-- real assistant chat backend for the "Ask VulnoraIQ" panel.
+No current WebUI critical path uses local-only scan or finding mutation state. Future maturity work is focused on enterprise identity, SIEM/SOAR integrations, signed/native packaging, and external independent assurance.
 
 ## Operator flow
 
@@ -54,7 +66,7 @@ These UI flows still use typed mock state or non-persistent behaviour because th
 6. Select an assessment profile or focused single-test option.
 7. Confirm authorisation for non-demo targets.
 8. Launch the scan.
-9. Review recent jobs, findings, and report artifacts.
+9. Review recent jobs, findings, live progress, assistant guidance, and report artifacts.
 
 ## Development flow
 
