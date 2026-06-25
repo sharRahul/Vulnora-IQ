@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -31,7 +32,16 @@ class BenchmarkSuiteResult:
     results: list[BenchmarkResult]
 
 
-def run_benchmarks(manifest_path: str | Path = "benchmarks/benchmark_suite.yaml", output_dir: str | Path = "reports/output/benchmarks") -> BenchmarkSuiteResult:
+def _enable_fixture_targets_for_benchmarks() -> None:
+    os.environ.setdefault("VULNORAIQ_ALLOW_TEST_FIXTURE_TARGETS", "true")
+    os.environ.setdefault("VULNORAIQ_TARGET_CONFIG", "targets.test.yaml")
+
+
+def run_benchmarks(
+    manifest_path: str | Path = "benchmarks/benchmark_suite.yaml",
+    output_dir: str | Path = "reports/output/benchmarks",
+) -> BenchmarkSuiteResult:
+    _enable_fixture_targets_for_benchmarks()
     manifest = yaml.safe_load(Path(manifest_path).read_text(encoding="utf-8")) or {}
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
