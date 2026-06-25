@@ -6,13 +6,25 @@ from pathlib import Path
 from scripts.build_platform_release_package import build_platform_package
 
 
-def test_double_click_launchers_use_docker_directly() -> None:
+def test_desktop_and_docker_lab_launchers_are_split() -> None:
     for launcher in [
         Path("launch-vulnoraiq-webui.bat"),
         Path("launch-vulnoraiq-webui.command"),
         Path("launch-vulnoraiq-webui.sh"),
     ]:
         text = launcher.read_text(encoding="utf-8")
+        assert "Desktop Mode" in text
+        assert "desktop_launch.py" in text
+        assert "scan-reports" in text
+        assert "docker compose build" not in text
+
+    for launcher in [
+        Path("launch-vulnoraiq-docker-lab.bat"),
+        Path("launch-vulnoraiq-docker-lab.command"),
+        Path("launch-vulnoraiq-docker-lab.sh"),
+    ]:
+        text = launcher.read_text(encoding="utf-8")
+        assert "Advanced Docker Lab" in text
         assert "docker compose build" in text
         assert "docker compose up -d" in text
         assert "docker compose ps" in text
@@ -26,7 +38,7 @@ def test_double_click_launchers_use_docker_directly() -> None:
     assert "webbrowser.open" in bootstrap
 
 
-def test_windows_release_package_contains_docker_only_launcher_and_start_here(tmp_path: Path) -> None:
+def test_windows_release_package_contains_desktop_and_docker_lab_launchers(tmp_path: Path) -> None:
     package = build_platform_package("windows", version="9.9.9-test", output_dir=tmp_path)
     assert package.output.exists()
     with zipfile.ZipFile(package.output) as archive:
@@ -34,16 +46,20 @@ def test_windows_release_package_contains_docker_only_launcher_and_start_here(tm
         prefix = "vulnoraiq-9.9.9-test-windows/"
         assert prefix + "START_HERE.txt" in names
         assert prefix + "launch-vulnoraiq-webui.bat" in names
+        assert prefix + "launch-vulnoraiq-docker-lab.bat" in names
+        assert prefix + "scripts/desktop_launch.py" in names
         assert prefix + "scripts/bootstrap_launch.py" in names
         assert prefix + "webui/static/console/index.html" in names
         start_here = archive.read(prefix + "START_HERE.txt").decode("utf-8")
-        launcher = archive.read(prefix + "launch-vulnoraiq-webui.bat").decode("utf-8")
-    assert "Double-click quick start" in start_here
-    assert "Docker" in start_here
+        desktop_launcher = archive.read(prefix + "launch-vulnoraiq-webui.bat").decode("utf-8")
+        docker_lab_launcher = archive.read(prefix + "launch-vulnoraiq-docker-lab.bat").decode("utf-8")
+    assert "Desktop Mode quick start" in start_here
+    assert "Advanced Docker Lab Mode" in start_here
     assert "SHA256SUMS.txt" in start_here
-    assert "docker compose build" in launcher
-    assert "docker compose up -d" in launcher
-    assert "bootstrap_launch.py" not in launcher
+    assert "desktop_launch.py" in desktop_launcher
+    assert "scan-reports" in desktop_launcher
+    assert "docker compose build" in docker_lab_launcher
+    assert "docker compose up -d" in docker_lab_launcher
 
 
 def test_release_workflow_produces_signed_attested_bundle() -> None:
