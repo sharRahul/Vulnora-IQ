@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import os
 import subprocess
-import time
 from pathlib import Path
 from typing import Any
 
@@ -80,7 +79,6 @@ class AgentHost:
             if env:
                 default_env.update(env)
             env = default_env
-            network = tmpl.get("network_mode", "bridge")
             if build:
                 ctx = build.get("context", ".")
                 df = build.get("dockerfile", "Dockerfile")
@@ -91,7 +89,6 @@ class AgentHost:
                 raise ValueError("Either template_key or image must be provided")
             image_name = image
             ports = []
-            network = "bridge"
 
         cmd = ["run", "-d", "--name", name, "--label", f"{AGENT_LABEL}={agent_id}", "--label", f"vulnoraiq.agent.id={agent_id}", "--network", AGENT_NETWORK]
         for p in ports:

@@ -28,7 +28,17 @@ from integrations.target_adapters import connectivity_check
 from reports.json_report_generator import JsonReportGenerator
 from reports.report_generator import MarkdownReportGenerator
 from reports.sarif_report_generator import SarifReportGenerator
-from webui.agent_host import _run_docker, agent_logs, deploy_agent, get_agent, list_agents, list_templates, remove_agent, start_agent, stop_agent, template_targets
+from webui.agent_host import (
+    _run_docker,
+    agent_logs,
+    deploy_agent,
+    list_agents,
+    list_templates,
+    remove_agent,
+    start_agent,
+    stop_agent,
+    template_targets,
+)
 from webui.auth import AuthPrincipal, WebAuthManager
 from webui.persistent_jobs import JobStore, PersistedScanJob, create_job_store
 from webui.production_checks import validate_all
@@ -729,7 +739,6 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
                 self._send_error_response(HTTPStatus.BAD_REQUEST, "project name is required")
                 return
             from webui.project_analyzer import PROJECTS_ROOT, analyze_project
-            import subprocess
             proj_path = PROJECTS_ROOT / project_name
             if not proj_path.exists():
                 self._send_error_response(HTTPStatus.NOT_FOUND, f"project '{project_name}' not found")

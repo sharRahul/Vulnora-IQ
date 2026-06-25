@@ -151,7 +151,7 @@ def analyze_project(name: str) -> dict[str, Any]:
 
     # if no endpoints detected via patterns, try AST analysis on each file
     if not result["endpoints"]:
-        for rel, source in source_map.items():
+        for _rel, source in source_map.items():
             try:
                 tree = ast.parse(source)
                 for node in ast.walk(tree):
@@ -203,7 +203,6 @@ def generate_dockerfile(name: str) -> str | None:
     if existing_df.exists():
         return existing_df.read_text(encoding="utf-8", errors="replace")
 
-    fw = project.get("framework", "python")
     base = "python:3.12-slim"
     install = "pip install -r requirements.txt" if project["has_requirements"] else "pip install ."
     entrypoint = "python app.py" if (root / "app.py").exists() else "python main.py"

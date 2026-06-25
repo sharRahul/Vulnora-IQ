@@ -66,7 +66,7 @@ def main() -> None:
     _run_compose(["up", "-d"])
     _run_compose(["ps"])
 
-    print(f"\nWaiting for containers to start (this can take up to 2 min)...", flush=True)
+    print("\nWaiting for containers to start (this can take up to 2 min)...", flush=True)
     if _wait_for_webui():
         print(" VulnoraIQ WebUI is ready!")
         webbrowser.open(WEBUI_URL)
