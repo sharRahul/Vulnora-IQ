@@ -28,6 +28,10 @@ ASSISTANT = AssistantOrchestrator()
 LOGGER = logging.getLogger("vulnoraiq.webui")
 
 
+def _is_desktop_mode() -> bool:
+    return os.getenv("VULNORAIQ_RUN_MODE", "").strip().lower() in {"desktop", "native"}
+
+
 class AssistantHostedWebUiHandler(base.HostedWebUiHandler):
     """Hosted WebUI handler with assistant and experimental Agent Lab endpoints enabled."""
 
@@ -53,6 +57,7 @@ class AssistantHostedWebUiHandler(base.HostedWebUiHandler):
             self._send_json(
                 {
                     "experimental": True,
+                    "run_mode": os.getenv("VULNORAIQ_RUN_MODE", "docker_lab"),
                     "provider_presets": provider_presets(),
                     "projects": list_agent_projects(),
                     "deployments": list_deployments(),
@@ -138,6 +143,25 @@ class AssistantHostedWebUiHandler(base.HostedWebUiHandler):
         self._send_error_response(HTTPStatus.FORBIDDEN, "invalid or missing CSRF token")
         return False
 
+    def _agent_lab_save_target_fn(self, payload: dict):
+        if not _is_desktop_mode():
+            return base._save_runtime_target
+        ports = payload.get("ports") or [8000]
+        if not isinstance(ports, list):
+            ports = [ports]
+        try:
+            port = int(ports[0])
+        except (TypeError, ValueError, IndexError):
+            port = 8000
+
+        def save_desktop_target(target_id: str, config: dict):
+            desktop_config = dict(config)
+            desktop_config["base_url"] = f"http://127.0.0.1:{port}"
+            desktop_config["environment"] = "agent_lab_desktop"
+            return base._save_runtime_target(target_id, desktop_config)
+
+        return save_desktop_target
+
     def _handle_agent_lab_post(self, clean_path: str, client_ip: str, request_id: str) -> None:
         principal = self._require_agent_lab_principal(client_ip, "POST", clean_path, request_id)
         if not principal or not self._validate_agent_lab_csrf(principal):
@@ -160,7 +184,7 @@ class AssistantHostedWebUiHandler(base.HostedWebUiHandler):
         if clean_path.startswith("/api/agent-lab/projects/") and clean_path.endswith("/deploy"):
             parts = [unquote(item) for item in clean_path.split("/") if item]
             project_id = parts[3]
-            result = deploy_agent_project(project_id, payload, base._save_runtime_target)
+            result = deploy_agent_project(project_id, payload, self._agent_lab_save_target_fn(payload))
             base._audit_structured("agent_lab_deploy", principal, request_id, client_ip, "POST", clean_path, 200, result.project_id)
             self._send_json({"deployed": True, **result.__dict__})
             return

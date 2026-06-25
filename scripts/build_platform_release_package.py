@@ -25,6 +25,9 @@ ROOT_FILES = [
     "launch-vulnoraiq-webui.bat",
     "launch-vulnoraiq-webui.command",
     "launch-vulnoraiq-webui.sh",
+    "launch-vulnoraiq-docker-lab.bat",
+    "launch-vulnoraiq-docker-lab.command",
+    "launch-vulnoraiq-docker-lab.sh",
     "VulnoraIQ.desktop",
 ]
 
@@ -60,7 +63,13 @@ EXCLUDED_PARTS = {
 EXCLUDED_SUFFIXES = {".pyc", ".pyo", ".db", ".key", ".pem"}
 EXCLUDED_NAME_FRAGMENTS = (".secret", "_secret")
 PLATFORMS = {"windows", "linux", "macos"}
-EXECUTABLE_LAUNCHERS = {"launch-vulnoraiq-webui.command", "launch-vulnoraiq-webui.sh", "VulnoraIQ.desktop"}
+EXECUTABLE_LAUNCHERS = {
+    "launch-vulnoraiq-webui.command",
+    "launch-vulnoraiq-webui.sh",
+    "launch-vulnoraiq-docker-lab.command",
+    "launch-vulnoraiq-docker-lab.sh",
+    "VulnoraIQ.desktop",
+}
 PACKAGE_EXTENSIONS = {
     "windows": "zip",
     "linux": "tar.gz",
@@ -120,38 +129,50 @@ def _iter_release_files() -> list[Path]:
 
 
 def _readme_for(platform: str, version: str) -> str:
-    launcher = {
+    desktop_launcher = {
         "windows": "launch-vulnoraiq-webui.bat",
         "linux": "VulnoraIQ.desktop or launch-vulnoraiq-webui.sh",
         "macos": "launch-vulnoraiq-webui.command",
     }[platform]
-    terminal_launcher = {
+    desktop_terminal = {
         "windows": "launch-vulnoraiq-webui.bat",
         "linux": "./launch-vulnoraiq-webui.sh",
         "macos": "./launch-vulnoraiq-webui.command",
+    }[platform]
+    docker_lab_terminal = {
+        "windows": "launch-vulnoraiq-docker-lab.bat",
+        "linux": "./launch-vulnoraiq-docker-lab.sh",
+        "macos": "./launch-vulnoraiq-docker-lab.command",
     }[platform]
     return f"""VulnoraIQ {version} {platform} release package
 
 This package is for local/self-hosted authorised AI security assessment only.
 
-Double-click quick start
+Desktop Mode quick start
 ------------------------
 1. Install Docker Desktop or Docker Engine with Docker Compose v2.
-2. Install Python 3.10 or newer.
+2. Install Python 3.10 or newer for this source-style package.
 3. Extract this package to a normal writable folder.
-4. Double-click: {launcher}
+4. Double-click: {desktop_launcher}
 
-First run uses Docker Compose to build/start the local Web UI and opens the browser.
-Later runs reuse Docker image/cache state unless you explicitly clean it.
+Desktop Mode runs VulnoraIQ on the host machine, uses Docker only for sandboxed
+Agent Lab runtimes, and stores output under scan-reports/ and agent-lab/.
 
 Terminal alternative
 --------------------
 Open a terminal in this extracted folder and run:
 
-   {terminal_launcher}
+   {desktop_terminal}
 
-Cross-platform Python alternative:
+Advanced Docker Lab Mode
+------------------------
+To run the full Compose lab with VulnoraIQ itself inside Docker, run:
 
+   {docker_lab_terminal}
+
+Cross-platform Python alternatives:
+
+   python scripts/desktop_launch.py
    python scripts/bootstrap_launch.py
 
 Security and acceptable use
@@ -213,7 +234,7 @@ def _build_dmg(output: Path, stage_dir: Path, prefix: str) -> None:
         raise RuntimeError("macOS .dmg creation requires hdiutil and must run on macOS")
     subprocess.run(
         [
-            hdiutil,
+            "hdiutil",
             "create",
             "-volname",
             "VulnoraIQ",

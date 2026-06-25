@@ -2,24 +2,25 @@
 
 This folder documents the current VulnoraIQ `0.2.0` codebase.
 
-> **Current posture:** Docker-first, self-hosted AI security testing lab for approved local or internal-server assessment.  
+> **Current posture:** self-hosted AI security testing application with Desktop Mode for laptop/workstation use and Docker Lab Mode for server, VM, CI, and dev-lab use.  
 > **Current WebUI:** React 18 + TypeScript + Vite console served by `webui/hosted_server.py`.  
-> **Default network boundary:** the Docker WebUI is published on host loopback only at `127.0.0.1:8787`.  
+> **Default network boundary:** local WebUI launchers bind to host loopback at `127.0.0.1:8787`.  
 > **Assessment boundary:** findings are structured internal evidence requiring human review. VulnoraIQ is not certified VAPT-grade assurance.
 
 ## Current status snapshot
 
 | Area | Status |
 | --- | --- |
-| Docker lab | Complete for the current local lab scope. `docker-compose.yml` starts `vulnoraiq-web` and optional `test-runner` on a private Docker network with loopback-only WebUI publishing. |
+| Desktop Mode | Phase 1 implemented for source/release-package use: VulnoraIQ starts natively on the host, uses Docker only for sandboxed Agent Lab runtimes, stores reports under `scan-reports/`, and stores Agent Lab projects under `agent-lab/`. |
+| Docker Lab | Complete for the current local lab scope. `docker-compose.yml` starts `vulnoraiq-web` and optional `test-runner` on a private Docker network with loopback-only WebUI publishing. |
 | Experimental Agent Lab | Implemented as an experimental local-lab workflow at `/agent-lab` for importing real AI-agent projects, configuring model providers, selecting CPU/GPU runtime options, building/running containers, auto-creating targets, and launching authorised scans. |
 | Target support | Complete for current approved local/internal scope with HTTP JSON, chat-completions, Ollama generate, RAG query, webhook JSON, and dry-run tool-loop contracts. |
 | WebUI | Current supported UI is the React SecOps console in `webui/console/`, built to `webui/static/console/`. A clean start shows no dummy assets, findings, or dashboard data. |
 | WebUI backend | Target management, scan launch, SSE progress, finding actions/history, assistant model controls, and Agent Lab APIs are implemented. |
 | CLI | `vulnoraiq` supports `targets list`, `targets validate`, `scan`, `reports list`, `jobs list`, and `jobs show`. |
-| Security hardening | Auth, trusted proxy mode, CSRF, request limits, rate limiting, security headers, audit logs, metrics, artifact path protection, production startup validation, and loopback-only local Docker publishing. Agent Lab remains experimental because it can build and run local Docker containers. |
+| Security hardening | Auth, trusted proxy mode, CSRF, request limits, rate limiting, security headers, audit logs, metrics, artifact path protection, production startup validation, and loopback-only local publishing. Agent Lab remains experimental because it can build and run local Docker containers. |
 | CI | Python matrix checks plus lint, typing, tests, dependency checks, validators, hosted WebUI flow, functional acceptance, supply-chain reports, SBOMs, and image signing workflow. |
-| Release/packaging | Release-only platform artifact and Python package workflows are documented; native OS certificate-signed installers remain future maturity work. |
+| Release/packaging | Release-only platform artifact and Python package workflows are documented; native OS certificate-signed installers and bundled desktop runtime remain future maturity work. |
 
 ## Start here
 
@@ -27,9 +28,10 @@ This folder documents the current VulnoraIQ `0.2.0` codebase.
 | --- | --- |
 | Project overview and quick start | [`../README.md`](../README.md) |
 | End-to-end user guide | [`USER_GUIDE.md`](USER_GUIDE.md) |
+| Desktop vs Docker Lab run modes | [`RUN_MODES_DESKTOP_AND_DOCKER_LAB.md`](RUN_MODES_DESKTOP_AND_DOCKER_LAB.md) |
 | Experimental Agent Lab workflow | [`AGENT_LAB.md`](AGENT_LAB.md) |
 | Experimental Agent Lab implementation plan | [`AGENT_LAB_PLAN.md`](AGENT_LAB_PLAN.md) |
-| Docker-first lab startup and troubleshooting | [`DOCKER_TESTING.md`](DOCKER_TESTING.md) |
+| Docker Lab startup and troubleshooting | [`DOCKER_TESTING.md`](DOCKER_TESTING.md) |
 | Safety model and authorisation rules | [`SAFETY_MODEL.md`](SAFETY_MODEL.md) |
 | Target configuration and runtime target rules | [`TARGET_CONFIGURATION.md`](TARGET_CONFIGURATION.md) |
 | WebUI operator guide | [`WEBUI_GUIDE.md`](WEBUI_GUIDE.md) |

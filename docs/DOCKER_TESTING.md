@@ -1,22 +1,21 @@
-# Docker-first VulnoraIQ lab
+# Docker Lab mode
 
-VulnoraIQ's current safe path for real AI-agent, RAG, webhook, Ollama-style, and tool-loop testing is the Docker Compose lab.
+VulnoraIQ supports two local run modes:
 
-The host should run Docker commands or use the platform launcher, open the WebUI at <http://localhost:8787>, and inspect exported reports. Scans, target validation, evidence capture, report generation, and smoke testing run inside containers.
+- **Desktop Mode**: VulnoraIQ runs on the host machine and Docker is used only for sandboxed Agent Lab runtimes.
+- **Docker Lab Mode**: VulnoraIQ itself runs inside Docker Compose, alongside sandboxed imported agents.
 
-## Start the lab with the platform launcher
+This document covers **Docker Lab Mode**, which is best for servers, VMs, CI, reproducible development labs, and full-stack container testing.
 
-For normal laptop/workstation use, the launcher files are the point of start:
+## Start Docker Lab mode with the platform launcher
 
 | Platform | Launcher |
 | --- | --- |
-| Windows | `launch-vulnoraiq-webui.bat` |
-| macOS | `launch-vulnoraiq-webui.command` |
-| Linux | `launch-vulnoraiq-webui.sh` |
+| Windows | `launch-vulnoraiq-docker-lab.bat` |
+| macOS | `launch-vulnoraiq-docker-lab.command` |
+| Linux | `launch-vulnoraiq-docker-lab.sh` |
 
-The only prerequisite for this path is Docker Desktop or a compatible Docker Engine with Docker Compose v2.
-
-Each launcher performs these steps:
+Each Docker Lab launcher performs these steps:
 
 1. checks Docker is installed and running;
 2. runs `docker compose build`;
@@ -63,7 +62,7 @@ VULNORAIQ_AGENT_LAB_PROJECTS_ROOT=/data/agent_lab/projects
 
 Docker lab targets are defined in `config/targets.docker.yaml`. You must configure your own targets with real endpoints, or use Agent Lab to auto-create runtime targets for imported real agent projects.
 
-## Experimental Agent Lab
+## Experimental Agent Lab in Docker Lab mode
 
 Open:
 
@@ -73,9 +72,15 @@ http://localhost:8787/agent-lab
 
 Agent Lab supports importing a real project, configuring model-provider environment, choosing CPU or GPU runtime options, building/running the agent, creating a runtime target, and launching an authorised scan.
 
+In Docker Lab Mode, auto-created Agent Lab targets use container DNS, for example `http://vulnoraiq-agent-lab-<project>:8000`, because the scanner runs inside Docker on the same network.
+
 For local LLM providers running on the host, Docker Compose configures `host.docker.internal` through the host gateway.
 
 GPU mode requires host Docker support for GPU containers. Agent Lab only passes runtime options; it does not install host drivers.
+
+## Desktop Mode comparison
+
+Desktop Mode is documented in [`RUN_MODES_DESKTOP_AND_DOCKER_LAB.md`](RUN_MODES_DESKTOP_AND_DOCKER_LAB.md). In that mode, VulnoraIQ runs on the host, reports are written under `scan-reports/`, Agent Lab projects are written under `agent-lab/`, and auto-created targets use published localhost ports so the host scanner can reach the sandboxed Docker container.
 
 ## CLI from Docker
 
@@ -90,7 +95,7 @@ docker compose exec vulnoraiq-web vulnoraiq jobs show --job-id <job-id>
 
 ## WebUI workflow
 
-1. Start Docker Compose through the platform launcher or manual Docker commands.
+1. Start Docker Compose through a Docker Lab launcher or manual Docker commands.
 2. Open <http://localhost:8787>.
 3. Use the target workspace to search/filter targets, or open `/agent-lab` to import and run a real agent.
 4. Validate target connectivity.
