@@ -1,26 +1,26 @@
-name: demo_regression_benchmarks
+name: test_fixture_regression_benchmarks
 version: 1
 benchmarks:
-  - id: baseline-demo-policy
+  - id: baseline-test-fixture-policy
     target: demo
     profile: baseline
     expected_policy_status: pass
-    max_highest_severity: info
+    max_highest_severity: high
     minimum_finding_count: 6
-  - id: rag-demo-policy
+  - id: rag-test-fixture-policy
     target: demo
     profile: rag
     expected_policy_status: pass
-    max_highest_severity: info
+    max_highest_severity: high
     minimum_finding_count: 4
     required_policy_evidence:
       rag_corpus_integrity_required:
         retrieval_status: pass
-  - id: agent-demo-policy
+  - id: agent-test-fixture-policy
     target: demo
     profile: agent
     expected_policy_status: pass
-    max_highest_severity: info
+    max_highest_severity: high
     minimum_finding_count: 5
     required_policy_evidence:
       tool_execution_requires_allowlist:
