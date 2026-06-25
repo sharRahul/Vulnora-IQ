@@ -61,6 +61,10 @@ _DEFAULT_ROLE_MAPPING: dict[str, str] = {
 }
 
 
+def _env_true(name: str) -> bool:
+    return os.getenv(name, "").strip().lower() in ("1", "true", "yes")
+
+
 class WebAuthManager:
     """Role-aware auth manager driven by environment variables."""
 
@@ -137,6 +141,13 @@ class WebAuthManager:
         return str(self.load().get("auth", {}).get("header_name", "X-VulnoraIQ-Token"))
 
     def anonymous(self) -> AuthPrincipal:
+        fixture_admin = (
+            not self.is_production()
+            and _env_true("VULNORAIQ_ALLOW_TEST_FIXTURE_TARGETS")
+            and _env_true("VULNORAIQ_WEBUI_TEST_ADMIN")
+        )
+        if fixture_admin:
+            return AuthPrincipal("webui-test", "admin", _DEFAULT_PERMISSIONS["admin"], authenticated=False)
         return AuthPrincipal("anonymous", "viewer", _DEFAULT_PERMISSIONS["viewer"], authenticated=False)
 
     def authenticate_token(self, token: str | None) -> AuthPrincipal | None:
