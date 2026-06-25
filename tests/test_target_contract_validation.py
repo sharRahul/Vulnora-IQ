@@ -3,10 +3,11 @@ from __future__ import annotations
 from integrations.contract_validation import TargetContractValidator
 
 
-def test_default_target_contracts_are_shape_valid_but_placeholder_warn() -> None:
+def test_default_target_contracts_allow_empty_real_target_config() -> None:
     result = TargetContractValidator().validate()
 
-    assert result.status == "warn"
-    assert result.validated_count >= 4
+    assert result.status == "pass"
+    assert result.target_count == 0
+    assert result.validated_count == 0
     assert not result.errors
-    assert result.warnings
+    assert not result.warnings
