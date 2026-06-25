@@ -18,13 +18,6 @@ AI_TESTING_GUIDE_PROFILES = [
     "test_nist_ai_100_2_adversarial_ml",
 ]
 
-OWASP_LAB_TARGETS = [
-    "owasp_lab_agent_http",
-    "owasp_lab_chat_completions",
-    "owasp_lab_ollama_generate",
-    "owasp_lab_webhook_json",
-]
-
 
 def _load_yaml(path: str) -> dict:
     return yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
@@ -49,12 +42,7 @@ def test_ai_testing_guide_payloads_are_loaded_for_framework_modules() -> None:
     assert any("authorised" in payload.input_text.lower() for payload in payloads)
 
 
-def test_owasp_lab_targets_are_real_local_templates_not_placeholders() -> None:
+def test_default_targets_config_has_no_active_lab_targets() -> None:
     targets = _load_yaml("config/targets.yaml")["targets"]
 
-    for target_name in OWASP_LAB_TARGETS:
-        target = targets[target_name]
-        endpoint = target["endpoint"]
-        assert endpoint.startswith("http://127.0.0.1")
-        assert "example.invalid" not in endpoint
-        assert target["auth"] == "none"
+    assert targets == {}
