@@ -22,8 +22,8 @@ Choose the path you want to run.
 | Run path | Required before starting |
 | --- | --- |
 | Recommended Docker GUI lab | Docker Engine or Docker Desktop with Docker Compose v2, internet access for the first image/dependency build, and a modern browser such as Chrome, Edge, Firefox, or Safari. |
+| Double-click launchers | Docker Desktop or compatible Docker Engine with Docker Compose v2. The `.bat`, `.command`, and `.sh` files are the startup entry points and run Docker build/start/health/browser steps directly. No host Python install is required for this path. |
 | Experimental Agent Lab | Docker lab prerequisites plus local Docker build/run access. GPU mode requires host GPU container support. Local Ollama/LM Studio providers should listen on the host and are reached through `host.docker.internal`. |
-| Double-click launchers | Python 3.10 or newer on `PATH`, internet access for first-time `.venv` dependency installation, and a modern browser. Use `launch-vulnoraiq-webui.bat`, `launch-vulnoraiq-webui.command`, or `launch-vulnoraiq-webui.sh`. |
 | Source/package install | Python 3.10 or newer, `pip`, `venv`, Git for source checkouts, and a modern browser. |
 | Local wheel build | Python 3.10 or newer plus the release extra: `pip install -e .[release]`. |
 | WebUI development/tests | Node.js 20 or newer, npm, and Playwright browser dependencies. End users do not need Node.js when using Docker, release packages, or the Python package. |
@@ -45,6 +45,25 @@ Open the GUI/WebUI in your browser: <http://localhost:8787>.
 The WebUI is published on host loopback only: `127.0.0.1:8787:8787`.
 
 To use the experimental Agent Lab, open <http://localhost:8787/agent-lab> after the Docker lab is running.
+
+### Double-click launchers
+
+For normal laptop/workstation use, the launcher files are now the point of start:
+
+| Platform | Launcher |
+| --- | --- |
+| Windows | `launch-vulnoraiq-webui.bat` |
+| macOS | `launch-vulnoraiq-webui.command` |
+| Linux | `launch-vulnoraiq-webui.sh` |
+
+Each launcher performs the full startup sequence:
+
+1. check Docker is installed and running;
+2. run `docker compose build`;
+3. run `docker compose up -d`;
+4. show `docker compose ps`;
+5. wait for `vulnoraiq-web` health;
+6. open <http://127.0.0.1:8787> in the default browser.
 
 Useful Docker commands:
 
@@ -104,17 +123,9 @@ vulnoraiq-web --host 127.0.0.1 --port 8787
 
 The supported GUI is the built React console under `webui/static/console/`; the source app lives in `webui/console/`. It is a browser GUI, not a native desktop window. The experimental Agent Lab static assets live under `webui/static/agent-lab/`.
 
-The existing double-click launchers are part of the supported GUI flow for source checkouts and release packages:
+The double-click launchers are Docker-only startup entry points. They do not create a Python virtual environment and do not require Python on the host.
 
-| Platform | Launcher |
-| --- | --- |
-| Windows | `launch-vulnoraiq-webui.bat` |
-| macOS | `launch-vulnoraiq-webui.command` |
-| Linux | `launch-vulnoraiq-webui.sh` |
-
-These launchers call `scripts/bootstrap_launch.py`, create or reuse `.venv`, prepare the local package environment, and start the browser WebUI on loopback.
-
-You can also run the local launcher directly from a source checkout:
+You can also run the Python launcher directly from a source checkout when using the Python-based local path:
 
 ```bash
 python launch-vulnoraiq-webui.py

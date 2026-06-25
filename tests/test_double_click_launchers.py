@@ -3,23 +3,27 @@ from __future__ import annotations
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+LAUNCHERS = [
+    ROOT / "launch-vulnoraiq-webui.bat",
+    ROOT / "launch-vulnoraiq-webui.command",
+    ROOT / "launch-vulnoraiq-webui.sh",
+]
 
 
-def test_platform_launchers_delegate_to_bootstrap() -> None:
-    launchers = [
-        ROOT / "launch-vulnoraiq-webui.bat",
-        ROOT / "launch-vulnoraiq-webui.command",
-        ROOT / "launch-vulnoraiq-webui.sh",
-    ]
-    for launcher in launchers:
+def test_platform_launchers_run_docker_startup_flow() -> None:
+    for launcher in LAUNCHERS:
         text = launcher.read_text(encoding="utf-8")
-        assert "scripts" in text
-        assert "bootstrap_launch.py" in text
         assert "VulnoraIQ" in text
-        assert "docker compose down" in text or "Docker" in text
+        assert "docker info" in text
+        assert "docker compose build" in text
+        assert "docker compose up -d" in text
+        assert "docker compose ps" in text
+        assert "vulnoraiq-web" in text
+        assert "127.0.0.1:8787" in text
+        assert "bootstrap_launch.py" not in text
 
 
-def test_bootstrap_runs_docker_browser_launcher_flow() -> None:
+def test_bootstrap_remains_available_for_python_launcher_flow() -> None:
     bootstrap = (ROOT / "scripts" / "bootstrap_launch.py").read_text(encoding="utf-8")
 
     assert "docker" in bootstrap
@@ -37,4 +41,6 @@ def test_readme_documents_double_click_launcher_flow() -> None:
     assert "launch-vulnoraiq-webui.command" in readme
     assert "launch-vulnoraiq-webui.sh" in readme
     assert "browser GUI" in readme
-    assert "scripts/bootstrap_launch.py" in readme
+    assert "No host Python install is required" in readme
+    assert "docker compose build" in readme
+    assert "docker compose up -d" in readme
