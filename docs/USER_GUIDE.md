@@ -89,7 +89,35 @@ For each non-demo target, confirm:
 - owner/contact details;
 - authorised environment/safety profile.
 
-## 5. Experimental Agent Lab
+## 5. Run a scan
+
+After a target is configured and validated:
+
+1. select the target in the WebUI;
+2. choose a profile such as `baseline`, `rag`, `agent`, `full`, `ai_agent_foundation`, or a focused single-test profile;
+3. confirm the authorisation checklist;
+4. start the scan;
+5. watch live progress and scan events.
+
+CLI equivalent:
+
+```bash
+docker compose exec vulnoraiq-web vulnoraiq scan --target <target_name> --profile baseline --authorised
+```
+
+## 6. Review and act on findings
+
+After the scan completes, review:
+
+- findings and severity;
+- evidence snippets and redaction state;
+- policy status;
+- generated reports;
+- finding history and remediation notes.
+
+Treat VulnoraIQ output as framework evidence that requires human review before sharing, closing, or treating a finding as confirmed.
+
+## 7. Experimental Agent Lab
 
 Open this path after startup:
 
@@ -100,3 +128,13 @@ http://localhost:8787/agent-lab
 Use Agent Lab to import a real AI-agent project, configure provider/API key settings, select CPU/GPU Docker runtime mode, build/run the agent, auto-create a target, and launch an authorised scan.
 
 Agent Lab remains experimental because it builds and runs imported code through local Docker. Use it only for code and systems you own or are authorised to assess.
+
+## 8. Operate safely
+
+Use VulnoraIQ only for authorised assessment work.
+
+- Keep the default local Docker lab bound to loopback.
+- Do not expose the WebUI on a shared network without production auth, TLS, reverse proxy controls, audit retention, and backup controls.
+- Store API keys outside the repository and pass them through runtime environment variables or approved secret handling.
+- Review reports and evidence before sharing them.
+- Stop the lab with `docker compose down` when you are finished.
