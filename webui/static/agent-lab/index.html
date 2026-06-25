@@ -79,3 +79,35 @@
           </div>
           <div class="grid two compact">
             <label>Container port<input id="port" type="number" min="1" max="65535" value="8000" /></label>
+            <label>Memory limit <span class="optional">optional</span><input id="memory" placeholder="8g" /></label>
+          </div>
+          <div class="grid two compact">
+            <label>CPU limit <span class="optional">optional</span><input id="cpus" placeholder="4" /></label>
+            <label>Publish localhost port<select id="publish-ports"><option value="true">Yes</option><option value="false">No, Docker network only</option></select></label>
+          </div>
+          <div class="grid two compact">
+            <label>Target type<select id="target-type"><option value="http_json">HTTP JSON</option><option value="chat_completions">OpenAI Chat Completions</option></select></label>
+            <label>Endpoint path<input id="endpoint-path" value="/" /></label>
+          </div>
+          <label>HTTP method<select id="http-method"><option>POST</option><option>GET</option><option>PUT</option><option>PATCH</option></select></label>
+          <button id="deploy" class="button success" type="button" disabled>Build / Run / Auto-create Target</button>
+        </article>
+      </section>
+
+      <section class="grid two">
+        <article class="card">
+          <h2>Project Analysis</h2>
+          <pre id="analysis" class="output">Select a project to analyze it.</pre>
+        </article>
+        <article class="card">
+          <h2>5. Test with VulnoraIQ</h2>
+          <label>Auto-created target<select id="target-select"></select></label>
+          <label>Scan profile<select id="scan-profile"></select></label>
+          <button id="start-scan" class="button danger" type="button" disabled>Start Authorised Scan</button>
+          <pre id="deployments" class="output">No deployment selected yet.</pre>
+        </article>
+      </section>
+    </main>
+    <script src="/static/agent-lab/app.js" defer></script>
+  </body>
+</html>
