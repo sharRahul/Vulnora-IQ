@@ -8,16 +8,35 @@ Use one of these supported paths:
 
 | Path | Best for | Start command |
 | --- | --- | --- |
-| Docker GUI lab | Recommended local use | `docker compose up -d` |
-| Double-click launcher | Simple local source/release package use | `.bat`, `.command`, or `.sh` launcher |
-| Python package/source checkout | CLI and local WebUI use | `vulnoraiq-web --host 127.0.0.1 --port 8787` |
+| Double-click launcher | Recommended simple local use | `.bat`, `.command`, or `.sh` launcher |
+| Docker GUI lab | Manual Docker use | `docker compose build` then `docker compose up -d` |
+| Python package/source checkout | CLI and local WebUI development | `vulnoraiq-web --host 127.0.0.1 --port 8787` |
 | Internal server | Shared controlled environment | production config validation plus reverse proxy/TLS/auth |
 
 For a clean first run, the dashboard is intentionally empty. VulnoraIQ does not show sample findings, mock assets, or dummy dashboard data.
 
 ## 2. Start the local browser GUI
 
-Recommended Docker flow:
+The simplest local path is to use the platform launcher:
+
+| Platform | Launcher |
+| --- | --- |
+| Windows | `launch-vulnoraiq-webui.bat` |
+| macOS | `launch-vulnoraiq-webui.command` |
+| Linux | `launch-vulnoraiq-webui.sh` |
+
+The only prerequisite for this path is Docker Desktop or a compatible Docker Engine with Docker Compose v2. The launchers do not require host Python.
+
+Each launcher performs the startup steps in order:
+
+1. checks Docker is installed and the Docker engine is running;
+2. runs `docker compose build`;
+3. runs `docker compose up -d`;
+4. shows `docker compose ps`;
+5. waits for `vulnoraiq-web` to become healthy;
+6. opens the WebUI in the default browser.
+
+Manual Docker flow:
 
 ```bash
 docker compose build
@@ -39,7 +58,7 @@ Cleanly stop the Docker lab:
 docker compose down
 ```
 
-Delete local jobs, reports, evidence, audit data, and Docker volumes only when you intentionally want a full reset:
+Delete local jobs, reports, evidence, audit data, Agent Lab imports, and Docker volumes only when you intentionally want a full reset:
 
 ```bash
 docker compose down -v
@@ -68,66 +87,16 @@ For each non-demo target, confirm:
 - request type and payload template;
 - response extraction path;
 - owner/contact details;
-- authorisation requirement;
-- safety profile;
-- rate limit;
-- credentials through environment variables, not hard-coded secrets.
+- authorised environment/safety profile.
 
-Use **Test connectivity** before running a scan.
+## 5. Experimental Agent Lab
 
-## 5. Run a scan
+Open this path after startup:
 
-You can run scans from either the header or the Targets page.
-
-Header flow:
-
-1. Select **Run Scan**.
-2. Watch the live backend scan status.
-3. Wait for completion.
-4. Review the populated findings and evidence.
-
-Target flow:
-
-1. Open **Targets**.
-2. Select a configured target.
-3. Choose a scan profile.
-4. Select **Start authorised scan**.
-5. Monitor live progress and recent jobs.
-
-CLI example:
-
-```bash
-docker compose exec vulnoraiq-web vulnoraiq scan --target local_mock_agent --profile ai_agent_foundation --authorised
+```text
+http://localhost:8787/agent-lab
 ```
 
-## 6. Review and act on findings
+Use Agent Lab to import a real AI-agent project, configure provider/API key settings, select CPU/GPU Docker runtime mode, build/run the agent, auto-create a target, and launch an authorised scan.
 
-When findings exist, open **Workspace** and select a finding.
-
-Review:
-
-- evidence;
-- affected component;
-- OWASP/MITRE mapping where available;
-- recommendation;
-- remediation rationale;
-- current review/remediation status.
-
-Use WebUI actions to mark findings for review or fixed. VulnoraIQ persists finding status changes in the backend scan store.
-
-## 7. Find reports, evidence, and history
-
-Use the WebUI for interactive triage and the CLI for direct inspection:
-
-```bash
-docker compose exec vulnoraiq-web vulnoraiq reports list
-docker compose exec vulnoraiq-web vulnoraiq jobs list
-```
-
-Reports and evidence are written under the configured output root. In Docker, use the configured volume/output path for the `vulnoraiq-web` service.
-
-## 8. Operate safely
-
-VulnoraIQ is for authorised assessment only.
-
-Do not scan external or third-party systems unless you have explicit written permission. For shared/internal-server deployments, enable production configuration, strong secrets, TLS through a trusted reverse proxy, audit retention, backups, and protected health/metrics endpoints.
+Agent Lab remains experimental because it builds and runs imported code through local Docker. Use it only for code and systems you own or are authorised to assess.
