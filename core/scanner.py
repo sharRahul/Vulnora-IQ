@@ -23,6 +23,8 @@ def _fixture_targets_allowed() -> bool:
 class TestFixtureTargetClient:
     """Deterministic target used only when test fixture targets are explicitly enabled."""
 
+    name: str
+
     def __init__(self, name: str) -> None:
         self.name = name
 
