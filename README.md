@@ -2,7 +2,7 @@
 
 **VulnoraIQ** is a self-hosted AI security testing application for authorised assessment of LLM applications, RAG systems, AI agents, and orchestration layers.
 
-VulnoraIQ is a **self-hosted internal application** for controlled **laptop/server** AI security testing. It provides a browser WebUI, CLI, Agent Lab, target configuration, scan execution, evidence capture, reports, audit logs, and CI validation workflows. Findings are **assessment evidence for human review**; VulnoraIQ does not claim certified VAPT-grade assurance. See [`docs/ASSESSMENT_ASSURANCE.md`](docs/ASSESSMENT_ASSURANCE.md).
+VulnoraIQ is a **self-hosted internal application** for controlled **laptop/server** AI security testing, including controlled **internal server** deployment when production auth, reverse proxy, TLS, audit retention, and backup controls are configured. It provides a browser WebUI, CLI, Agent Lab, target configuration, scan execution, evidence capture, reports, audit logs, and CI validation workflows. Findings are **assessment evidence for human review**; VulnoraIQ does not claim certified VAPT-grade assurance. See [`docs/ASSESSMENT_ASSURANCE.md`](docs/ASSESSMENT_ASSURANCE.md).
 
 ## Product direction
 
@@ -222,7 +222,7 @@ VulnoraIQ is intended for authorised local or controlled internal use.
 - Treat reports and findings as evidence requiring human review.
 - Review imported Agent Lab source before running it.
 
-Production/internal-server mode requires explicit hardening:
+Production/internal-server mode requires explicit hardening. For a shared internal server, configure production auth, a trusted reverse proxy, TLS, audit retention, and backups before exposing the service.
 
 ```bash
 export VULNORAIQ_ENV=production
