@@ -15,18 +15,19 @@ def test_platform_launchers_delegate_to_bootstrap() -> None:
         text = launcher.read_text(encoding="utf-8")
         assert "scripts" in text
         assert "bootstrap_launch.py" in text
-        assert "127.0.0.1:8787" in text or "VulnoraIQ WebUI" in text
+        assert "VulnoraIQ" in text
+        assert "docker compose down" in text or "Docker" in text
 
 
-def test_bootstrap_runs_local_browser_launcher_flow() -> None:
+def test_bootstrap_runs_docker_browser_launcher_flow() -> None:
     bootstrap = (ROOT / "scripts" / "bootstrap_launch.py").read_text(encoding="utf-8")
 
-    assert "scripts" in bootstrap
-    assert "launch_webui.py" in bootstrap
-    assert "VULNORAIQ_LAUNCH_MODE" in bootstrap
-    assert "double_click_launcher" in bootstrap
-    assert "[release]" in bootstrap
-    assert "os.execv" in bootstrap
+    assert "docker" in bootstrap
+    assert "compose" in bootstrap
+    assert "docker-compose.yml" in bootstrap
+    assert "http://127.0.0.1:8787" in bootstrap
+    assert "webbrowser.open" in bootstrap
+    assert "docker compose logs vulnoraiq-web" in bootstrap
 
 
 def test_readme_documents_double_click_launcher_flow() -> None:
