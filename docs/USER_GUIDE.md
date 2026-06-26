@@ -40,7 +40,12 @@ scan-reports/
 agent-lab/
   projects/
   deployments.yaml
+
+projects/
+  <optional mapped AI-agent folders>
 ```
+
+Use `agent-lab/projects/` for projects imported through the WebUI. Use `projects/` only when you intentionally want a persistent mapped folder that appears after Agent Lab refresh.
 
 Advanced Docker Lab launchers:
 
@@ -148,6 +153,17 @@ http://localhost:8787/agent-lab
 ```
 
 Use Agent Lab to import a real AI-agent project, configure provider/API key settings, select CPU/GPU Docker runtime mode, build/run the agent, auto-create a target, and launch an authorised scan.
+
+Recommended import options:
+
+| Option | When to use it | Where the project lands |
+| --- | --- | --- |
+| **Local folder upload** | The agent source folder is already on your laptop/workstation. Select the folder in the browser and upload it directly. | Managed `agent-lab/projects/<project-id>/` in Desktop Mode or `/data/agent_lab/projects/<project-id>/` in Docker Lab Mode. |
+| **ZIP upload** | You already have a prepared project archive or browser folder upload is unavailable. | Managed Agent Lab project root. |
+| **Git URL** | The project is in an approved public/controlled Git host. | Managed Agent Lab project root. |
+| **Mapped folder** | You intentionally want a persistent host-visible folder and can place it under `./projects/<agent-name>/`. | Mapped `projects/<agent-name>/`, read-only from Agent Lab. |
+
+For normal desktop use, prefer **Local folder upload**. The browser packages the selected folder and sends only the selected files to VulnoraIQ. The backend does not read arbitrary local filesystem paths.
 
 In Desktop Mode, auto-created Agent Lab targets use published localhost ports so the host-based scanner can reach the sandboxed agent container. In Docker Lab Mode, targets use container DNS on the Docker network.
 
