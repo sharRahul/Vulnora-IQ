@@ -48,14 +48,15 @@
           </form>
 
           <div id="mounted-panel" class="tab-panel">
-            <p class="muted">Place a real project directory in <code>./projects/</code> on the host. It is mounted read-only in Docker and appears below after refresh. If it has no Dockerfile, import it into the managed Agent Lab first or add a Dockerfile.</p>
+            <p class="muted">Desktop Mode creates <code>./projects/</code> beside the launcher. Place a real AI agent in <code>./projects/&lt;agent-name&gt;/</code>, then refresh. Managed imports live in <code>./agent-lab/projects/</code>.</p>
+            <p class="muted">Mapped projects are read-only. If a mapped project has no Dockerfile, either add one to that folder or upload/import it into managed Agent Lab so VulnoraIQ can generate one.</p>
             <button id="refresh-mounted" class="button secondary" type="button">Refresh Projects</button>
           </div>
         </article>
 
         <article class="card">
           <h2>2. Select Project</h2>
-          <input id="project-filter" placeholder="Filter imported/mounted projects…" />
+          <input id="project-filter" placeholder="Filter imported/mapped projects…" />
           <div id="project-list" class="list"></div>
         </article>
       </section>
