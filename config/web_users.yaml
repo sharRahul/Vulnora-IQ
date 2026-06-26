@@ -1,16 +1,19 @@
 # Web UI authentication configuration.
 #
-# Local Desktop Mode and Docker Lab Mode are designed as single-user/admin
-# sessions on 127.0.0.1. Their launchers set VULNORAIQ_AUTH_ENABLED=false,
-# which resolves API requests to the built-in local-admin principal.
+# Local Desktop Mode uses VULNORAIQ_AUTH_MODE=local_admin, which resolves
+# requests to the built-in local-admin principal. This is only for local,
+# single-user/admin operation and startup validation rejects it in production.
 #
-# For production or shared internal server deployments, explicitly enable auth
-# and provide environment tokens:
+# For production or shared internal server deployments, explicitly enable token
+# auth and provide environment tokens:
 #   VULNORAIQ_ENV=production
-#   VULNORAIQ_AUTH_ENABLED=true
+#   VULNORAIQ_AUTH_MODE=token
 #   VULNORAIQ_ADMIN_TOKEN=<strong-random-token>
 #   VULNORAIQ_ANALYST_TOKEN=<analyst-token>
 #   VULNORAIQ_VIEWER_TOKEN=<viewer-token>
+#
+# VULNORAIQ_AUTH_ENABLED=false is kept only as a backward-compatible alias for
+# VULNORAIQ_AUTH_MODE=local_admin. New launchers should use VULNORAIQ_AUTH_MODE.
 #
 # When env token vars are set, file-based users are ignored.
 # This file is used only as a fallback when no token env vars are present.
