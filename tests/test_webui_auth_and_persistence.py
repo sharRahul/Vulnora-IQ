@@ -75,7 +75,7 @@ def test_production_mode_rejects_disabled_auth(monkeypatch) -> None:
     monkeypatch.setenv("VULNORAIQ_ENV", "production")
     monkeypatch.setenv("VULNORAIQ_AUTH_ENABLED", "false")
     manager = WebAuthManager()
-    with pytest.raises(RuntimeError, match="Production mode requires"):
+    with pytest.raises(RuntimeError, match="local_admin"):
         manager._validate_production()
 
 
