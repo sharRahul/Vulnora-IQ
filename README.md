@@ -1,6 +1,6 @@
 # VulnoraIQ
 
-**VulnoraIQ** is a self-hosted AI security testing application for authorised assessment of LLM applications, RAG systems, AI agents, and orchestration layers.
+**VulnoraIQ** is a self-hosted internal application for controlled laptop/server AI security testing of LLM applications, RAG systems, AI agents, and orchestration layers.
 
 It provides a browser WebUI, CLI, Agent Lab, target configuration, scan execution, evidence capture, reports, audit logs, and validation workflows. Findings are assessment evidence for human review; VulnoraIQ does not claim certified VAPT-grade assurance. See [`docs/ASSESSMENT_ASSURANCE.md`](docs/ASSESSMENT_ASSURANCE.md).
 
