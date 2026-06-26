@@ -11,6 +11,7 @@ services:
     env_file:
       - .env.docker.example
     environment:
+      VULNORAIQ_RUN_MODE: docker_lab
       VULNORAIQ_HOST: 0.0.0.0
       VULNORAIQ_PORT: "8787"
       VULNORAIQ_CONFIG_DIR: /app/config
@@ -19,7 +20,8 @@ services:
       VULNORAIQ_WEB_OUTPUT_ROOT: /data/reports
       VULNORAIQ_EVIDENCE_DIR: /data/evidence
       VULNORAIQ_AUDIT_DIR: /data/audit
-      VULNORAIQ_AUTH_ENABLED: "false"
+      VULNORAIQ_AUTH_MODE: local_admin
+      VULNORAIQ_LOCAL_ADMIN_BIND_OK: "true"
       VULNORAIQ_AGENT_LAB_ROOT: /data/agent_lab
       VULNORAIQ_AGENT_LAB_PROJECTS_ROOT: /data/agent_lab/projects
       VULNORAIQ_AGENT_LAB_ALLOWED_GIT_HOSTS: github.com,gitlab.com,bitbucket.org
