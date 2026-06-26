@@ -66,7 +66,7 @@ def _env_true(name: str) -> bool:
 
 
 class WebAuthManager:
-    """Role-aware auth manager driven by environment variables."""
+    """Role-aware auth manager with a local single-user admin mode."""
 
     def __init__(self, path: str | Path = "config/web_users.yaml") -> None:
         self.path = Path(path)
@@ -140,6 +140,9 @@ class WebAuthManager:
     def header_name(self) -> str:
         return str(self.load().get("auth", {}).get("header_name", "X-VulnoraIQ-Token"))
 
+    def local_admin(self) -> AuthPrincipal:
+        return AuthPrincipal("local-admin", "admin", _DEFAULT_PERMISSIONS["admin"], authenticated=False)
+
     def anonymous(self) -> AuthPrincipal:
         fixture_admin = (
             not self.is_production()
@@ -152,7 +155,7 @@ class WebAuthManager:
 
     def authenticate_token(self, token: str | None) -> AuthPrincipal | None:
         if not self.enabled():
-            return self.anonymous()
+            return self.local_admin()
 
         if not token:
             return None

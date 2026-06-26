@@ -1,19 +1,21 @@
 # VulnoraIQ
 
-**VulnoraIQ** is a self-hosted AI security testing application for authorised assessment of LLM applications, RAG systems, AI agents, and orchestration layers.
+**VulnoraIQ** is a self-hosted internal application for controlled laptop/server AI security testing of LLM applications, RAG systems, AI agents, and orchestration layers.
 
-VulnoraIQ is a **self-hosted internal application** for controlled **laptop/server** AI security testing, including controlled **internal server** deployment when production auth, reverse proxy, TLS, audit retention, and backup controls are configured. It provides a browser WebUI, CLI, Agent Lab, target configuration, scan execution, evidence capture, reports, audit logs, and CI validation workflows. Findings are **assessment evidence for human review**; VulnoraIQ does not claim certified VAPT-grade assurance. See [`docs/ASSESSMENT_ASSURANCE.md`](docs/ASSESSMENT_ASSURANCE.md).
+It provides a browser WebUI, CLI, Agent Lab, target configuration, scan execution, evidence capture, reports, audit logs, and validation workflows. Findings are assessment evidence for human review; VulnoraIQ does not claim certified VAPT-grade assurance. See [`docs/ASSESSMENT_ASSURANCE.md`](docs/ASSESSMENT_ASSURANCE.md).
+
+For operator setup and usage, see [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md).
 
 ## Product direction
 
-VulnoraIQ now has two explicit run modes.
+VulnoraIQ has two explicit run modes.
 
 | Mode | Best for | Where VulnoraIQ runs | Where imported AI agents run | Report location |
 | --- | --- | --- | --- | --- |
 | **Desktop Mode** | Normal desktop/laptop users | Host machine | Docker containers | `./scan-reports/` |
 | **Advanced Docker Lab Mode** | Servers, VMs, CI, dev/test labs | Docker Compose container | Docker containers | Docker `/data` volume or mapped folders |
 
-The intended product experience is:
+Desktop Mode and Docker Lab Mode use a **local single-user/admin WebUI session** by default. Production or shared internal-server deployments must explicitly enable auth and provide an admin token.
 
 ```text
 User clicks launcher
@@ -33,11 +35,11 @@ User clicks launcher
 | --- | --- |
 | Version | `0.2.0` beta |
 | WebUI | React browser console served by `webui.assistant_server` / `vulnoraiq-web`. |
-| Desktop Mode | Phase 1 source/package foundation. Primary launchers start VulnoraIQ on the host and create local `scan-reports/` and `agent-lab/` folders. |
+| Desktop Mode | Primary launchers start VulnoraIQ on the host, create local `scan-reports/` and `agent-lab/` folders, and open a local single-user/admin WebUI session. |
 | Advanced Docker Lab Mode | Full Docker Compose lab remains available through explicit Docker Lab launchers and manual Compose commands. |
 | Agent Lab | Experimental workflow at `/agent-lab` for importing real AI-agent projects, configuring provider/runtime settings, building/running agents in Docker, auto-creating targets, and launching scans. |
 | Persistence | SQLite job store, reports, evidence, audit logs, and Agent Lab metadata. |
-| Identity | Local/single-user auth model for current scope; direct OIDC/JWT is future work. |
+| Identity | Local single-user/admin mode for desktop/lab scope; production token auth and reverse-proxy identity are available for hardened internal deployments. Direct OIDC/JWT is future work. |
 
 ## Prerequisites
 
@@ -48,8 +50,6 @@ User clicks launcher
 | Agent Lab GPU mode | Host GPU container support. Agent Lab passes Docker GPU runtime flags; it does not install host GPU drivers. |
 | Local Ollama / LM Studio | Provider running on the host. Agent containers reach host providers through `host.docker.internal` where supported/configured. |
 | Development tests | Python 3.10 or newer, Node.js 20 or newer, npm, Playwright browser dependencies, and a modern browser. |
-
-**Packaging note:** Desktop Mode currently requires Python when running from a source checkout or source-style release package. The next packaging phase should bundle/freeze the runtime so normal users only need Docker Desktop plus the downloaded VulnoraIQ package.
 
 ## Quick start: Desktop Mode
 
@@ -64,10 +64,13 @@ Use this for normal laptop/workstation use.
 Desktop Mode performs the following steps:
 
 1. starts VulnoraIQ natively on the host;
-2. checks Docker is available for sandboxed Agent Lab runtimes;
-3. creates local output folders;
-4. starts the WebUI on `127.0.0.1:8787`;
-5. opens the browser.
+2. opens a local single-user/admin WebUI session on `127.0.0.1`;
+3. checks Docker is available for sandboxed Agent Lab runtimes;
+4. creates local output folders;
+5. starts the WebUI on `127.0.0.1:8787`;
+6. opens the browser.
+
+Desktop Mode **does not create a `vulnoraiq-web` Docker container**. Docker containers appear only when you import/deploy an AI agent or local test runtime. Use Docker Lab Mode when you intentionally want the VulnoraIQ WebUI itself to run inside Docker.
 
 Desktop Mode folder contract:
 
@@ -120,12 +123,6 @@ Open:
 http://127.0.0.1:8787
 ```
 
-The Docker Lab WebUI is published on host loopback only:
-
-```text
-127.0.0.1:8787:8787
-```
-
 Useful Docker Lab commands:
 
 ```bash
@@ -161,25 +158,9 @@ Import Agent
   -> Review dashboard, evidence, and reports
 ```
 
-Supported provider patterns include:
+Supported provider patterns include Ollama, LM Studio, OpenRouter, custom OpenAI-compatible endpoints, and custom environment variables.
 
-- Ollama local/OpenAI-compatible
-- LM Studio local/OpenAI-compatible
-- OpenRouter
-- custom OpenAI-compatible endpoints
-- custom environment variables
-
-In **Desktop Mode**, VulnoraIQ scans the sandboxed agent through a published localhost endpoint such as:
-
-```text
-http://127.0.0.1:<port>
-```
-
-In **Advanced Docker Lab Mode**, VulnoraIQ scans the sandboxed agent through Docker container DNS such as:
-
-```text
-http://vulnoraiq-agent-lab-<project>:8000
-```
+In Desktop Mode, VulnoraIQ scans sandboxed agents through published localhost endpoints. In Advanced Docker Lab Mode, VulnoraIQ can scan sandboxed agents through Docker container DNS.
 
 Agent Lab remains experimental because it builds and runs operator-provided code. Import and test only code and systems you own or are explicitly authorised to assess.
 
@@ -206,10 +187,10 @@ Run Docker Lab backend directly:
 python scripts/bootstrap_launch.py
 ```
 
-Run only the WebUI server:
+Run only the WebUI server in local single-user/admin mode:
 
 ```bash
-vulnoraiq-web --host 127.0.0.1 --port 8787
+VULNORAIQ_AUTH_ENABLED=false vulnoraiq-web --host 127.0.0.1 --port 8787
 ```
 
 ## Security boundary
@@ -227,7 +208,7 @@ Production/internal-server mode requires explicit hardening. For a shared intern
 ```bash
 export VULNORAIQ_ENV=production
 export VULNORAIQ_AUTH_ENABLED=true
-export VULNORAIQ_ADMIN_TOKEN="$(openssl rand -hex 32)"
+export VULNORAIQ_ADMIN_TOKEN=<strong-admin-token>
 export VULNORAIQ_JOB_STORE_BACKEND=sqlite
 export VULNORAIQ_JOB_STORE_PATH=/data/jobs.db
 export VULNORAIQ_WEB_OUTPUT_ROOT=/data/reports
@@ -258,28 +239,4 @@ WebUI browser flow:
 
 ```bash
 npm install
-npx playwright install chromium --with-deps
-npm run test:webui:hosted
 ```
-
-## Documentation
-
-| Need | Document |
-| --- | --- |
-| User guide | [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) |
-| Desktop vs Docker Lab run modes | [`docs/RUN_MODES_DESKTOP_AND_DOCKER_LAB.md`](docs/RUN_MODES_DESKTOP_AND_DOCKER_LAB.md) |
-| Agent Lab | [`docs/AGENT_LAB.md`](docs/AGENT_LAB.md), [`docs/AGENT_LAB_PLAN.md`](docs/AGENT_LAB_PLAN.md) |
-| Docker Lab | [`docs/DOCKER_TESTING.md`](docs/DOCKER_TESTING.md) |
-| WebUI | [`docs/WEBUI_GUIDE.md`](docs/WEBUI_GUIDE.md), [`docs/WEB_UI_TEST_CATALOG.md`](docs/WEB_UI_TEST_CATALOG.md) |
-| CLI | [`docs/CLI_GUIDE.md`](docs/CLI_GUIDE.md) |
-| Safety and targets | [`docs/SAFETY_MODEL.md`](docs/SAFETY_MODEL.md), [`docs/TARGET_CONFIGURATION.md`](docs/TARGET_CONFIGURATION.md) |
-| Deployment and operations | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md), [`docs/RUNBOOK.md`](docs/RUNBOOK.md), [`docs/INCIDENT_RESPONSE.md`](docs/INCIDENT_RESPONSE.md) |
-| Release and supply chain | [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md), [`docs/RELEASE_ARTIFACTS.md`](docs/RELEASE_ARTIFACTS.md), [`docs/SUPPLY_CHAIN_PIPELINE.md`](docs/SUPPLY_CHAIN_PIPELINE.md), [`docs/PYPI_PACKAGE.md`](docs/PYPI_PACKAGE.md) |
-| Assurance limits | [`docs/ASSESSMENT_ASSURANCE.md`](docs/ASSESSMENT_ASSURANCE.md), [`docs/PRODUCTION_READINESS_SCORECARD.md`](docs/PRODUCTION_READINESS_SCORECARD.md), [`docs/PRODUCTION_HARDENING_BACKLOG.md`](docs/PRODUCTION_HARDENING_BACKLOG.md) |
-| Future identity | [`docs/future-plans/OIDC_JWT_AUTH_PLAN.md`](docs/future-plans/OIDC_JWT_AUTH_PLAN.md) |
-
-## License and notices
-
-VulnoraIQ-specific source code and documentation are licensed under Apache-2.0. See [`LICENSE`](LICENSE).
-
-Some documentation and planning data is derived from MITRE ATLAS. MITRE ATLAS data is copyright 2021-2026 MITRE and licensed under the Apache License, Version 2.0. See [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

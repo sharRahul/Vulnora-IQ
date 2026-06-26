@@ -4,15 +4,9 @@ setlocal EnableExtensions
 REM VulnoraIQ Desktop Mode launcher for Windows.
 REM Source checkouts require Python 3.10+ on PATH.
 REM Docker Desktop is required for Docker-based runtime features.
+REM VulnoraIQ stores Desktop Mode output in scan-reports\.
 
 cd /d "%~dp0"
-echo ============================================================
-echo  VulnoraIQ Desktop Mode
-echo ============================================================
-echo.
-echo VulnoraIQ will run on this machine and store output in scan-reports\.
-echo Advanced Docker Lab mode is available through launch-vulnoraiq-docker-lab.bat.
-echo.
 
 where py >nul 2>nul
 if %ERRORLEVEL%==0 (

@@ -38,6 +38,7 @@ def _prepare_desktop_environment() -> dict[str, str]:
 
     env = os.environ.copy()
     _set_default_env(env, "VULNORAIQ_RUN_MODE", "desktop")
+    _set_default_env(env, "VULNORAIQ_AUTH_ENABLED", "false")
     _set_default_env(env, "VULNORAIQ_HOST", "127.0.0.1")
     _set_default_env(env, "VULNORAIQ_PORT", "8787")
     _set_default_env(env, "VULNORAIQ_JOB_STORE_PATH", scan_root / "jobs.db")
@@ -94,8 +95,9 @@ def main() -> None:
     print("============================================================")
     print(" VulnoraIQ Desktop Mode")
     print("============================================================")
-    print("VulnoraIQ will run natively on this machine.")
+    print("VulnoraIQ will run natively on this machine as a local single-user admin session.")
     print("Docker will be used only for sandboxed imported agents and local LLM/test runtimes.")
+    print("No VulnoraIQ Docker container is created in Desktop Mode.")
     print(f"Reports folder: {ROOT / 'scan-reports'}")
     print(f"Agent Lab folder: {ROOT / 'agent-lab'}")
     print("")
