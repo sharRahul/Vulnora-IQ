@@ -14,7 +14,7 @@
         <div>
           <p class="eyebrow">Experimental Agent Lab</p>
           <h1>Import, configure, run, register, and test real AI agents</h1>
-          <p class="lede">Use Git import, ZIP upload, or mapped project folders. Configure Ollama, LM Studio, OpenRouter, or custom OpenAI-compatible providers, then run the agent in Docker with optional GPU access and auto-create VulnoraIQ scan targets.</p>
+          <p class="lede">Use Git import, ZIP upload, local folder upload, or mapped project folders. Configure Ollama, LM Studio, OpenRouter, or custom OpenAI-compatible providers, then run the agent in Docker with optional GPU access and auto-create VulnoraIQ scan targets.</p>
         </div>
         <div class="hero-actions">
           <a href="/" class="button secondary">Main Console</a>
@@ -31,6 +31,7 @@
           <div class="tabs" role="tablist">
             <button class="tab active" data-tab="git">Git URL</button>
             <button class="tab" data-tab="zip">ZIP upload</button>
+            <button class="tab" data-tab="folder">Local folder upload</button>
             <button class="tab" data-tab="mounted">Mapped folder</button>
           </div>
 
@@ -45,6 +46,13 @@
             <label>Project ID<input id="zip-project-id" placeholder="agent-name" required /></label>
             <label>ZIP archive<input id="zip-file" type="file" accept=".zip,application/zip" required /></label>
             <button class="button" type="submit">Upload ZIP</button>
+          </form>
+
+          <form id="folder-form" class="tab-panel">
+            <label>Project ID <span class="optional">optional; defaults to selected folder name</span><input id="folder-project-id" placeholder="agent-name" /></label>
+            <label>Local agent folder<input id="folder-files" type="file" webkitdirectory directory multiple required /></label>
+            <p class="muted">Select a local AI-agent source folder. The browser uploads it into managed Agent Lab storage under <code>./agent-lab/projects/</code>; VulnoraIQ never receives a raw local filesystem path.</p>
+            <button class="button" type="submit">Upload Selected Folder</button>
           </form>
 
           <div id="mounted-panel" class="tab-panel">
