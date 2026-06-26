@@ -21,7 +21,7 @@ Desktop Mode and Docker Lab Mode use a **local single-user/admin WebUI session**
 User clicks launcher
   -> VulnoraIQ WebUI opens
   -> User imports/selects an AI agent in Agent Lab
-  -> VulnoraIQ stores the project under agent-lab/
+  -> VulnoraIQ stores WebUI imports under agent-lab/projects/
   -> User configures API key, local LLM, remote LLM, CPU/GPU runtime
   -> Docker runs only the sandboxed imported agent/runtime
   -> VulnoraIQ auto-creates a target
@@ -35,9 +35,9 @@ User clicks launcher
 | --- | --- |
 | Version | `0.2.0` beta |
 | WebUI | React browser console served by `webui.assistant_server` / `vulnoraiq-web`. |
-| Desktop Mode | Primary launchers start VulnoraIQ on the host, create local `scan-reports/` and `agent-lab/` folders, and open a guarded local single-user/admin WebUI session. |
+| Desktop Mode | Primary launchers start VulnoraIQ on the host, create local `scan-reports/`, `agent-lab/`, and optional mapped `projects/` folders, and open a guarded local single-user/admin WebUI session. |
 | Advanced Docker Lab Mode | Full Docker Compose lab remains available through explicit Docker Lab launchers and manual Compose commands. |
-| Agent Lab | Experimental workflow at `/agent-lab` for importing real AI-agent projects, configuring provider/runtime settings, building/running agents in Docker, auto-creating targets, and launching scans. |
+| Agent Lab | Experimental workflow at `/agent-lab` for importing real AI-agent projects through local folder upload, ZIP upload, Git import, or mapped folders; configuring provider/runtime settings; building/running agents in Docker; auto-creating targets; and launching scans. |
 | Persistence | SQLite job store, reports, evidence, audit logs, and Agent Lab metadata. |
 | Identity | `local_admin` mode for desktop/lab scope; production token auth and reverse-proxy identity are available for hardened internal deployments. Direct OIDC/JWT is future work. |
 
@@ -83,8 +83,11 @@ scan-reports/
   exports/
 
 agent-lab/
-  projects/
+  projects/          # WebUI imports: local folder upload, ZIP upload, Git import
   deployments.yaml
+
+projects/            # optional mapped AI-agent folders
+  <agent-name>/
 ```
 
 After startup, open:
@@ -157,6 +160,15 @@ Import Agent
   -> Run authorised scan
   -> Review dashboard, evidence, and reports
 ```
+
+Recommended import options:
+
+| Option | Typical use |
+| --- | --- |
+| **Local folder upload** | Select an AI-agent source folder in the browser and import it into managed `agent-lab/projects/`. This is the preferred desktop flow. |
+| **ZIP upload** | Upload a prepared project archive. |
+| **Git URL** | Import from an approved Git host. |
+| **Mapped folder** | Place projects under `./projects/<agent-name>/` and refresh them as read-only mapped projects. |
 
 Supported provider patterns include Ollama, LM Studio, OpenRouter, custom OpenAI-compatible endpoints, and custom environment variables.
 
@@ -240,5 +252,10 @@ python scripts/validate_runtime_production_config.py
 WebUI browser flow:
 
 ```bash
+cd webui/console
 npm install
+npm run typecheck
+npm run build
+npx playwright install chromium --with-deps
+npm run test:webui:hosted
 ```
