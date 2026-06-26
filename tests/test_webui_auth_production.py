@@ -10,7 +10,7 @@ def test_production_mode_rejects_disabled_auth(monkeypatch) -> None:
     monkeypatch.setenv("VULNORAIQ_ADMIN_TOKEN", "this-is-a-long-enough-admin-token-12345")
     monkeypatch.setenv("VULNORAIQ_AUTH_ENABLED", "false")
     manager = WebAuthManager()
-    with pytest.raises(RuntimeError, match="Production mode requires"):
+    with pytest.raises(RuntimeError, match="local_admin"):
         manager._validate_production()
 
 
@@ -153,6 +153,7 @@ def test_constant_time_comparison(monkeypatch) -> None:
 
 
 # -- Trusted proxy identity regression tests --
+
 
 def test_proxy_env_trust_headers_parsing() -> None:
     """TRUST_PROXY_HEADERS env var parsing rejects false values."""
