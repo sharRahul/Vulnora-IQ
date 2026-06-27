@@ -1,0 +1,99 @@
+"""Safe, minimal tool surface for the VulnoraIQ assistant.
+
+The assistant is a small helper agent, not an autonomous operator, so its tools
+are deliberately narrow and guarded:
+
+- :func:`web_fetch` performs a single HTTP(S) GET, blocks private/loopback/link
+  -local targets (SSRF guard), caps the response size, and returns readable text.
+  This is how the assistant can "look something up" when it does not know an
+  answer from its bundled knowledge.
+- :func:`read_text_file` reads a UTF-8 text file, but only from an allowlisted
+  root (the repository docs by default), so the model cannot exfiltrate arbitrary
+  host files.
+
+Both return short, structured strings suitable for injecting back into a prompt.
+"""
+from __future__ import annotations
+
+import ipaddress
+import os
+import re
+import socket
+import urllib.request
+from pathlib import Path
+from urllib.parse import urlparse
+
+_ROOT = Path(__file__).resolve().parents[1]
+_MAX_FETCH_BYTES = int(os.getenv("VULNORAIQ_ASSISTANT_FETCH_MAX_BYTES", str(200_000)))
+_TAG_RE = re.compile(r"<(script|style)[^>]*>.*?</\1>", re.I | re.S)
+_HTML_RE = re.compile(r"<[^>]+>")
+_WS_RE = re.compile(r"[ \t]*\n[ \t]*")
+
+
+def _read_root() -> Path:
+    configured = os.getenv("VULNORAIQ_ASSISTANT_READ_ROOT", "").strip()
+    return Path(configured) if configured else (_ROOT / "docs")
+
+
+def _host_is_public(host: str) -> bool:
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except OSError:
+        return False
+    for info in infos:
+        addr = info[4][0]
+        try:
+            ip = ipaddress.ip_address(addr.split("%")[0])
+        except ValueError:
+            return False
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+            return False
+    return True
+
+
+def web_fetch(url: str, *, timeout: float = 15.0) -> str:
+    """Fetch a public URL and return readable text (SSRF-guarded, size-capped)."""
+    parsed = urlparse(url.strip())
+    if parsed.scheme not in {"http", "https"}:
+        return "web_fetch error: only http/https URLs are allowed"
+    if not parsed.hostname:
+        return "web_fetch error: missing host"
+    if not _host_is_public(parsed.hostname):
+        return "web_fetch error: refusing to fetch a private, loopback, or reserved address"
+    request = urllib.request.Request(url, headers={"User-Agent": "VulnoraIQ-Assistant/1.0"})
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as resp:
+            raw = resp.read(_MAX_FETCH_BYTES + 1)
+            charset = resp.headers.get_content_charset() or "utf-8"
+    except Exception as exc:  # network failures are reported, not raised
+        return f"web_fetch error: {exc}"
+    truncated = len(raw) > _MAX_FETCH_BYTES
+    text = raw[:_MAX_FETCH_BYTES].decode(charset, errors="replace")
+    text = _TAG_RE.sub(" ", text)
+    text = _HTML_RE.sub(" ", text)
+    text = _WS_RE.sub("\n", text).strip()
+    if truncated:
+        text += "\n…[truncated]"
+    return text[:_MAX_FETCH_BYTES]
+
+
+def read_text_file(relative_path: str) -> str:
+    """Read a UTF-8 text file from inside the allowlisted read root."""
+    root = _read_root().resolve()
+    candidate = (root / relative_path).resolve()
+    if root not in candidate.parents and candidate != root:
+        return "read error: path is outside the allowed documentation root"
+    if not candidate.is_file():
+        return f"read error: no such file: {relative_path}"
+    try:
+        return candidate.read_text(encoding="utf-8", errors="replace")[:_MAX_FETCH_BYTES]
+    except OSError as exc:
+        return f"read error: {exc}"
+
+
+_URL_RE = re.compile(r"https?://[^\s)>\]]+")
+
+
+def extract_url(text: str) -> str | None:
+    match = _URL_RE.search(text or "")
+    return match.group(0) if match else None

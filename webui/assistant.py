@@ -6,6 +6,9 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
+from webui import assistant_knowledge, assistant_tools
+from webui.assistant_llm import LocalAssistantModel, ModelUnavailable
+
 
 @dataclass(slots=True)
 class AssistantSettings:
@@ -17,7 +20,13 @@ class AssistantSettings:
 
 
 class AssistantOrchestrator:
-    DEFAULT_SYSTEM_PROMPT = "Provide concise evidence-grounded guidance for authorised internal assessment work."
+    DEFAULT_SYSTEM_PROMPT = (
+        "You are the VulnoraIQ assistant, a focused helper for authorised AI/LLM security "
+        "assessment. You explain vulnerabilities, summarise evidence, and suggest mitigations. "
+        "You provide mitigation guidance only and never claim to apply fixes to a target. Ground "
+        "answers in the supplied finding evidence and reference material; if you are unsure, say so. "
+        "Findings are evidence requiring human review, not certified assurance."
+    )
 
     def __init__(self) -> None:
         self.provider = os.getenv("VULNORAIQ_ASSISTANT_PROVIDER", "local").strip().lower()
@@ -27,8 +36,11 @@ class AssistantOrchestrator:
             for item in os.getenv("VULNORAIQ_ASSISTANT_ALLOWED_MODELS", self.default_model).split(",")
             if item.strip()
         }
+        self._model = LocalAssistantModel.instance()
 
+    # ── configuration ─────────────────────────────────────────────────────────
     def available_config(self) -> dict[str, Any]:
+        status = self._model.status()
         return {
             "provider": self.provider,
             "default_model": self.default_model,
@@ -36,24 +48,97 @@ class AssistantOrchestrator:
             "default_temperature": 0.2,
             "default_system_prompt": self.DEFAULT_SYSTEM_PROMPT,
             "streaming_supported": False,
+            "local_model": status,
+            "tools": ["knowledge_base", "web_fetch", "read_docs"],
         }
 
+    # ── chat ────────────────────────────────────────────────────────────────────
     def chat(self, payload: dict[str, Any], actor: str) -> dict[str, Any]:
         started = time.monotonic()
         settings = self._settings(payload)
         prompt = self._prompt(payload)
         finding = payload.get("finding") if isinstance(payload.get("finding"), dict) else {}
-        content = self._local_chat(settings, prompt, finding)
+        content, backend, tools_used = self._respond(settings, prompt, finding)
         return {
             "role": "assistant",
             "content": content,
             "provider": settings.provider,
             "model": settings.model,
+            "backend": backend,
+            "tools_used": tools_used,
             "temperature": settings.temperature,
             "latency_ms": int((time.monotonic() - started) * 1000),
             "actor": actor,
             "safety_note": "Assistant output is advisory and requires human review before remediation or closure.",
         }
+
+    def explain_finding(self, finding: dict[str, Any]) -> dict[str, Any]:
+        """Generate a grounded, human-readable explanation for a single finding."""
+        started = time.monotonic()
+        summary = self._finding_summary(finding)
+        query = " ".join(
+            str(finding.get(key, "")) for key in ("title", "category", "owasp", "affected_component")
+        ) or str(finding.get("title", ""))
+        context = assistant_knowledge.context_block(query, limit=2)
+        if self._model.available():
+            messages = [
+                {"role": "system", "content": self.DEFAULT_SYSTEM_PROMPT},
+                {
+                    "role": "user",
+                    "content": (
+                        "Explain this security finding in 3-4 sentences for a reviewer: what the weakness is, "
+                        "why it matters, and what to check. Do not propose code fixes.\n\n"
+                        f"Finding:\n{summary}\n\nReference material:\n{context or '(none)'}"
+                    ),
+                },
+            ]
+            try:
+                text = self._model.generate(messages, temperature=0.2, max_tokens=320)
+                backend = "local-model"
+            except ModelUnavailable as exc:
+                text, backend = self._templated_explanation(finding, context), f"templated ({exc})"
+        else:
+            text, backend = self._templated_explanation(finding, context), "templated"
+        return {
+            "explanation": text,
+            "backend": backend,
+            "latency_ms": int((time.monotonic() - started) * 1000),
+            "safety_note": "Explanation is advisory; a human reviewer must validate the finding.",
+        }
+
+    # ── internals ─────────────────────────────────────────────────────────────
+    def _respond(self, settings: AssistantSettings, prompt: str, finding: dict[str, Any]) -> tuple[str, str, list[str]]:
+        tools_used: list[str] = []
+        finding_ctx = self._finding_summary(finding)
+        kb = assistant_knowledge.context_block(prompt + " " + finding_ctx, limit=3)
+        if kb:
+            tools_used.append("knowledge_base")
+        fetched = ""
+        url = assistant_tools.extract_url(prompt)
+        if url:
+            fetched = assistant_tools.web_fetch(url)[:4000]
+            tools_used.append("web_fetch")
+
+        if not self._model.available():
+            return self._templated_chat(prompt, finding_ctx, kb, fetched, available=False), "templated", tools_used
+
+        reference = "\n\n".join(part for part in (kb, (f"Fetched from {url}:\n{fetched}" if fetched else "")) if part)
+        messages = [
+            {"role": "system", "content": settings.system_prompt},
+            {
+                "role": "user",
+                "content": (
+                    f"{prompt}\n\n"
+                    f"Finding context:\n{finding_ctx}\n\n"
+                    f"Reference material (may be empty):\n{reference or '(none)'}"
+                ),
+            },
+        ]
+        try:
+            text = self._model.generate(messages, temperature=settings.temperature, max_tokens=settings.max_tokens)
+            return text, "local-model", tools_used
+        except ModelUnavailable as exc:
+            return self._templated_chat(prompt, finding_ctx, kb, fetched, available=False, error=str(exc)), "templated", tools_used
 
     def _settings(self, payload: dict[str, Any]) -> AssistantSettings:
         controls = payload.get("controls") if isinstance(payload.get("controls"), dict) else {}
@@ -103,15 +188,42 @@ class AssistantOrchestrator:
             parts.append(f"Recommendation: {recommendation}")
         return "\n".join(str(part)[:1000] for part in parts)
 
-    def _local_chat(self, settings: AssistantSettings, prompt: str, finding: dict[str, Any]) -> str:
+    def _templated_explanation(self, finding: dict[str, Any], context: str) -> str:
+        title = finding.get("title", "this finding")
+        base = (
+            f"{title} is reported as evidence from the authorised scan and requires human review. "
+            "Confirm the affected component, review the captured evidence, and assess exposure in the "
+            "deployment context before treating it as confirmed."
+        )
+        if context:
+            base += "\n\nRelevant reference:\n" + context.split("\n\n")[0]
+        base += "\n\n(The bundled assistant model is not installed; install the 'vulnoraiq[assistant]' extra for richer explanations.)"
+        return base
+
+    def _templated_chat(
+        self, prompt: str, finding_ctx: str, kb: str, fetched: str, *, available: bool, error: str = ""
+    ) -> str:
         lower = prompt.lower()
-        context = self._finding_summary(finding)
         if "test" in lower or "validate" in lower:
-            guidance = "Validation approach:\n1. Re-run the relevant VulnoraIQ profile.\n2. Confirm the original evidence no longer reproduces.\n3. Add a regression check.\n4. Record reviewer sign-off in the finding history."
+            guidance = (
+                "Validation approach:\n1. Re-run the relevant VulnoraIQ profile.\n2. Confirm the original "
+                "evidence no longer reproduces.\n3. Add a regression check.\n4. Record reviewer sign-off."
+            )
         elif "risk" in lower or "priority" in lower:
             guidance = "Risk review:\nPrioritise by exposure, trust boundary, data sensitivity, and governance category."
-        elif "fix" in lower or "remed" in lower:
-            guidance = "Remediation guidance:\nApply deterministic controls where possible, preserve evidence, and verify with a human reviewer."
+        elif "mitig" in lower or "fix" in lower or "remed" in lower:
+            guidance = "Mitigation guidance:\nApply deterministic controls, preserve evidence, and verify with a human reviewer. VulnoraIQ advises only; it does not change the target."
         else:
-            guidance = "Analysis guidance:\nReview the evidence, mapped governance context, and current remediation state before updating the finding."
-        return f"{guidance}\n\nFinding context considered:\n{context}\n\nModel controls: {settings.model}, temperature={settings.temperature}."
+            guidance = "Analysis guidance:\nReview the evidence, mapped governance context, and current mitigation state before updating the finding."
+        extra = ""
+        if kb:
+            extra += f"\n\nReference material:\n{kb.split(chr(10) + chr(10))[0]}"
+        if fetched:
+            extra += f"\n\nFetched content (excerpt):\n{fetched[:600]}"
+        note = (
+            "\n\n(The bundled assistant model is not installed, so this is templated guidance. "
+            "Install the 'vulnoraiq[assistant]' extra to enable the local model.)"
+        )
+        if error:
+            note = f"\n\n(Local model unavailable: {error}. Showing templated guidance.)"
+        return f"{guidance}\n\nFinding context considered:\n{finding_ctx}{extra}{note}"

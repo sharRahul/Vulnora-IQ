@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Added
+
+- Optional in-app assistant model (`pip install -e .[assistant]`): "Ask VulnoraIQ" and AI finding explanations now run a small GGUF model locally via `llama-cpp-python` (CPU or GPU), downloaded once on first use and cached — no Ollama or external API. Answers are grounded in the bundled OWASP notes and the selected finding, with safe `web_fetch` (SSRF-guarded) and allowlisted `read_docs` tools. Degrades gracefully to templated guidance when the model is not installed. New `POST /api/assistant/explain` endpoint; see `docs/ASSISTANT_MODEL.md` (incl. a path to fine-tune your own model on a 16 GB GPU).
+- Agent Lab: a per-project **Delete** button (managed projects only; mapped projects shown read-only).
+
+### Changed
+
+- WebUI is mitigation-only: removed the "Apply Fix" action and its `status:"fixed"` persistence; relabeled the panel to "Recommended Mitigation" / "Mitigation View" with an explicit "guidance only — a human owner must implement and verify" note. VulnoraIQ advises; it does not change the target.
+- Corrected the console branding from "VulnorAIQ" to "VulnoraIQ" everywhere on the UI.
+- Agent Lab import: "Local folder upload" is now the default first tab with a clearer "Browse & select your AI agent folder" picker.
+
 ### Fixed
 
 - Agent Lab project analysis no longer returns HTTP 500 for Flask projects that use a bare `@app.route("/")` without `methods=` (an optional regex group returned `None`, causing `AttributeError` in endpoint detection).

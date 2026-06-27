@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Columns2,
   FileCode2,
@@ -41,7 +41,46 @@ export function AnalysisWorkspace({
   onMarkForReview,
 }: AnalysisWorkspaceProps) {
   const [split, setSplit] = useState(true);
+  const [aiExplanation, setAiExplanation] = useState<string | null>(null);
   const status = statusStyles[finding.status];
+
+  // Fetch a model-grounded explanation for the selected finding. Falls back
+  // silently to the finding's own summary if the assistant is unavailable.
+  useEffect(() => {
+    let cancelled = false;
+    setAiExplanation(null);
+    (async () => {
+      try {
+        const tokenRes = await fetch("/api/csrf-token", { credentials: "same-origin" });
+        if (!tokenRes.ok) return;
+        const { csrf_token } = (await tokenRes.json()) as { csrf_token: string };
+        const res = await fetch("/api/assistant/explain", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf_token },
+          body: JSON.stringify({
+            finding: {
+              title: finding.title,
+              severity: finding.severity,
+              status: finding.status,
+              affected_component: finding.affectedPath,
+              recommendation: finding.remediation?.summary,
+            },
+          }),
+        });
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as { explanation?: string; backend?: string };
+        if (!cancelled && data.explanation && data.backend?.startsWith("local-model")) {
+          setAiExplanation(data.explanation);
+        }
+      } catch {
+        /* assistant optional; keep the finding's own summary */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [finding.id, finding.title, finding.affectedPath, finding.severity, finding.status, finding.remediation?.summary]);
 
   return (
     <div className="flex h-full flex-col">
@@ -73,7 +112,12 @@ export function AnalysisWorkspace({
           <Sparkles className="mt-0.5 size-4 shrink-0 text-[var(--accent-slate)]" />
           <p className="text-sm leading-relaxed text-foreground">
             <span className="font-semibold">Finding explanation · </span>
-            {finding.aiSummary}
+            {aiExplanation ?? finding.aiSummary}
+            {aiExplanation ? (
+              <span className="ml-1 rounded bg-[var(--accent-slate)]/15 px-1 text-[10px] font-semibold uppercase text-[var(--accent-slate)]">
+                AI
+              </span>
+            ) : null}
           </p>
         </div>
       </header>

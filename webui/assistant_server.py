@@ -123,6 +123,25 @@ class AssistantHostedWebUiHandler(base.HostedWebUiHandler):
             )
             self._send_json(response)
             return
+        if clean_path == "/api/assistant/explain":
+            principal = self._require_principal(client_ip, "POST", clean_path, request_id)
+            if not principal or not self._check_rate_limit(principal, client_ip):
+                return
+            if not base._validate_csrf(self._session_key(principal), self.headers.get("X-CSRF-Token")):
+                self._send_error_response(HTTPStatus.FORBIDDEN, "invalid or missing CSRF token")
+                return
+            if not base.AUTH_MANAGER.can(principal, "view_scans"):
+                self._forbidden()
+                return
+            payload = self._read_json()
+            finding = payload.get("finding") if isinstance(payload.get("finding"), dict) else {}
+            response = ASSISTANT.explain_finding(finding)
+            base._audit_structured(
+                "assistant_explain", principal, request_id, client_ip, "POST", clean_path, 200,
+                f"backend={response.get('backend')}",
+            )
+            self._send_json(response)
+            return
         if clean_path.startswith("/api/agent-lab/"):
             self._handle_agent_lab_post(clean_path, client_ip, request_id)
             return

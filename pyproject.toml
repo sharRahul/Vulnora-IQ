@@ -53,6 +53,12 @@ release = [
   "build>=1.2.1",
   "twine>=5.1.0"
 ]
+# Optional in-app assistant model (Ask VulnoraIQ + richer finding explanations).
+# Runs a small GGUF locally via llama.cpp on CPU or GPU; weights are downloaded
+# on first use and cached. For GPU, install a CUDA/Metal build of llama-cpp-python.
+assistant = [
+  "llama-cpp-python>=0.2.90"
+]
 
 [project.scripts]
 vulnoraiq = "scripts.run_scan:main"
@@ -113,3 +119,10 @@ ignore_errors = true
 no_implicit_optional = true
 check_untyped_defs = true
 exclude = "reports/output|build|dist|docker|tests|projects|agent-lab/projects|scan-reports|\\.manual-test-work|\\.pytest_tmp|core/scanner.py|webui/auth.py|scripts/run_functional_test.py"
+
+# numpy (pulled in only by the optional [assistant] extra) ships stubs that use
+# Python 3.12+ syntax; we target 3.10, so don't follow it.
+[[tool.mypy.overrides]]
+module = "numpy.*"
+follow_imports = "skip"
+follow_imports_for_stubs = true
