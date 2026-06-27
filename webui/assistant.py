@@ -49,7 +49,7 @@ class AssistantOrchestrator:
             "default_system_prompt": self.DEFAULT_SYSTEM_PROMPT,
             "streaming_supported": False,
             "local_model": status,
-            "tools": ["knowledge_base", "web_fetch", "read_docs"],
+            "tools": ["knowledge_base", "web_fetch", "read_docs", "cve_lookup"],
         }
 
     # ── chat ────────────────────────────────────────────────────────────────────
@@ -80,6 +80,9 @@ class AssistantOrchestrator:
             str(finding.get(key, "")) for key in ("title", "category", "owasp", "affected_component")
         ) or str(finding.get("title", ""))
         context = assistant_knowledge.context_block(query, limit=2)
+        cve_block = assistant_tools.cve_lookup(finding)
+        if cve_block:
+            context = context + "\n\n" + cve_block if context else cve_block
         if self._model.available():
             messages = [
                 {"role": "system", "content": self.DEFAULT_SYSTEM_PROMPT},
@@ -118,11 +121,20 @@ class AssistantOrchestrator:
         if url:
             fetched = assistant_tools.web_fetch(url)[:4000]
             tools_used.append("web_fetch")
+        cve_block = assistant_tools.cve_lookup(finding)
+        if cve_block:
+            tools_used.append("cve_lookup")
 
         if not self._model.available():
-            return self._templated_chat(prompt, finding_ctx, kb, fetched, available=False), "templated", tools_used
+            return self._templated_chat(prompt, finding_ctx, kb, fetched, cve_block, available=False), "templated", tools_used
 
-        reference = "\n\n".join(part for part in (kb, (f"Fetched from {url}:\n{fetched}" if fetched else "")) if part)
+        reference = "\n\n".join(
+            part for part in (
+                kb,
+                (f"Fetched from {url}:\n{fetched}" if fetched else ""),
+                cve_block,
+            ) if part
+        )
         messages = [
             {"role": "system", "content": settings.system_prompt},
             {
@@ -138,7 +150,7 @@ class AssistantOrchestrator:
             text = self._model.generate(messages, temperature=settings.temperature, max_tokens=settings.max_tokens)
             return text, "local-model", tools_used
         except ModelUnavailable as exc:
-            return self._templated_chat(prompt, finding_ctx, kb, fetched, available=False, error=str(exc)), "templated", tools_used
+            return self._templated_chat(prompt, finding_ctx, kb, fetched, cve_block, available=False, error=str(exc)), "templated", tools_used
 
     def _settings(self, payload: dict[str, Any]) -> AssistantSettings:
         controls = payload.get("controls") if isinstance(payload.get("controls"), dict) else {}
@@ -201,7 +213,7 @@ class AssistantOrchestrator:
         return base
 
     def _templated_chat(
-        self, prompt: str, finding_ctx: str, kb: str, fetched: str, *, available: bool, error: str = ""
+        self, prompt: str, finding_ctx: str, kb: str, fetched: str, cve_block: str = "", *, available: bool, error: str = ""
     ) -> str:
         lower = prompt.lower()
         if "test" in lower or "validate" in lower:
@@ -220,6 +232,8 @@ class AssistantOrchestrator:
             extra += f"\n\nReference material:\n{kb.split(chr(10) + chr(10))[0]}"
         if fetched:
             extra += f"\n\nFetched content (excerpt):\n{fetched[:600]}"
+        if cve_block:
+            extra += f"\n\n{cve_block}"
         note = (
             "\n\n(The bundled assistant model is not installed, so this is templated guidance. "
             "Install the 'vulnoraiq[assistant]' extra to enable the local model.)"

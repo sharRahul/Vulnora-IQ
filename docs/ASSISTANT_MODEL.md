@@ -21,7 +21,9 @@ gracefully to deterministic templated guidance, and nothing else breaks.
   dependency-free keyword retriever) plus the selected finding's evidence.
 - Tools (skills): **knowledge base** (bundled docs), **web_fetch** (a single,
   SSRF-guarded, size-capped HTTP GET so it can look something up when it does not
-  know), and **read_docs** (read-only, allowlisted to the docs folder).
+  know), **read_docs** (read-only, allowlisted to the docs folder), and
+  **cve_lookup** (auto-queries NVD + OSV for matching CVE records when a finding
+  has package or keyword information).
 
 ## Install
 
@@ -61,6 +63,7 @@ templated guidance — the WebUI keeps working.
 | `VULNORAIQ_ASSISTANT_GPU_LAYERS` | `auto`, `0` (CPU), or a layer count / `-1` (all GPU) | `auto` |
 | `VULNORAIQ_ASSISTANT_CTX` | Context window | `4096` |
 | `VULNORAIQ_ASSISTANT_READ_ROOT` | Allowlisted root for the `read_docs` tool | `docs/` |
+| `VULNORAIQ_CVE_TIMEOUT` | Timeout (seconds) for CVE API calls | `12` |
 
 ## Training your own model (16 GB GPU)
 
@@ -75,6 +78,9 @@ result in as a GGUF — no change to VulnoraIQ code:
    then quantize (e.g. `q4_k_m`).
 4. Point VulnoraIQ at it: `VULNORAIQ_ASSISTANT_MODEL_PATH=/path/to/your-model.gguf`.
 
-The assistant keeps the same tools (knowledge base, `web_fetch`, `read_docs`), so
-a model that does not know an answer can still fetch a reference URL the user
-provides. Custom training is a follow-up to this foundation, not a prerequisite.
+The assistant keeps the same tools (knowledge base, `web_fetch`, `read_docs`,
+`cve_lookup`), so a model that does not know an answer can still fetch a
+reference URL the user provides or look up known CVEs. The training dataset
+(`prepare_dataset.py`) now includes examples where the model references
+live CVE data from the lookup. Custom training is a follow-up to this
+foundation, not a prerequisite.

@@ -7,11 +7,14 @@ are deliberately narrow and guarded:
   -local targets (SSRF guard), caps the response size, and returns readable text.
   This is how the assistant can "look something up" when it does not know an
   answer from its bundled knowledge.
-- :func:`read_text_file` reads a UTF-8 text file, but only from an allowlisted
+- :func:`read_text_file` reads a UTF-8 text file, but from an allowlisted
   root (the repository docs by default), so the model cannot exfiltrate arbitrary
   host files.
+- :func:`cve_lookup` looks up public CVE records (NVD + OSV) for a finding,
+  returning structured CVE IDs, CVSS scores, and summaries. It is SSRF-guarded
+  and offline-safe: network failures return an empty result, not an error.
 
-Both return short, structured strings suitable for injecting back into a prompt.
+All return short, structured strings suitable for injecting back into a prompt.
 """
 from __future__ import annotations
 
@@ -93,7 +96,39 @@ def read_text_file(relative_path: str) -> str:
 
 _URL_RE = re.compile(r"https?://[^\s)>\]]+")
 
+_DUMMY_FINDING_KEYS = {"package", "ecosystem", "title", "category", "owasp", "cwe", "affected_component"}
+
 
 def extract_url(text: str) -> str | None:
     match = _URL_RE.search(text or "")
     return match.group(0) if match else None
+
+
+def cve_lookup(finding: dict[str, object], *, timeout: float = 15.0) -> str:
+    """Look up public CVE/advisory records for a finding (NVD + OSV).
+
+    Returns a formatted block safe to inject into a prompt, or an empty string
+    when offline or no finding keys are present.
+    """
+    if not any(k in finding for k in _DUMMY_FINDING_KEYS):
+        return ""
+    try:
+        from integrations.cve_lookup import lookup_for_finding
+
+        result = lookup_for_finding(finding, limit=4)
+    except Exception:
+        return ""
+    if not result.get("online"):
+        return ""
+    lines: list[str] = []
+    for m in result.get("matches", []):
+        lines.append(
+            f"- {m.get('id', '?')} ({m.get('source', '?')}) "
+            f"severity={m.get('severity', '?')} "
+            f"summary={m.get('summary', '')[:200]}"
+        )
+    if lines:
+        if result.get("candidate_novel"):
+            lines.append("\nNo matching public CVE found — candidate novel issue (human verification required).")
+        return "CVE lookup:\n" + "\n".join(lines)
+    return ""
