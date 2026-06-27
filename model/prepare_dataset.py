@@ -16,11 +16,12 @@ ASSURANCE_FILE = Path(__file__).resolve().parent.parent / "docs" / "ASSESSMENT_A
 OUTPUT_FILE = Path(__file__).resolve().parent / "train_dataset.jsonl"
 
 SYSTEM_PROMPT = (
-    "You are the VulnoraIQ assistant, a focused helper for authorised AI/LLM security "
+    "You are Nora, the VulnoraIQ assistant — a focused helper for authorised AI/LLM security "
     "assessment. You explain vulnerabilities, summarise evidence, and suggest mitigations. "
     "You provide mitigation guidance only and never claim to apply fixes to a target. Ground "
     "answers in the supplied finding evidence and reference material; if you are unsure, say so. "
-    "Findings are evidence requiring human review, not certified assurance."
+    "You never invent CVE identifiers, CVSS scores, or facts — defer to the provided reference "
+    "material and lookups. Findings are evidence requiring human review, not certified assurance."
 )
 
 IM_START = "<|im_start|>"
@@ -709,6 +710,230 @@ def generate_assurance_examples() -> list[dict]:
     ]
 
 
+KNOWLEDGE_DIR = Path(__file__).resolve().parent / "knowledge"
+
+# Sections to skip when mining the extracted PDFs — front/back matter, not content.
+_KNOWLEDGE_SKIP = (
+    "license", "creative commons", "copyright", "disclaimer", "table of contents",
+    "acknowledg", "contributor", "about owasp", "references", "appendix",
+)
+
+# Friendly topic names for question phrasing, keyed by a slug substring.
+_KNOWLEDGE_TOPICS = {
+    "top-10-for-agentic": "the OWASP Top 10 for Agentic Applications",
+    "agentic-ai-threats": "agentic AI threats and mitigations",
+    "mas-threat-modelling": "multi-agent system threat modelling",
+    "secure-mcp-server": "secure MCP server development",
+    "third-party-mcp": "using third-party MCP servers",
+    "red-teaming": "GenAI red teaming",
+    "data-security": "GenAI data security and privacy",
+    "ir-guide": "GenAI incident response",
+    "verification-standard": "the OWASP Application Security Verification Standard",
+    "samm": "OWASP SAMM",
+    "compass": "the OWASP GenAI COMPASS runbook",
+    "securing-agentic": "securing agentic applications",
+    "governance": "agentic AI security and governance",
+    "vendor-evaluation": "evaluating AI red-teaming vendors",
+    "solutions-reference": "the OWASP GenAI solutions reference",
+    "crosswalk": "the agentic applications control crosswalk",
+}
+
+
+def _knowledge_topic(slug: str) -> str:
+    for key, label in _KNOWLEDGE_TOPICS.items():
+        if key in slug:
+            return label
+    return "this OWASP GenAI security material"
+
+
+def _split_knowledge_sections(text: str) -> list[tuple[str, str]]:
+    text = re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL)
+    sections: list[tuple[str, str]] = []
+    heading = "Overview"
+    buffer: list[str] = []
+    for line in text.splitlines():
+        s = line.strip()
+        if s.startswith(">") or s.startswith("# "):  # skip provenance + the H1 title
+            continue
+        if s.startswith("## ") or s.startswith("### "):
+            if buffer:
+                sections.append((heading, "\n".join(buffer).strip()))
+                buffer = []
+            heading = s.lstrip("# ").strip() or heading
+        else:
+            buffer.append(line)
+    if buffer:
+        sections.append((heading, "\n".join(buffer).strip()))
+    return sections
+
+
+def _is_useful_section(heading: str, body: str) -> bool:
+    if not (200 <= len(body) <= 2000):
+        return False
+    blob = (heading + " " + body).lower()
+    if any(marker in blob for marker in _KNOWLEDGE_SKIP):
+        return False
+    letters = sum(c.isalpha() for c in body)
+    if letters < 0.5 * len(body):  # reject tables/symbol-heavy noise
+        return False
+    # Prose-density checks: reject sponsor/vendor lists, tables of contents, and
+    # other line-per-item fragments that are letter-rich but not actual prose.
+    lines = [ln.strip() for ln in body.splitlines() if ln.strip()]
+    if not lines:
+        return False
+    prose_lines = [ln for ln in lines if len(ln.split()) >= 6]
+    if len(prose_lines) / len(lines) < 0.45:
+        return False
+    if body.count(". ") < 2:  # needs at least a couple of sentences -> prose, not a list
+        return False
+    return True
+
+
+def _chunk_body(body: str, size: int = 1400) -> list[str]:
+    """Split an over-long section into prose-sized chunks on paragraph/line breaks.
+
+    Several extracted PDFs have few headings, so a whole multi-page section arrives
+    as one blob. Chunking lets the prose filter keep the good paragraphs instead of
+    rejecting the entire section for being too long.
+    """
+    body = body.strip()
+    if len(body) <= size:
+        return [body]
+    units = re.split(r"\n\s*\n", body)
+    if len(units) <= 1:
+        units = body.splitlines()
+    chunks: list[str] = []
+    current = ""
+    for unit in units:
+        unit = unit.strip()
+        if not unit:
+            continue
+        if current and len(current) + len(unit) + 1 > size:
+            chunks.append(current)
+            current = unit
+        else:
+            current = f"{current}\n{unit}" if current else unit
+    if current:
+        chunks.append(current)
+    return chunks
+
+
+def _is_informative_heading(heading: str) -> bool:
+    """A heading worth naming in a question (not 'Overview' or a truncated fragment)."""
+    h = heading.strip()
+    if h.lower() in {"overview", "introduction", "summary", "abstract", "background"}:
+        return False
+    words = h.split()
+    # require a couple of real words; reject 1-3 char fragments like "Hap"
+    return len(words) >= 2 and len(h) >= 8 and any(len(w) >= 4 for w in words)
+
+
+def _condense(body: str, limit: int = 520) -> str:
+    """Take the leading prose of a section, trimmed to a sentence boundary."""
+    snippet = " ".join(body.split())[:limit]
+    cut = max(snippet.rfind(". "), snippet.rfind("; "))
+    if cut > 200:
+        snippet = snippet[: cut + 1]
+    return snippet
+
+
+def generate_knowledge_examples(per_doc: int = 10) -> list[dict]:
+    """RAG-grounded Q&A mined from the extracted OWASP PDFs (``model/knowledge/``).
+
+    Each example pairs a question + the relevant section as ``Reference material``
+    with a grounded, safely-framed answer — training the small model to *use*
+    supplied context rather than recall facts from weights.
+    """
+    if not KNOWLEDGE_DIR.is_dir():
+        print(f"  knowledge dir not found ({KNOWLEDGE_DIR}); skipping grounded examples")
+        return []
+    examples: list[dict] = []
+    for path in sorted(KNOWLEDGE_DIR.glob("*.md")):
+        if path.name.lower() == "readme.md":
+            continue
+        slug = path.stem
+        topic = _knowledge_topic(slug)
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        useful: list[tuple[str, str]] = []
+        for heading, section in _split_knowledge_sections(text):
+            for chunk in _chunk_body(section):
+                if _is_useful_section(heading, chunk):
+                    useful.append((heading, chunk))
+        if not useful:
+            continue
+        random.shuffle(useful)
+        for heading, body in useful[:per_doc]:
+            ref = f"Reference material ({path.name} · {heading}):\n{body[:1500]}"
+            condensed = _condense(body)
+            if _is_informative_heading(heading):
+                q_templates = [
+                    f"What does the OWASP guidance say about {heading}?\n\n{ref}",
+                    f"I'm assessing {topic}. Summarise the key points on {heading}.\n\n{ref}",
+                    f"Explain {heading} and what a reviewer should check.\n\n{ref}",
+                ]
+                lead = f"{heading}: "
+            else:
+                q_templates = [
+                    f"Summarise the security guidance in this excerpt on {topic}.\n\n{ref}",
+                    f"I'm assessing {topic}. What are the key points in this material?\n\n{ref}",
+                    f"What should a reviewer take away from this {topic} excerpt?\n\n{ref}",
+                ]
+                lead = ""
+            user_text = random.choice(q_templates)
+            assistant_text = (
+                f"Based on the reference material ({path.name}), {lead}{condensed}\n\n"
+                f"This is reference guidance for authorised assessment of {topic} — validate it "
+                f"against the target's actual architecture and deployment context. Any related "
+                f"finding is evidence requiring human review, not certified assurance."
+            )
+            examples.append(_make_raw(user_text, assistant_text))
+    return examples
+
+
+def generate_identity_examples() -> list[dict]:
+    """Teach the assistant who it is and what its boundaries are (no reference needed)."""
+    pairs = [
+        (
+            "Who are you?",
+            "I'm Nora, the VulnoraIQ assistant — a helper for authorised AI/LLM security "
+            "assessment. I explain vulnerabilities, summarise finding evidence, and suggest "
+            "mitigations grounded in OWASP guidance and the reference material you provide. "
+            "I advise only; I do not change or fix your target, and my output requires human review.",
+        ),
+        (
+            "What's your name?",
+            "My name is Nora. I'm the VulnoraIQ assistant for authorised AI/LLM security "
+            "assessment, focused on explaining findings and suggesting mitigations for human review.",
+        ),
+        (
+            "What can you help me with?",
+            "As Nora, I can explain OWASP LLM and agentic-AI risk categories, interpret finding "
+            "evidence, suggest mitigations and controls, help you plan assessments, and ground "
+            "answers in the reference material you supply. I provide mitigation guidance only — I "
+            "never apply fixes to a target, and every finding I describe needs human validation.",
+        ),
+        (
+            "Can you fix the vulnerability in my system?",
+            "No — I'm Nora, and I provide mitigation guidance only. I can't and won't change a "
+            "target system. I'll explain the weakness and the secure baseline, but a human must "
+            "implement and verify any remediation, then re-assess to confirm it is effective.",
+        ),
+        (
+            "Are your findings certified or guaranteed?",
+            "No. I'm Nora, and what I produce is evidence requiring human review, not certified "
+            "VAPT-grade assurance. False positives and false negatives are expected; a human "
+            "reviewer must confirm scope, evidence, and context before treating a finding as real.",
+        ),
+        (
+            "Do you know all the CVEs for this?",
+            "I don't carry a CVE database in memory, and I won't invent CVE IDs or CVSS scores. "
+            "Run the VulnoraIQ NVD/OSV lookup and share the results — then I, Nora, can help you "
+            "correlate each record against your evidence, which still needs human validation.",
+        ),
+    ]
+    return [_make_raw(u, a) for u, a in pairs]
+
+
 def finding_triage(doc: dict[str, str], path: Path) -> list[dict]:
     title = doc.get("title", path.stem)
     vulnerable = doc.get("vulnerable_expected_behaviour", "")
@@ -1042,6 +1267,14 @@ def main() -> None:
     asr = generate_assurance_examples()
     all_examples.extend(asr)
     print(f"  ASSESSMENT_ASSURANCE.md: {len(asr)} examples")
+
+    ident = generate_identity_examples()
+    all_examples.extend(ident)
+    print(f"  Nora identity: {len(ident)} examples")
+
+    know = generate_knowledge_examples()
+    all_examples.extend(know)
+    print(f"  model/knowledge (grounded PDF Q&A): {len(know)} examples")
 
     seen = set()
     deduped = []
