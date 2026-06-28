@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
-  ExternalLink,
   Filter,
   Loader2,
   PlayCircle,
@@ -19,7 +18,6 @@ import { Button } from "@/components/ui/button";
 import type { ConnectivityResult, ScanEvent, ScanJob, TargetConfig, TargetRecord } from "@/types";
 import { cn } from "@/lib/utils";
 
-const TARGET_TYPES = ["http_json", "chat_completions", "ollama_generate", "webhook_json", "rag_query", "agent_tool_loop"];
 const ENVIRONMENTS = ["local", "lab", "internal", "production-like"];
 const SCAN_PROFILES = ["baseline", "rag", "agent", "full", "owasp-aitg-full"];
 
@@ -61,7 +59,6 @@ function parseJsonField(value: string, fallback: unknown): unknown {
 
 function targetHealth(target: TargetRecord): "ready" | "needs-owner" | "needs-auth" | "external" {
   if (target.config.allow_external) return "external";
-  if (!target.config.owner?.contact) return "needs-owner";
   if (target.config.authorisation_required === false) return "needs-auth";
   return "ready";
 }
@@ -89,6 +86,9 @@ export function TargetsManager() {
   const [error, setError] = useState<string | null>(null);
   const [liveEvents, setLiveEvents] = useState<ScanEvent[]>([]);
   const [streamState, setStreamState] = useState<"idle" | "connecting" | "live" | "error" | "complete">("idle");
+  // Maps a hosted-agent id to its live host base URL (http://127.0.0.1:<published port>),
+  // so an agent-backed target's Base URL is always taken from Docker, never typed.
+  const [agentBaseUrls, setAgentBaseUrls] = useState<Record<string, string>>({});
 
   const selected = useMemo(() => targets.find((target) => target.id === selectedId), [selectedId, targets]);
   const filteredTargets = useMemo(() => {
@@ -131,6 +131,21 @@ export function TargetsManager() {
       setError(exc instanceof Error ? exc.message : String(exc));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadAgentBaseUrls() {
+    try {
+      const data = await api<{ agents: { id: string; ports?: string }[] }>("/api/agents");
+      const map: Record<string, string> = {};
+      for (const agent of data.agents || []) {
+        // ports look like "0.0.0.0:8099->8099/tcp, [::]:8099->8099/tcp"; take the first host port.
+        const match = /:(\d+)->/.exec(agent.ports || "");
+        if (match) map[agent.id] = `http://127.0.0.1:${match[1]}`;
+      }
+      setAgentBaseUrls(map);
+    } catch {
+      // Agent host unavailable; fall back to the stored base URL.
     }
   }
 
@@ -272,15 +287,27 @@ export function TargetsManager() {
   useEffect(() => {
     void loadTargets();
     void loadJobs();
+    void loadAgentBaseUrls();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Base URL is always taken from Docker: derive it from the matching hosted agent's
+  // live published port and keep it locked (no manual entry).
+  const agentId = draftId.replace(/^agent-/, "");
+  const dockerBaseUrl = agentBaseUrls[agentId] || "";
+  const lockedBaseUrl = dockerBaseUrl || draft.base_url || "";
+  useEffect(() => {
+    if (dockerBaseUrl && draft.base_url !== dockerBaseUrl) {
+      setDraft((d) => ({ ...d, base_url: dockerBaseUrl }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dockerBaseUrl]);
 
   const isExternal = draft.allow_external === true;
   const safetyChecklist = [
     { label: "Authorisation gate", ok: draft.authorisation_required !== false },
-    { label: "Owner contact", ok: Boolean(draft.owner?.contact) },
-    { label: "Bounded rate limit", ok: Number(draft.rate_limit?.requests_per_second || 0) > 0 },
-    { label: "Safety profile", ok: Boolean(draft.safety_profile) },
+    { label: "Base URL from Docker", ok: Boolean(lockedBaseUrl) },
+    { label: "Endpoint configured", ok: Boolean(draft.endpoint_path) },
   ];
 
   return (
@@ -348,28 +375,23 @@ export function TargetsManager() {
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(300px,360px)]">
             <div className="space-y-4">
               <div className="grid gap-4 lg:grid-cols-2">
-                <Field label="Target ID"><input value={draftId} onChange={(e) => setDraftId(e.target.value)} className="input" /></Field>
+                <Field label="Target ID"><input value={draftId} readOnly tabIndex={-1} aria-readonly="true" className="input font-mono cursor-not-allowed opacity-70" /></Field>
                 <Field label="Display name"><input value={draft.name || ""} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className="input" /></Field>
-                <Field label="Type"><select value={draft.type} onChange={(e) => setDraft({ ...draft, type: e.target.value })} className="input">{TARGET_TYPES.map((type) => <option key={type}>{type}</option>)}</select></Field>
-                <Field label="Environment"><select value={draft.environment || "local"} onChange={(e) => setDraft({ ...draft, environment: e.target.value })} className="input">{ENVIRONMENTS.map((env) => <option key={env}>{env}</option>)}</select></Field>
-                <Field label="Base URL"><input value={draft.base_url || ""} onChange={(e) => setDraft({ ...draft, base_url: e.target.value })} className="input font-mono" placeholder="http://127.0.0.1:9090" /></Field>
-                <Field label="Endpoint path"><input value={draft.endpoint_path || ""} onChange={(e) => setDraft({ ...draft, endpoint_path: e.target.value })} className="input font-mono" placeholder="/agent" /></Field>
-                <Field label="HTTP method"><select value={draft.method || "POST"} onChange={(e) => setDraft({ ...draft, method: e.target.value })} className="input"><option>POST</option><option>GET</option></select></Field>
-                <Field label="Response extraction path"><input value={draft.response_extraction_path || ""} onChange={(e) => setDraft({ ...draft, response_extraction_path: e.target.value })} className="input font-mono" placeholder="choices.0.message.content" /></Field>
+                <Field label="Base URL">
+                  <input value={lockedBaseUrl} readOnly tabIndex={-1} aria-readonly="true" className="input font-mono cursor-not-allowed opacity-70" placeholder="Set automatically when an agent is deployed" />
+                  <span className="mt-1 block text-[11px] text-muted-foreground">{dockerBaseUrl ? "From the deployed agent container." : "Auto-set from Docker on deploy — not edited here."}</span>
+                </Field>
+                <Field label="Endpoint path"><input value={draft.endpoint_path || ""} readOnly tabIndex={-1} aria-readonly="true" className="input font-mono cursor-not-allowed opacity-70" placeholder="Set on deploy" /></Field>
                 <Field label="Auth token env var"><input value={draft.auth_token_env || draft.token_env_var || ""} onChange={(e) => setDraft({ ...draft, auth_token_env: e.target.value, token_env_var: undefined })} className="input font-mono" placeholder="LLM_VAPT_TARGET_TOKEN" /></Field>
-                <Field label="Safety profile"><input value={draft.safety_profile || ""} onChange={(e) => setDraft({ ...draft, safety_profile: e.target.value })} className="input" /></Field>
-                <Field label="Timeout seconds"><input type="number" value={draft.timeout || 30} onChange={(e) => setDraft({ ...draft, timeout: Number(e.target.value) })} className="input" /></Field>
-                <Field label="Rate limit / second"><input type="number" step="0.1" value={draft.rate_limit?.requests_per_second || 1} onChange={(e) => setDraft({ ...draft, rate_limit: { requests_per_second: Number(e.target.value) } })} className="input" /></Field>
               </div>
               <div className="grid gap-4 lg:grid-cols-2">
-                <Field label="Headers JSON"><textarea value={headersText} onChange={(e) => setHeadersText(e.target.value)} className="input min-h-32 font-mono text-xs" /></Field>
-                <Field label="Request body template JSON"><textarea value={bodyText} onChange={(e) => setBodyText(e.target.value)} className="input min-h-32 font-mono text-xs" /></Field>
+                <Field label="Response extraction path"><input value={draft.response_extraction_path || ""} readOnly tabIndex={-1} aria-readonly="true" className="input font-mono cursor-not-allowed opacity-70" placeholder="Set on deploy" /></Field>
+                <Field label="Request body template JSON"><textarea value={bodyText} readOnly tabIndex={-1} aria-readonly="true" className="input min-h-32 font-mono text-xs cursor-not-allowed opacity-70" /></Field>
               </div>
-              <div className="grid gap-4 lg:grid-cols-3">
+              <div className="grid gap-4">
                 <Toggle checked={draft.authorisation_required !== false} onChange={(checked) => setDraft({ ...draft, authorisation_required: checked })} title="Authorisation required" body="Required for all real targets." />
-                <Toggle checked={draft.allow_external === true} onChange={(checked) => setDraft({ ...draft, allow_external: checked })} title="Allow external host" body="Overrides the loopback/internal host guard for authorised scopes." icon={<ExternalLink className="size-4" />} />
-                <Field label="Owner/contact"><input value={draft.owner?.contact || ""} onChange={(e) => setDraft({ ...draft, owner: { ...(draft.owner || {}), contact: e.target.value } })} className="input" placeholder="team@example.com" /></Field>
               </div>
+              <p className="text-[11px] text-muted-foreground">Request body, response path, endpoint and base URL are configured when you deploy the agent (Agents tab) and shown read-only here.</p>
             </div>
 
             <aside className="space-y-4">

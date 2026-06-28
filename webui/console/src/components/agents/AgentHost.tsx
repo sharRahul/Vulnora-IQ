@@ -27,8 +27,9 @@ interface AgentRecord {
 }
 
 interface AgentTemplate {
-  display_name: string;
-  description: string;
+  display_name?: string;
+  description?: string;
+  image?: string;
 }
 
 async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -66,6 +67,46 @@ export function AgentHost() {
   const [logs, setLogs] = useState("");
   const [customImage, setCustomImage] = useState("");
   const [customEnv, setCustomEnv] = useState("");
+  const [customPort, setCustomPort] = useState("");
+  const [customEndpoint, setCustomEndpoint] = useState("/");
+  const [customBody, setCustomBody] = useState('{"prompt": "{{prompt}}"}');
+  const [customResponse, setCustomResponse] = useState("response");
+  const [showAddTemplate, setShowAddTemplate] = useState(false);
+  const [tplKey, setTplKey] = useState("");
+  const [tplImage, setTplImage] = useState("");
+  const [tplPort, setTplPort] = useState("");
+  const [tplEndpoint, setTplEndpoint] = useState("/");
+
+  async function saveTemplate() {
+    if (!tplKey.trim() || !tplImage.trim()) return;
+    setError(null);
+    try {
+      const token = await csrfToken();
+      await api("/api/agents/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": token },
+        body: JSON.stringify({ key: tplKey.trim(), image: tplImage.trim(), port: tplPort.trim(), endpoint: tplEndpoint.trim() }),
+      });
+      setTplKey(""); setTplImage(""); setTplPort(""); setTplEndpoint("/"); setShowAddTemplate(false);
+      await loadAgents();
+    } catch (exc) {
+      setError(exc instanceof Error ? exc.message : String(exc));
+    }
+  }
+
+  async function deleteTemplate(key: string) {
+    setError(null);
+    try {
+      const token = await csrfToken();
+      await api(`/api/agents/templates/${encodeURIComponent(key)}/delete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": token },
+      });
+      await loadAgents();
+    } catch (exc) {
+      setError(exc instanceof Error ? exc.message : String(exc));
+    }
+  }
 
   async function loadAgents() {
     setLoading(true);
@@ -91,6 +132,10 @@ export function AgentHost() {
         body.template = templateKey;
       } else {
         body.image = customImage;
+        if (customPort.trim()) body.port = customPort.trim();
+        if (customEndpoint.trim()) body.endpoint = customEndpoint.trim();
+        if (customBody.trim()) body.body_template = customBody.trim();
+        if (customResponse.trim()) body.response_path = customResponse.trim();
         if (customEnv.trim()) {
           const env: Record<string, string> = {};
           customEnv.split("\n").filter(Boolean).forEach((line) => {
@@ -112,6 +157,10 @@ export function AgentHost() {
       setDeploying(false);
       setCustomImage("");
       setCustomEnv("");
+      setCustomPort("");
+      setCustomEndpoint("/");
+      setCustomBody('{"prompt": "{{prompt}}"}');
+      setCustomResponse("response");
     }
   }
 
@@ -205,34 +254,76 @@ export function AgentHost() {
 
           <aside className="space-y-4">
             <div className="rounded-xl border border-border bg-card p-4 shadow-card">
-              <h3 className="ui-title-row font-bold"><Plus className="size-4" /> <span>Deploy from Template</span></h3>
-              <p className="mt-1 text-xs text-muted-foreground">Pre-defined agent images with auto-registered scan targets.</p>
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="ui-title-row font-bold"><Plus className="size-4" /> <span>Deploy from Template</span></h3>
+                <Button size="sm" variant="ghost" onClick={() => setShowAddTemplate((v) => !v)}>
+                  <Plus className="size-3.5" /> <span>Add template</span>
+                </Button>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">Saved agent images you can redeploy; each auto-registers a scan target.</p>
               <div className="mt-3 space-y-2">
                 {Object.entries(templates).map(([key, tmpl]) => (
                   <div key={key} className="rounded-lg border border-border bg-canvas p-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="font-semibold text-sm">{tmpl.display_name}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{tmpl.description}</p>
+                        <p className="font-semibold text-sm break-anywhere">{tmpl.display_name || key}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 break-anywhere font-mono">{tmpl.description || tmpl.image}</p>
                       </div>
-                      <Button size="sm" variant="primary" disabled={deploying} onClick={() => deployAgent(key, key)}>
-                        {deploying ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
-                        <span>Deploy</span>
-                      </Button>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <Button size="sm" variant="primary" disabled={deploying} onClick={() => deployAgent(key, key)}>
+                          {deploying ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
+                          <span>Deploy</span>
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => void deleteTemplate(key)} title="Delete template"><Trash2 className="size-3.5" /></Button>
+                      </div>
                     </div>
                   </div>
                 ))}
-                {Object.keys(templates).length === 0 ? <p className="text-xs text-muted-foreground">No templates configured. Add them to config/agent_templates.yaml.</p> : null}
+                {Object.keys(templates).length === 0 && !showAddTemplate ? <p className="text-xs text-muted-foreground">No templates yet. Use “Add template” to save a reusable agent image.</p> : null}
+
+                {showAddTemplate ? (
+                  <div className="space-y-2 rounded-lg border border-dashed border-border bg-canvas p-3">
+                    <input value={tplKey} onChange={(e) => setTplKey(e.target.value)} className="input text-sm" placeholder="Template name (e.g. my-agent)" />
+                    <input value={tplImage} onChange={(e) => setTplImage(e.target.value)} className="input font-mono text-sm" placeholder="Docker image (e.g. org/agent:latest)" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input value={tplPort} onChange={(e) => setTplPort(e.target.value)} inputMode="numeric" className="input font-mono text-sm" placeholder="Port (8000)" />
+                      <input value={tplEndpoint} onChange={(e) => setTplEndpoint(e.target.value)} className="input font-mono text-sm" placeholder="/chat" />
+                    </div>
+                    <Button size="sm" variant="primary" className="w-full" disabled={!tplKey.trim() || !tplImage.trim()} onClick={() => void saveTemplate()}>
+                      <Plus className="size-3.5" /> <span>Save template</span>
+                    </Button>
+                  </div>
+                ) : null}
               </div>
             </div>
 
             <div className="rounded-xl border border-border bg-card p-4 shadow-card">
               <h3 className="ui-title-row font-bold"><Server className="size-4" /> <span>Deploy Custom Image</span></h3>
-              <p className="mt-1 text-xs text-muted-foreground">Deploy any Docker image as a hosted agent.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Deploy any Docker image as a hosted agent. Set the port it listens on to auto-register it as a scannable target.</p>
               <div className="mt-3 space-y-3">
                 <label className="block">
                   <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Docker image</span>
                   <input value={customImage} onChange={(e) => setCustomImage(e.target.value)} className="input mt-1 font-mono text-sm" placeholder="my-agent:latest" />
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="block">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Port</span>
+                    <input value={customPort} onChange={(e) => setCustomPort(e.target.value)} inputMode="numeric" className="input mt-1 font-mono text-sm" placeholder="8000" />
+                  </label>
+                  <label className="block">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Endpoint path</span>
+                    <input value={customEndpoint} onChange={(e) => setCustomEndpoint(e.target.value)} className="input mt-1 font-mono text-sm" placeholder="/chat" />
+                  </label>
+                </div>
+                <label className="block">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Request body template</span>
+                  <textarea value={customBody} onChange={(e) => setCustomBody(e.target.value)} className="input mt-1 min-h-16 font-mono text-xs" placeholder='{"prompt": "{{prompt}}"}' />
+                  <span className="mt-1 block text-[11px] text-muted-foreground">How the scanner wraps the prompt. Use {"{{prompt}}"} as the placeholder.</span>
+                </label>
+                <label className="block">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Response extraction path</span>
+                  <input value={customResponse} onChange={(e) => setCustomResponse(e.target.value)} className="input mt-1 font-mono text-sm" placeholder="response" />
+                  <span className="mt-1 block text-[11px] text-muted-foreground">Where the agent's reply sits in the JSON (e.g. response, choices.0.message.content).</span>
                 </label>
                 <label className="block">
                   <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Environment variables (KEY=VALUE, one per line)</span>

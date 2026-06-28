@@ -117,6 +117,29 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+@layer components {
+  /* Base form control. Lives in the components layer (not utilities) so Tailwind
+     utilities applied alongside it — e.g. `pl-8` to clear a leading icon — win the
+     cascade instead of being overridden by this class's own padding. */
+  .input {
+    width: 100%;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border);
+    background: var(--canvas);
+    color: var(--foreground);
+    padding: 0.55rem 0.65rem;
+    line-height: 1.35;
+    outline: none;
+  }
+  .input:focus {
+    box-shadow: 0 0 0 2px var(--ring);
+  }
+  .input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
 @layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;
@@ -168,23 +191,6 @@ body {
     gap: 0.5rem;
   }
 
-  .input {
-    width: 100%;
-    border-radius: 0.5rem;
-    border: 1px solid var(--border);
-    background: var(--canvas);
-    color: var(--foreground);
-    padding: 0.55rem 0.65rem;
-    line-height: 1.35;
-    outline: none;
-  }
-  .input:focus {
-    box-shadow: 0 0 0 2px var(--ring);
-  }
-  .input:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
   .skeleton-shimmer {
     position: relative;
     overflow: hidden;

@@ -26,6 +26,9 @@ interface HeaderBarProps {
   scanFindingCount?: number;
   scanDisabled?: boolean;
   onToggleScan: () => void;
+  targets?: { id: string; label: string }[];
+  selectedTarget?: string;
+  onSelectTarget?: (id: string) => void;
 }
 
 export function HeaderBar({
@@ -39,6 +42,9 @@ export function HeaderBar({
   scanFindingCount = 0,
   scanDisabled = false,
   onToggleScan,
+  targets = [],
+  selectedTarget = "",
+  onSelectTarget,
 }: HeaderBarProps) {
   const scanLabel = scanning
     ? `${scanStatusLabel || "Scan running"} · ${Math.round(scanProgressPercent)}% · ${scanFindingCount} findings`
@@ -103,6 +109,23 @@ export function HeaderBar({
           />
           <span className="truncate">{scanLabel}</span>
         </span>
+
+        {targets.length > 0 ? (
+          <label className="hidden items-center gap-1.5 sm:inline-flex" title="Target to scan">
+            <span className="sr-only">Target to scan</span>
+            <select
+              value={selectedTarget}
+              onChange={(e) => onSelectTarget?.(e.target.value)}
+              disabled={scanning}
+              className="input h-8 max-w-[200px] py-0 text-xs"
+              aria-label="Target to scan"
+            >
+              {targets.map((t) => (
+                <option key={t.id} value={t.id}>{t.label}</option>
+              ))}
+            </select>
+          </label>
+        ) : null}
 
         <Button variant="primary" size="sm" onClick={onToggleScan} disabled={scanning || scanDisabled} className="shrink-0" title={scanDisabled ? "No targets configured. Add a target in the Targets view first." : "Run a scan"}>
           {scanning ? (

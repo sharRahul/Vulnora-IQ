@@ -159,6 +159,7 @@ function ConsoleInner() {
   const [scanPhase, setScanPhase] = useState("Idle");
   const [liveFindingCount, setLiveFindingCount] = useState(0);
   const [configuredTargetIds, setConfiguredTargetIds] = useState<string[]>([]);
+  const [configuredTargets, setConfiguredTargets] = useState<{ id: string; label: string }[]>([]);
   const [scanTargetId, setScanTargetId] = useState<string>("");
 
   const displayFindings = runtimeFindings;
@@ -193,6 +194,7 @@ function ConsoleInner() {
       const data = await api<{ targets: Record<string, TargetConfig> }>("/api/targets");
       const ids = Object.keys(data.targets || {});
       setConfiguredTargetIds(ids);
+      setConfiguredTargets(ids.map((id) => ({ id, label: data.targets[id]?.name || id })));
       if (!scanTargetId && ids.length > 0) setScanTargetId(ids[0]);
     } catch {
       // Targets unavailable; scan button will be disabled.
@@ -318,7 +320,7 @@ function ConsoleInner() {
   const intelPane = selectedFinding ? <IntelligencePanel finding={selectedFinding} /> : <EmptyState icon={ScanSearch} title="No finding selected" description="Vulnerability intelligence and the Ask VulnoraIQ assistant appear here after a real backend finding is selected." />;
 
   return (
-    <AppShell view={view} onChangeView={setView} theme={theme} onToggleTheme={toggleTheme} scanning={scanning} scanStatusLabel={scanPhase} scanProgressPercent={scanProgressPercent} scanFindingCount={liveFindingCount} scanDisabled={configuredTargetIds.length === 0} onToggleScan={handleToggleScan}>
+    <AppShell view={view} onChangeView={setView} theme={theme} onToggleTheme={toggleTheme} scanning={scanning} scanStatusLabel={scanPhase} scanProgressPercent={scanProgressPercent} scanFindingCount={liveFindingCount} scanDisabled={configuredTargetIds.length === 0} onToggleScan={handleToggleScan} targets={configuredTargets} selectedTarget={scanTargetId} onSelectTarget={setScanTargetId}>
       {view === "projects" ? <ProjectImporter /> : view === "agents" ? <AgentHost /> : view === "targets" ? <TargetsManager /> : view === "overview" ? (
         <div className="h-full overflow-y-auto scrollbar-thin p-4 sm:p-6">
           <div className="mx-auto max-w-[1400px]">
