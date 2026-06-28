@@ -43,6 +43,30 @@ def load_templates() -> dict[str, Any]:
     return data.get("templates", {})
 
 
+def save_template(key: str, template: dict[str, Any]) -> dict[str, Any]:
+    """Persist a deployable agent template to config/agent_templates.yaml."""
+    data: dict[str, Any] = {}
+    if TEMPLATES_PATH.exists():
+        data = yaml.safe_load(TEMPLATES_PATH.read_text(encoding="utf-8")) or {}
+    templates = data.setdefault("templates", {})
+    templates[key] = template
+    TEMPLATES_PATH.parent.mkdir(parents=True, exist_ok=True)
+    TEMPLATES_PATH.write_text(yaml.safe_dump(data, sort_keys=True), encoding="utf-8")
+    return template
+
+
+def delete_template(key: str) -> bool:
+    if not TEMPLATES_PATH.exists():
+        return False
+    data = yaml.safe_load(TEMPLATES_PATH.read_text(encoding="utf-8")) or {}
+    templates = data.get("templates", {})
+    if key not in templates:
+        return False
+    del templates[key]
+    TEMPLATES_PATH.write_text(yaml.safe_dump(data, sort_keys=True), encoding="utf-8")
+    return True
+
+
 class AgentHost:
     def list_agents(self) -> list[dict[str, Any]]:
         try:
@@ -73,7 +97,7 @@ class AgentHost:
                 return agent
         return None
 
-    def deploy(self, agent_id: str, template_key: str | None = None, image: str | None = None, env: dict[str, str] | None = None) -> dict[str, Any]:
+    def deploy(self, agent_id: str, template_key: str | None = None, image: str | None = None, env: dict[str, str] | None = None, port: int | None = None) -> dict[str, Any]:
         name = _container_name(agent_id)
         existing = self.get_agent(agent_id)
         if existing:
@@ -98,7 +122,9 @@ class AgentHost:
             if not image:
                 raise ValueError("Either template_key or image must be provided")
             image_name = image
-            ports = []
+            # Publish the agent's port to the host (host:container) so VulnoraIQ can
+            # reach it at 127.0.0.1:<port> and register it as a scannable target.
+            ports = [f"{port}:{port}"] if port else []
 
         cmd = ["run", "-d", "--name", name, "--label", f"{AGENT_LABEL}={agent_id}", "--label", f"vulnoraiq.agent.id={agent_id}", "--network", AGENT_NETWORK]
         for p in ports:
@@ -114,7 +140,7 @@ class AgentHost:
             raise RuntimeError(f"Failed to deploy agent '{agent_id}': {exc}") from exc
 
         container_id = out.strip()
-        return {"container_id": container_id, "agent_id": agent_id, "name": name, "image": image_name, "status": "deployed"}
+        return {"container_id": container_id, "agent_id": agent_id, "name": name, "image": image_name, "status": "deployed", "port": port}
 
     def stop(self, agent_id: str) -> bool:
         agent = self.get_agent(agent_id)
@@ -166,9 +192,9 @@ def get_agent(agent_id: str) -> dict[str, Any] | None:
     return _HOST.get_agent(agent_id)
 
 
-def deploy_agent(agent_id: str, template_key: str | None = None, image: str | None = None, env: dict[str, str] | None = None) -> dict[str, Any]:
+def deploy_agent(agent_id: str, template_key: str | None = None, image: str | None = None, env: dict[str, str] | None = None, port: int | None = None) -> dict[str, Any]:
     _HOST.ensure_network()
-    return _HOST.deploy(agent_id, template_key, image, env)
+    return _HOST.deploy(agent_id, template_key, image, env, port)
 
 
 def stop_agent(agent_id: str) -> bool:

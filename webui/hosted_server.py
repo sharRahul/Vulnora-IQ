@@ -31,10 +31,12 @@ from reports.sarif_report_generator import SarifReportGenerator
 from webui.agent_host import (
     _run_docker,
     agent_logs,
+    delete_template,
     deploy_agent,
     list_agents,
     list_templates,
     remove_agent,
+    save_template,
     start_agent,
     stop_agent,
     template_targets,
@@ -692,19 +694,109 @@ class HostedWebUiHandler(BaseHTTPRequestHandler):
             template_key = payload.get("template")
             image = payload.get("image")
             env = payload.get("env") or {}
+            try:
+                port = int(payload["port"]) if payload.get("port") not in (None, "") else None
+            except (TypeError, ValueError):
+                self._send_error_response(HTTPStatus.BAD_REQUEST, "port must be a number")
+                return
             if not agent_id:
                 self._send_error_response(HTTPStatus.BAD_REQUEST, "agent id is required")
                 return
             if not template_key and not image:
                 self._send_error_response(HTTPStatus.BAD_REQUEST, "template or image is required")
                 return
-            result = deploy_agent(agent_id, template_key=template_key, image=image, env=env)
+            result = deploy_agent(agent_id, template_key=template_key, image=image, env=env, port=port)
             for entry in template_targets(template_key) if template_key else []:
                 try:
                     _save_runtime_target(entry["id"], entry["config"])
                 except ValueError:
                     pass
+            # Custom-image agents become scannable targets too: the published port is
+            # reachable from the host, so register an http_json target pointing at it.
+            if image and port:
+                endpoint = str(payload.get("endpoint") or "/").strip() or "/"
+                response_path = str(payload.get("response_path") or "response").strip() or "response"
+                body_template = payload.get("body_template")
+                if isinstance(body_template, str) and body_template.strip():
+                    try:
+                        body_template = json.loads(body_template)
+                    except json.JSONDecodeError:
+                        body_template = None
+                if not isinstance(body_template, dict):
+                    body_template = {"prompt": "{{prompt}}"}
+                target_id = f"agent-{agent_id}"[:81]
+                target_cfg = {
+                    "name": agent_id,
+                    "type": "http_json",
+                    "base_url": f"http://127.0.0.1:{port}",
+                    "endpoint_path": endpoint,
+                    "method": "POST",
+                    "request_body_template": body_template,
+                    "response_extraction_path": response_path,
+                    "environment": "lab",
+                    "authorisation_required": True,
+                }
+                try:
+                    saved = _save_runtime_target(target_id, target_cfg)
+                    result["target_id"] = saved["target_id"]
+                except ValueError as exc:
+                    result["target_warning"] = str(exc)
             self._send_json(result)
+            return
+        if clean_path == "/api/agents/templates":
+            if not _validate_csrf(self._session_key(principal), self.headers.get("X-CSRF-Token")):
+                self._send_error_response(HTTPStatus.FORBIDDEN, "invalid or missing CSRF token")
+                return
+            if not AUTH_MANAGER.can(principal, "manage_runtime"):
+                self._forbidden()
+                return
+            payload = self._read_json()
+            key = str(payload.get("key") or "").strip()
+            image = str(payload.get("image") or "").strip()
+            if not key or not RUNTIME_TARGET_ID_RE.fullmatch(key):
+                self._send_error_response(HTTPStatus.BAD_REQUEST, "template name must be 2-81 chars: letters, numbers, hyphens, underscores")
+                return
+            if not image:
+                self._send_error_response(HTTPStatus.BAD_REQUEST, "docker image is required")
+                return
+            try:
+                port = int(payload["port"]) if payload.get("port") not in (None, "") else None
+            except (TypeError, ValueError):
+                self._send_error_response(HTTPStatus.BAD_REQUEST, "port must be a number")
+                return
+            endpoint = str(payload.get("endpoint") or "/").strip() or "/"
+            env = payload.get("env") if isinstance(payload.get("env"), dict) else {}
+            template: dict[str, Any] = {"image": image, "env": env}
+            if port:
+                template["ports"] = [f"{port}:{port}"]
+                template["targets"] = [{
+                    "id": f"agent-{key}"[:81],
+                    "config": {
+                        "name": key,
+                        "type": "http_json",
+                        "base_url": f"http://127.0.0.1:{port}",
+                        "endpoint_path": endpoint,
+                        "method": "POST",
+                        "request_body_template": {"prompt": "{{prompt}}"},
+                        "response_extraction_path": "response",
+                        "environment": "lab",
+                        "authorisation_required": True,
+                    },
+                }]
+            saved = save_template(key, template)
+            self._send_json({"saved": True, "key": key, "template": saved})
+            return
+        if clean_path.startswith("/api/agents/templates/") and clean_path.endswith("/delete"):
+            if not _validate_csrf(self._session_key(principal), self.headers.get("X-CSRF-Token")):
+                self._send_error_response(HTTPStatus.FORBIDDEN, "invalid or missing CSRF token")
+                return
+            if not AUTH_MANAGER.can(principal, "manage_runtime"):
+                self._forbidden()
+                return
+            parts = [unquote(item) for item in clean_path.split("/") if item]
+            key = parts[3]
+            deleted = delete_template(key)
+            self._send_json({"deleted": deleted, "key": key})
             return
         if clean_path.startswith("/api/agents/") and any(clean_path.endswith(suffix) for suffix in ("/stop", "/start", "/remove")):
             if not _validate_csrf(self._session_key(principal), self.headers.get("X-CSRF-Token")):
