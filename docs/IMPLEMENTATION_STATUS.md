@@ -2,7 +2,7 @@
 
 This document separates implemented capability from future assurance and maturity work.
 
-> **Current maturity:** VulnoraIQ `0.3.0` is a self-hosted AI security testing application with two supported run modes: Desktop Mode for normal laptop/workstation use and Docker Lab Mode for advanced server, VM, CI, and dev-lab use. It supports authorised local/internal testing of LLM, RAG, tool-using, agentic, and GenAI data-security scenarios through a Python scanner, target adapters, hosted React WebUI, assistant backend/model controls, target templates, CLI, SQLite job persistence, reports, evidence, on-demand release packages, supply-chain workflow evidence, loopback-only local publishing, and CI validation.
+> **Current maturity:** VulnoraIQ `0.3.0` is a self-hosted AI security testing application with two supported run modes: Desktop Mode for normal laptop/workstation use and Docker Lab Mode for advanced server, VM, CI, and dev-lab use. It is complete for **self-hosted laptop/server use** within the current authorised local/internal scope. It supports authorised local/internal testing of LLM, RAG, tool-using, agentic, and GenAI data-security scenarios through a Python scanner, target adapters, hosted React WebUI, assistant backend/model controls, target templates, CLI, SQLite job persistence, reports, evidence, on-demand release packages, supply-chain workflow evidence, loopback-only local publishing, and CI validation.
 
 > **Assurance limitation:** OWASP, GenAI, Agentic, AITG, and MITRE mappings are framework evidence and planning/validation controls. They are not independently validated VAPT-grade assurance. See [`ASSESSMENT_ASSURANCE.md`](ASSESSMENT_ASSURANCE.md) for the full assurance boundary.
 
@@ -29,7 +29,7 @@ This document separates implemented capability from future assurance and maturit
 | Release packaging | Complete for self-hosted package scope | Manual release workflow, double-click launchers, bootstrap `.venv`, checksums, GitHub artifact attestations, optional GPG signatures. |
 | Supply-chain workflow | Complete for current container release scope | Trivy filesystem/image scans, SARIF artifacts, SPDX/CycloneDX SBOMs, optional strict gates, GHCR publish, Cosign keyless signing, and verification evidence. |
 | CI | Consolidated normal gate set | `.github/workflows/ci.yml` runs the Python matrix, Ruff, mypy, pytest, dependency checks, validators, hosted WebUI flow, functional acceptance, and artifacts. The old duplicate `python-ci.yml` workflow was removed. |
-| Documentation | Cleaned active docs tree | Completed/superseded planning docs are staged in `docs/ready-to-remove/` for maintainer review instead of remaining in the active docs index. |
+| Documentation | Cleaned active docs tree | Completed/superseded planning docs are staged in `docs/ready-to-remove/` for maintainer review while lightweight active stubs keep validator-owned paths stable. |
 
 ## Current complete capability
 
