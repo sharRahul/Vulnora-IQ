@@ -6,15 +6,20 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- `docs/ready-to-remove/` review queue for completed, superseded, or stale planning documentation that should be reviewed before final deletion.
 - CVE correlation for findings: a new online lookup (`integrations/cve_lookup.py`, `POST /api/findings/cve`) queries NVD by keyword/CWE (and OSV when a package is named) and surfaces matching CVE/advisory records in the WebUI intelligence panel. When a lookup succeeds with no match it flags the finding as a *candidate novel/zero-day* for human verification — never asserting a zero-day automatically. Best-effort and offline-safe (reports `online: false` instead of failing).
 - Optional in-app assistant model (`pip install -e .[assistant]`): "Ask VulnoraIQ" and AI finding explanations now run a small GGUF model locally via `llama-cpp-python` (CPU or GPU), downloaded once on first use and cached — no Ollama or external API. Answers are grounded in the bundled OWASP notes and the selected finding, with safe `web_fetch` (SSRF-guarded) and allowlisted `read_docs` tools. Degrades gracefully to templated guidance when the model is not installed. New `POST /api/assistant/explain` endpoint; see `docs/ASSISTANT_MODEL.md` (incl. a path to fine-tune your own model on a 16 GB GPU).
 - Agent Lab: a per-project **Delete** button (managed projects only; mapped projects shown read-only).
 
 ### Changed
 
+- Active documentation index now points to current guides, implementation status, scorecard, assurance, and future-plan docs instead of completed or stale planning documents.
+- README, docs index, implementation status, run-mode docs, and manual LLM testing prompt now describe the consolidated normal CI posture through `.github/workflows/ci.yml`.
 - WebUI is mitigation-only: removed the "Apply Fix" action and its `status:"fixed"` persistence; relabeled the panel to "Recommended Mitigation" / "Mitigation View" with an explicit "guidance only — a human owner must implement and verify" note. VulnoraIQ advises; it does not change the target.
 - Corrected the console branding from "VulnorAIQ" to "VulnoraIQ" everywhere on the UI.
 - Agent Lab import: "Local folder upload" is now the default first tab with a clearer "Browse & select your AI agent folder" picker.
+- `pytest` no longer pins `basetemp`/`cache_dir` inside the working tree (`.pytest_tmp`). It uses the OS temp dir and the default `.pytest_cache`, avoiding locked/ACL-corrupted leftover directories that made later runs fail with `PermissionError` on Windows.
+- The example release package now bundles `docker-compose.yml`, `Dockerfile`, and `.env.docker.example` so the included Docker Lab launchers can start the lab from the package alone.
 
 ### Fixed
 
@@ -22,10 +27,10 @@ All notable changes to this project will be documented in this file.
 - Agent Lab deployment removal (`POST /api/agent-lab/deployments/<id>/remove`) now resolves the identifier against the deployment registry (accepting `deployment_id`, `project_id`, or `container_name`) and reports `removed: true` only when a matching container actually existed. Previously a stale/wrong identifier could report success while leaving a container running, because `docker rm -f` exits `0` for a missing container.
 - WebUI console no longer loads fonts from the Google Fonts CDN. The stylesheet `@import` and `preconnect` hints were removed so the console renders with bundled/system fonts, works offline, and no longer triggers a Content-Security-Policy console error.
 
-### Changed
+### Removed
 
-- `pytest` no longer pins `basetemp`/`cache_dir` inside the working tree (`.pytest_tmp`). It uses the OS temp dir and the default `.pytest_cache`, avoiding locked/ACL-corrupted leftover directories that made later runs fail with `PermissionError` on Windows.
-- The example release package now bundles `docker-compose.yml`, `Dockerfile`, and `.env.docker.example` so the included Docker Lab launchers can start the lab from the package alone.
+- Redundant `.github/workflows/python-ci.yml` normal CI workflow. The remaining `.github/workflows/ci.yml` keeps the Python matrix, dependency checks, lint, type checking, tests, validators, hosted WebUI flow, functional acceptance, and artifacts.
+- Completed/superseded planning docs from the active documentation tree; copies were staged in `docs/ready-to-remove/` for maintainer review before final deletion.
 
 ## [0.3.0] - 2026-06-26
 

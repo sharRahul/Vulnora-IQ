@@ -4,7 +4,7 @@
 
 It provides a browser WebUI, CLI, Agent Lab, target configuration, scan execution, evidence capture, reports, audit logs, and validation workflows. Findings are assessment evidence for human review; VulnoraIQ does not claim certified VAPT-grade assurance. See [`docs/ASSESSMENT_ASSURANCE.md`](docs/ASSESSMENT_ASSURANCE.md).
 
-For operator setup and usage, see [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md).
+For operator setup and usage, see [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md). For the maintained documentation index, see [`docs/README.md`](docs/README.md).
 
 ## Product direction
 
@@ -40,6 +40,8 @@ User clicks launcher
 | Agent Lab | Experimental workflow at `/agent-lab` for importing real AI-agent projects through local folder upload, ZIP upload, Git import, or mapped folders; configuring provider/runtime settings; building/running agents in Docker; auto-creating targets; and launching scans. |
 | Persistence | SQLite job store, reports, evidence, audit logs, and Agent Lab metadata. |
 | Identity | `local_admin` mode for desktop/lab scope; production token auth and reverse-proxy identity are available for hardened internal deployments. Direct OIDC/JWT is future work. |
+| Documentation | Active docs now point to current guides/status/assurance docs. Completed or superseded planning docs are staged under `docs/ready-to-remove/` for maintainer review. |
+| CI | Normal PR/main checks are consolidated into `.github/workflows/ci.yml`. The duplicate `Python CI` workflow has been removed. |
 
 ## Prerequisites
 
@@ -245,6 +247,7 @@ pip-audit
 python scripts/validate_package_metadata.py
 python scripts/validate_owasp_atlas_mappings.py
 python scripts/validate_genai_readiness.py
+python scripts/validate_aitg_full_coverage.py
 python scripts/validate_production_testing_readiness.py --output-dir reports/output/production-readiness
 python scripts/validate_runtime_production_config.py
 ```
@@ -256,6 +259,10 @@ cd webui/console
 npm install
 npm run typecheck
 npm run build
+cd ../..
+npm install
 npx playwright install chromium --with-deps
 npm run test:webui:hosted
 ```
+
+Normal PR/main CI runs through `.github/workflows/ci.yml`. Release artifact builds, Python package publishing, and supply-chain image/SBOM workflows remain separate release/manual workflows so they do not duplicate the normal CI gate.
